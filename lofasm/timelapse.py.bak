@@ -1,0 +1,283 @@
+#!/usr/bin/python
+import parse_data as pdat
+import numpy as np
+import struct
+import os
+import datetime
+def get_avg_pow_in_range(fname, start_bin, end_bin):
+	'''determines average power in specified range of frequency 
+	bins. does *not* include the end bin in calculation.'''
+	if end_bin < start_bin:
+		#swap order
+		a = end_bin
+		end_bin = start_bin
+		start_bin = a
+		del a
+	bins = np.arange(start_bin, end_bin)
+	total_power = 0
+	for bin in bins:
+		total_power += get_avg_pow(fname, bin)
+	avg_pow = total_power/float(len(bins))
+	return avg_pow
+
+def get_avg_pow(fname, bin):
+	'''scans all integrations in fname and returns the mean power 
+	in the specified frequency bin. '''
+	print "\nOpening ", fname.split('/')[-1]
+	file_obj = open(fname, 'rb')
+
+	hdr_dict = pdat.parse_file_header(file_obj, fileType='spectra')
+	file_obj.seek(int(hdr_dict[3][1])) #move ptr past file header
+	num_bins = int(hdr_dict[5][1])
+	#bin = int(pdat.freq2bin(freq))
+
+	#print 'Frequency: %3.0f MHz has been mapped to bin %i' % (freq, bin)
+	num_integrations = int(hdr_dict[12][1])
+	num_vals = num_bins * num_integrations
+	if 'POW' in fname:
+		format = '>L'
+		spect_size = num_bins
+	elif 'x' in fname:
+		format = '>l'
+		num_vals *= 2
+		spect_size = num_bins * 2
+		bin *= 2
+	elif 'BEAM' in fname:
+		format = '>f'
+		spect_size = num_bins
+
+	num_vals = str(num_vals)
+	print num_vals.join(format)
+	binary_data = file_obj.read()
+	print 'TL: file length is ', len(binary_data)
+	file_data = list(struct.unpack(num_vals.join(format), binary_data))
+
+	pow_sum = 0
+	if 'x' in fname:
+		for i in range(num_integrations):
+			pow_sum += np.complex(file_data[(i * spect_size) + bin], 
+				file_data[(i * spect_size) + bin + 1])
+	else: #not complex
+		for i in range(num_integrations):
+			pow_sum += file_data[(i * spect_size) + bin]
+	#calculate mean
+	pow_sum = pow_sum/np.float(num_integrations)
+
+	print "Closing ", fname.split('/')[-1]
+	file_obj.close()
+	return pow_sum
+
+
+def get_file_list(filenameStart, filenameEnd):
+	fStartDate, fStartTime = pdat.parse_filename(filenameStart)
+	fEndDate, fEndTime = pdat.parse_filename(filenameEnd)
+
+	if fStartDate == fEndDate: #same day
+		files_to_consider = [filename for filename in os.listdir(fStartDate)]
+		startfile_index = files_to_consider.index(filenameStart)
+		endfile_index = files_to_consider.index(filenameEnd)
+		files_to_consider = [fStartDate+'/'+fname for fname in files_to_consider[startfile_index:endfile_index+1]]
+
+	else:
+		curr_directory_listing = os.getcwd()
+		dirs_to_consider = os.listdir(curr_directory_listing)
+
+		start_dir_index = dirs_to_consider.index(fStartDate)
+		end_dir_index = dirs_to_consider.index(fEndDate)
+
+		dirs_to_consider = dirs_to_consider[start_dir_index:end_dir_index+1]
+
+
+		files_to_consider = []
+		for i in range(len(dirs_to_consider)):
+			local_files_to_consider = os.listdir(dirs_to_consider[i])
+			if i == 0:
+				startfile_index = local_files_to_consider.index(filenameStart)
+				local_files_to_consider = [fStartDate+'/'+fname for fname in local_files_to_consider[startfile_index:]]
+				#print i, local_files_to_consider
+			elif i >= (len(dirs_to_consider)-1):
+				endfile_index = local_files_to_consider.index(filenameEnd)
+				local_files_to_consider = [fEndDate+'/'+fname for fname in local_files_to_consider[:endfile_index+1]]
+				#print i, local_files_to_consider
+			else:
+				local_files_to_consider = [dirs_to_consider[i].rstrip('/')+'/'+fname for fname in local_files_to_consider]
+			files_to_consider.extend(local_files_to_consider)
+
+def get_file_list2(filenameStart, filenameEnd):
+	#this function uses the pol_type in the filename to determine type of data
+	#work with filenames only
+	if '/' in filenameStart:
+		filenameStart = filenameStart.split('/')[-1]
+	if '/' in filenameEnd:
+		filenameEnd = filenameEnd.split('/')[-1]
+
+	fStartDate, fStartTime, startPolType = pdat.parse_filename(filenameStart)
+	fEndDate, fEndTime, endPolType = pdat.parse_filename(filenameEnd)
+
+	if startPolType != endPolType:
+		print "Polarization types of start and end files are different."
+		print "Continuing with ", startPolType
+		endPolType = startPolType
+
+	if fStartDate == fEndDate: #same day
+		dirs_to_consider = os.listdir(fStartDate)
+		
+		startDir_index = dirs_to_consider.index(fStartDate+'_'+fStartTime)
+		endDir_index = dirs_to_consider.index(fEndDate+'_'+fEndTime)
+		dirs_to_consider = dirs_to_consider[startDir_index:endDir_index+1]
+		
+		targets = []
+		for d in dirs_to_consider:
+			targets.append(fStartDate+'/'+d+'/'+d+'_'+startPolType+'.lsf')
+
+	else: #span of days
+		curr_directory_listing = os.getcwd()
+		date_dirs_all = os.listdir(curr_directory_listing)
+
+		try:
+			start_dir_index = date_dirs_all.index(fStartDate)
+			end_dir_index = date_dirs_all.index(fEndDate)
+		except ValueError as err:
+			print "Error caught: "
+			print err.msg
+			sys.exit()
+		date_dirs_selected = date_dirs_all[start_dir_index:end_dir_index+1]
+
+		dirs_to_consider = []
+		for d in date_dirs_selected:
+			dirs_to_consider.extend(os.listdir(d))
+
+		#narrow down to requested times
+		first_file_index = dirs_to_consider.index(fStartDate+'_'+fStartTime)
+		last_file_index = dirs_to_consider.index(fEndDate+'_'+fEndTime)
+		dirs_to_consider = dirs_to_consider[first_file_index:last_file_index+1]
+
+		targets = []
+		for dirName in dirs_to_consider:
+			currentDate = dirName.split('_')[0]
+			targetName = currentDate + '/' + dirName + '/' + dirName + '_' + startPolType + '.lsf'
+			targets.append(targetName)
+	return targets
+
+def get_file_list3(fNameStart, fNameStop, root_dir = os.getcwd()):
+    startDate, startTime = pdat.parse_filename(fNameStart)
+    stopDate, stopTime = pdat.parse_filename(fNameStop)
+    
+    #dir_listing = os.listdir(root_dir)
+    
+    if startDate == stopDate: 
+        file_listing = os.listdir(startDate)
+        startFileIndex = file_listing.index(fNameStart)
+        endFileIndex = file_listing.index(fNameStop)
+
+        #only consider files within our desired time frame
+        file_listing = file_listing[startFileIndex:endFileIndex+1] 
+
+    elif int(startDate) > int(stopDate):
+        print "Swapping order of start and end points!"
+        #swap start and end filenames
+        x = fNameStart
+        fNameStart = fNameStop
+        fNameStop = x
+        del x
+        file_listing = get_file_list3(fNameStart, fNameStop, root_dir)
+    elif int(startDate) < int(stopDate):
+        dir_listing = os.listdir(root_dir)
+        startDateIndex = dir_listing.index(startDate)
+        stopDateIndex = dir_listing.index(stopDate)
+        dir_listing = dir_listing[startDateIndex:stopDateIndex+1]
+        file_listing = []
+        for date in dir_listing:
+            if date == startDate:
+                files_in_dir = os.listdir(date)
+                startIndex = files_in_dir.index(fNameStart)
+                file_listing.extend(files_in_dir[startIndex:])
+            elif date == stopDate:
+                files_in_dir = os.listdir(date)
+                stopIndex = files_in_dir.index(fNameStop)
+                file_listing.extend(files_in_dir[:stopIndex+1])
+            else:
+                file_listing.extend(os.listdir(date))
+
+    return file_listing
+
+if __name__ == "__main__":
+    from optparse import OptionParser
+    import matplotlib.pyplot as plt
+    import sys
+
+    p = OptionParser()
+    p.set_usage('timelapse.py usage TBD.')
+    p.set_description(__doc__)
+    p.add_option('-s', dest='start_file', type='str', default=None,
+		help='path to the first LoFASM file in timelapse.')
+    p.add_option('-e', dest='end_file', type='str',
+		help='path to the last LoFASM file in timelapse.')
+    p.add_option('-f', dest='freq', type='float', default=None,
+		help='frequency to plot over specified time.')
+    p.add_option('--start_freq', dest='start_freq', type='float', default=None,
+		help = 'start frequency (MHz)')
+    p.add_option('--end_freq', dest='end_freq', type='float', default=None, help='end frequency (MHz)')
+
+
+
+    opts, args = p.parse_args(sys.argv[1:])
+    
+    #check input parameters
+    if opts.start_file is None:
+        print 'I need a starting place.'
+        sys.exit()
+    elif opts.end_file is None:
+        print 'I need an ending place.'
+        sys.exit()
+    elif os.path.isdir(opts.start_file):
+        print opts.start_file, " is not a regular LoFASM file."
+        sys.exit()
+    elif os.path.isdir(opts.end_file):
+        print opts.end_file, " is not a regular LoFASM file."
+        sys.exit()
+    elif opts.freq is None and opts.start_freq is None:
+        print "Choose a frequency (MHz) or range of frequencies to plot."
+        sys.exit()
+    lofasm_file_list = get_file_list3(opts.start_file, opts.end_file)
+    startDateStamp, startTimeStamp, _ = pdat.parse_filename(lofasm_file_list[0])
+    startDateTime = pdat.get_datetime_obj(startDateStamp, startTimeStamp)
+    
+    pow_list = []
+    time_list = []
+    #if single freq bin then calculate power in that bin
+	if opts.freq:
+        for fname in lofasm_file_list:
+            print fname
+            bin = pdat.freq2bin(opts.freq)
+            pow_list.append(get_avg_pow(fname, bin))
+            dateStamp, timeStamp, _ = pdat.parse_filename(fname.split('/')[-1])
+            currDateTime = pdat.get_datetime_obj(dateStamp, timeStamp)
+            
+            days_passed = (currDateTime - startDateTime).total_seconds() / 86400.0
+            
+            time_list.append(days_passed)
+		print pow_list
+		print time_list
+	else:
+        #if a frequency range is specified then calculate average power 
+        # in all enclosed bins
+		startBin = int(pdat.freq2bin(opts.start_freq))
+		endBin = int(pdat.freq2bin(opts.end_freq))
+		print "averaging power from bin %i to %i" % (startBin, endBin)
+        for fname in lofasm_file_list:
+            print fname
+            pow_list.append(get_avg_pow_in_range(fname, startBin, endBin))
+            dateStamp, timeStamp, _ = pdat.parse_filename(fname.split('/')[-1])
+            currDateTime = pdat.get_datetime_obj(dateStamp, timeStamp)
+            days_passed = (currDateTime - startDateTime).total_seconds() / 86400.0
+            
+            time_list.append(days_passed)
+            
+		print pow_list
+		print time_list
+	#plt.plot(time_list, 10*np.log10(pow_list),'*')
+	plt.plot(10*np.log10(pow_list), '*-')
+	plt.grid()
+	plt.show()
+

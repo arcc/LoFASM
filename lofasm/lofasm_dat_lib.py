@@ -1,0 +1,126 @@
+# lofasm data lib
+import struct
+import numpy as np
+
+HDR_V1_SIGNATURE = 14613675
+INTEGRATION_SIZE_B = 139264 #bytes
+
+#class definition
+class LoFASM_burst:
+    __fmt_autos = '>L'
+    __fmt_cross = '>l'
+    __fmt_beams = '>f'
+    __type_autos = int
+    __type_cross = complex
+    __type_beams = np.float64
+
+    def __init__(self, burst_string, packet_size=8192):
+        self.autos = {}
+        self.cross = {}
+        hdr_packet = burst_string[:packet_size]
+
+        burst_real_even_binary = burst_string[packet_size:packet_size*3]
+        burst_complex_even_binary = burst_string[packet_size*3:packet_size*9]
+        burst_real_odd_binary = burst_string[packet_size*9:packet_size*11]
+        burst_complex_odd_binary = burst_string[packet_size*11:]
+
+        burst_real_even_val = list(struct.unpack('4096'.join(self.__fmt_autos),
+                                                 burst_real_odd_binary))
+        burst_real_odd_val = list(struct.unpack('4096'.join(self.__fmt_autos),
+                                                burst_real_odd_binary))
+        burst_complex_even_val = struct.unpack('12288'.join(self.__fmt_cross),
+                                               burst_complex_even_binary)
+        burst_complex_odd_val = struct.unpack('12288'.join(self.__fmt_cross),
+                                              burst_complex_odd_binary)
+
+        AABB_even = burst_real_even_val[:2048]
+        CCDD_even = burst_real_even_val[2048:]
+        AABB_odd = burst_real_odd_val[:2048]
+        CCDD_odd = burst_real_odd_val[2048:]
+
+        AB_even = self.__cross_make_complex(burst_complex_even_val[:2048])
+        AC_even = self.__cross_make_complex(burst_complex_even_val[2048:2048*2])
+        AD_even = self.__cross_make_complex(burst_complex_even_val[2048*2:2048*3])
+        BC_even = self.__cross_make_complex(burst_complex_even_val[2048*3:2048*4])
+        BD_even = self.__cross_make_complex(burst_complex_even_val[2048*4:2048*5])
+        CD_even = self.__cross_make_complex(burst_complex_even_val[2048*5:])
+
+        AB_odd = self.__cross_make_complex(burst_complex_odd_val[:2048])
+        AC_odd = self.__cross_make_complex(burst_complex_odd_val[2048:2048*2])
+        AD_odd = self.__cross_make_complex(burst_complex_even_val[2048*2:2048*3])
+        BC_odd = self.__cross_make_complex(burst_complex_even_val[2048*3:2048*4])
+        BD_odd = self.__cross_make_complex(burst_complex_even_val[2048*4:2048*5])
+        CD_odd = self.__cross_make_complex(burst_complex_even_val[2048*5:])
+
+        AA_even, BB_even = self.__split_autos(AABB_even)
+        AA_odd, BB_odd = self.__split_autos(AABB_odd)
+        CC_even, DD_even = self.__split_autos(CCDD_even)
+        CC_odd, DD_odd = self.__split_autos(CCDD_odd)
+
+        self.autos['AA'] = self.__interleave_even_odd(AA_even, AA_odd)
+        self.autos['BB'] = self.__interleave_even_odd(BB_even, BB_odd)
+        self.autos['CC'] = self.__interleave_even_odd(CC_even, CC_odd)
+        self.autos['DD'] = self.__interleave_even_odd(DD_even, DD_odd)
+        self.cross['AB'] = self.__interleave_even_odd(AB_even, AB_odd)
+        self.cross['AC'] = self.__interleave_even_odd(AC_even, AC_odd)
+        self.cross['AD'] = self.__interleave_even_odd(AD_even, AD_odd)
+        self.cross['BC'] = self.__interleave_even_odd(BC_even, BC_odd)
+        self.cross['BD'] = self.__interleave_even_odd(BD_even, BD_odd)
+        self.cross['CD'] = self.__interleave_even_odd(CD_even, CD_odd)
+
+    def __cross_make_complex(self, cross_list):
+        cross_complex = []
+        for i in range(len(cross_list)/2):
+            cross_complex.append(complex(cross_list[i*2], cross_list[i*2+1]))
+        return cross_complex
+
+    def __interleave_even_odd(self, even_list, odd_list):
+        if len(even_list) != len(odd_list):
+            print "Cannot interleave! Even and odd lists be of equal length!"
+        else:
+            interleave_list = []
+            for i in range(len(even_list)):
+                interleave_list.append(even_list[i])
+                interleave_list.append(odd_list[i])
+        return interleave_list
+
+    def __split_autos(self, XXYY_list):
+        XX_list = []
+        YY_list = []
+        for i in range(len(XXYY_list)/2):
+            XX_list.append(XXYY_list[i*2])
+            YY_list.append(XXYY_list[i*2+1])
+        return (XX_list, YY_list)
+
+    def pack_binary(self, spect):
+        bin_str = ''
+        if (type(spect[0]) is self.__type_autos):
+            format = self.__fmt_autos
+            for val in spect:
+                bin_str += struct.pack(format, val)
+        elif type(spect[0]) is self.__type_cross:
+            format = self.__fmt_cross
+            for val in spect:
+                bin_str += struct.pack(format, val.real)
+                bin_str += struct.pack(format, val.imag)
+        elif type(spect[0]) is self.__type_beams:
+            format = self.__fmt_beams
+            for val in spect:
+                bin_str += struct.pack(format, val)
+        return bin_str
+
+    def __gen_LoFASM_beams(self, Ai=1.0, Aq=1.0):
+        self.beams={}
+        AA_pow = np.array(self.autos['AA'])
+        BB_pow = np.array(self.autos['BB'])
+        CC_pow = np.array(self.autos['CC'])
+        DD_pow = np.array(self.autos['DD'])
+        BD_cross = np.array(self.cross['BD'])
+        AC_cross = np.array(self.cross['AC'])
+        self.beams['BN'] = BB_pow + DD_pow + (2/(Ai*Aq))*np.real(BD_cross)
+        self.beams['BE'] = AA_pow + CC_pow + (2/(Ai_Aq))*np.real(AC_cross)
+
+    def create_LoFASM_beams(self):
+        self.__gen_LoFASM_beams()
+        
+        
