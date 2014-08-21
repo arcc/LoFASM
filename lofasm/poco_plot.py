@@ -95,6 +95,7 @@ if __name__ == '__main__':
         input_filename = opts.input_filename
         lofasm_input_file = open(input_filename, 'rb')
     hdr_dict = pdat.parse_file_header(lofasm_input_file)
+    lofasm_station = hdr_dict[4][1]
     #get past the header
     lofasm_input_file.seek(int(hdr_dict[3][1]))
     if opts.start_position < 0:
@@ -125,7 +126,7 @@ if __name__ == '__main__':
         plot_all_baselines(burst)
         raw_input()
     elif opts.animate_all:
-        lines = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, opts.norm_cross)
+        lines = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, lofasm_station, opts.norm_cross)
         anim = ani_lofasm.animation.FuncAnimation(ani_lofasm.fig, 
             ani_lofasm.update_all_baseline_plots, fargs=(ani_lofasm.fig, 
                 burst_generator, lines, opts.norm_cross), frames=num_frames, interval=opts.frame_dur, 

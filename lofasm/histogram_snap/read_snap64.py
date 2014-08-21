@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# python script to read ADC voltanges and report voltage ADC counts
 #-----------------------------------------------------------------
 import sys, os, random,numpy
 import matplotlib, corr, time,struct, math,pylab,mkid
@@ -7,6 +8,7 @@ import datetime
 def calculateRMS(data):
     data = numpy.array(data)
     return numpy.sqrt(data.var())
+
 def calculateENOB(rms):
     return numpy.log2(rms)
 
@@ -31,7 +33,7 @@ try:
     load_fpga = sys.argv[1]
 except:
     print "Usage:",sys.argv[0], "need to set loading firmware"; sys.exit(1)
-roach='192.168.4.21'# your roach IP adr
+roach='192.168.4.21'# roach IP adr
 katcp_port=7147
 timeout=10
 fpga=corr.katcp_wrapper.FpgaClient(roach,katcp_port)
@@ -40,9 +42,8 @@ if sys.argv[2] == '0':
     boffile = 'adc_snap4x_test_zdock0_2014_Jul_09_1920.bof'
 elif sys.argv[2] =='1':
     boffile = 'adc_snap4x_test_zdock1_2014_Jul_09_1956.bof'
-#boffile='adc_snap4x_test_zdock0_2011_May_10_1143.bof'#horloge 45 deg (32)
-#boffile='count_snap4x_zdock0_2011_May_10_1010.bof'
-if load_fpga == '1':  # pour forcer le chargement du firmware
+
+if load_fpga == '1':  # force bof program
 	fpga.progdev(boffile)     #enable to load the firmware
 	time.sleep(1)   # wait for roach to start to send or received data
 	list_reg=fpga.listdev()
