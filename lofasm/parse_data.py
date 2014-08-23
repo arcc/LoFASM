@@ -3,13 +3,19 @@ import lofasm_dat_lib as lofasm_dat
 import struct, sys
 import numpy as np
 import parse_data_H as pdat_H
-import datetime
 
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
 
 
 
 ##### Function Definitions
+def getSampleTime(Nacc):
+    return pdat_H.T_fpga * pdat_H.FFT_cycles * Nacc
+def getNumPackets(obs_dur):
+    obs_dur = float(obs_dur)
+    return int(pdat_H.PacketsPerSample * np.ceil(obs_dur /
+            getSampleTime(lofasm_dat.getRoachAccLen())))
+
 def freq2bin(freq):
 	rbw = 200.0/2048
 	return freq / rbw
@@ -17,32 +23,22 @@ def freq2bin(freq):
 def bin2freq(bin):
 	rbw = 200.0/2048
 	return bin * rbw
-
-
+		
 def parse_filename(filename):
-	#'''returns the file's time stamp as a list
-	#[YYmmdd, HHMMSS]
-    #'''
-    #if filename[-7:] == '.lofasm':
-    #print
-    filename = filename.rstrip('.lofasm')
-    parse_list = filename.split('_')
-   
-    date = parse_list[0]
-    time = parse_list[1]
+	'''returns the file's time stamp as a list
+	[YYmmdd, HHMMSS]
+	'''
 
-    return [date, time]
-def get_datetime_obj(dateStamp, timeStamp):
-    '''parses LoFASM dateStamp and timeStamp and returns 
-    a datetime object'''
-    year = int(dateStamp[:4])
-    month = int(dateStamp[4:6])
-    day = int(dateStamp[6:])
-    hour = int(timeStamp[:2])
-    minute = int(timeStamp[2:4])
-    second = int(timeStamp[4:])
-    return datetime.datetime(year, month, day, 
-            hour, minute, second)
+	if filename[-7]== '.lofsam':
+		filename = filename.rstrip('.lofasm')
+		parse_list = filename.split('_')
+	else:
+		filename = filename.rstrip('.lsf')
+		parse_list = filename.split('_')
+	date = parse_list[0]
+	time = parse_list[1]
+	pol = filename[(len(date)+len(time)+2):]
+	return [date, time, pol]
 
 def spectrum_conv_code(code_str):
 	return LoFASM_SPECTRA_KEY_TO_DESC[code_str]
@@ -89,12 +85,14 @@ def parse_file_header(file_obj, fileType='lofasm'):
 
 	#get file header version from file
 	file_hdr_version = int(file_obj.read(pdat_H.HDR_ENTRY_LENGTH))
+
 	#get corresponding header template
 	try:
 		if fileType == 'lofasm':
 			fhdr_field_dict = pdat_H.LoFASM_FHEADER_TEMPLATE[file_hdr_version]
 		elif fileType == 'spectra':
 			fhdr_field_dict = pdat_H.LoFASM_SPECTRUM_HEADER_TEMPLATE[file_hdr_version]
+
 	except KeyError as err:
 		print "Error: LoFASM raw file header version not recognized."
 		print "Unrecognized version: ", err.message
@@ -104,9 +102,11 @@ def parse_file_header(file_obj, fileType='lofasm'):
 	fhdr_field_dict[1][1] = file_sig
 	fhdr_field_dict[2][1] = file_hdr_version
 	fhdr_field_dict[3][1] = int(file_obj.read(pdat_H.HDR_ENTRY_LENGTH))
+
 	fields_left_to_populate = len(fhdr_field_dict.keys()) - 3
 	remaining_hdr_string = file_obj.read(fhdr_field_dict[3][1]-
 		3*pdat_H.HDR_ENTRY_LENGTH)
+	
 
 	for i in range(fields_left_to_populate):
 		j = i + 4 #start with 3rd field
@@ -173,56 +173,49 @@ def is_header(hdr_raw, print_header=False):
 		return False
 
 def check_headers(file_obj, packet_size_bytes=8192, verbose=False, print_headers=False):
-	#'''
-	#check_headers(file_obj, packet_size_bytes=8192, verbose=False, print_headers=False)
+	'''
+	check_headers(file_obj, packet_size_bytes=8192, verbose=False, print_headers=False)
 
-	#Iterate through LoFASM Data file and check that all the header packets
-	#are in place. 
+	Iterate through LoFASM Data file and check that all the header packets
+	are in place. 
 
-	#Note: The verbose argument is no longer used. It is being left in the definition 
-	#for now for compatibility purposes.
-	#'''
+	Note: The verbose argument is no longer used. It is being left in the definition 
+	for now for compatibility purposes.
+	'''
 
-    #assume the file_obj pointer is after the header!
-    filesize_bytes = get_filesize(file_obj)
-    number_of_packets = filesize_bytes / packet_size_bytes
-    packet_counter = 0 #packet counter
-    err_counter = 0
-    data_begins = pdat_H.LOFASM_RAW_HDR_LENGTH
-    first_header = True
-    print_msg = 'Checking UDP headers in %s ...\n' % file_obj.name
+	filesize_bytes = get_filesize(file_obj)
+	number_of_packets = filesize_bytes / packet_size_bytes
+	packet_counter = 0 #packet counter
+	err_counter = 0
+	first_header = True
+	print_msg = 'Checking UDP headers in %s ...\n' % file_obj.name
 
-    for i in range(number_of_packets):
-        block = file_obj.read(packet_size_bytes)
-        packet_counter += 1
-        #data_begins = file_obj.tell()
+	for i in range(number_of_packets): 
+		block = file_obj.read(packet_size_bytes)
+		packet_counter += 1
+		
+		if is_header(block):
+			if first_header:
+				print_msg += "\n|packet|packets since hdr|loc|integration|hdr_cnt|sig|\n"
+				first_header = False
+			elif packet_counter < 17:
+				print_msg += "WARNING: unexpected header packet arrived %i " % (17 - packet_counter)
+				print_msg += "packets too early!\n" 
+				err_counter += 1
+			hdr_dict = parse_hdr(block[:8])
 
-        if is_header(block):
-            if first_header:
-                print_msg += "\n|packet|packets since hdr|loc|integration|hdr_cnt|sig|\n"
-                first_header = False
-            elif packet_counter < 17:
-#                print 'early header packet!'
-                print_msg += "WARNING: unexpected header packet arrived %i " % (17 - packet_counter)
-                print_msg += "packets too early!\n" 
-                err_counter += 1
-                data_begins = file_obj.tell() - packet_size_bytes
-#                print data_begins
-            hdr_dict = parse_hdr(block[:8])
-
-            print_msg += "|%i|%i|%i|" % \
+			print_msg += "|%i|%i|%i|" % \
 				(i, packet_counter, file_obj.tell() - packet_size_bytes)
+			#print "HDR:", 
+			for key in hdr_dict:
+				print_msg += str(hdr_dict[key]) + "|"
+			print_msg += "\n"
+			packet_counter = 0 #reset packet counter
 
-            #print "HDR:", 
-            for key in hdr_dict:
-                print_msg += str(hdr_dict[key]) + "|"
-            print_msg += "\n"
-            packet_counter = 0 #reset packet counter if header is found
+	if print_headers:
+		print print_msg
 
-    if print_headers:
-        print print_msg
-
-    return [data_begins, err_counter]
+	return err_counter
 
 def get_filesize(file_obj):
 	'''Usage: get_filesize(file_obj)
@@ -238,7 +231,7 @@ def get_filesize(file_obj):
 def get_number_of_integrations(file_obj):
 	'''returns number of integrations in data file'''
 	
-	fileSize = get_filesize(file_obj) - parse_file_header(file_obj)[3][1]
+	fileSize = get_filesize(file_obj)
 	num_integrations = fileSize / lofasm_dat.INTEGRATION_SIZE_B
 	return num_integrations
 
