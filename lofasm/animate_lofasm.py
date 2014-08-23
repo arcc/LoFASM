@@ -21,7 +21,11 @@ BASELINE_ID = {
         'B' : 'IEW',
         'C' : 'ONS',
         'D' : 'OEW'},
-    'LoFASM3' : {},
+    'LoFASM3' : {
+        'A' : 'ONS',
+        'B' : 'OEW',
+        'C' : 'INS',
+        'D' : 'IEW'},
     'LoFASMIV' : {
         'A' : 'OEW',
         'B' : 'ONS',
@@ -132,6 +136,8 @@ def setup_color_plot(baseline, time_width_ms, xmin=0, xmax=200,
 def update_all_baseline_plots(i, fig, burst_gen, lines, norm_cross=False):
     print i
     baselines = ['AA', 'BB', 'CC', 'DD', 'AB', 'AC', 'AD', 'BC', 'BD', 'CD']
+
+    #get next integration
     burst_raw = burst_gen.next()
     pdat.print_hdr(pdat.parse_hdr(burst_raw))
     burst = lofasm.LoFASM_burst(burst_raw)
