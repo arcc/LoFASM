@@ -74,7 +74,7 @@ def write_header_to_file(outfile, Nacc=4096, fpga_clk_T=1e-08, Nchan=2048,
     hdr_ver = fmt_header_entry('1')
     hdr_sig = fmt_header_entry('LoCo')
     fmt_ver = fmt_header_entry('1')
-    station = fmt_header_entry(STATION)
+    station = fmt_header_entry(host)
     fstart = fmt_header_entry('0')
     fstep = fmt_header_entry(str(BW/Nbins).split('.')[1]) #mhz
     #fstop = fmt_header_entry('200')
