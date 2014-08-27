@@ -6,6 +6,12 @@ from datetime import datetime
 from astropy.time import Time
 import parse_data as pdat
 
+#hostname
+host = os.environ['STATION']
+
+
+
+# function defs
 def getTimeStampMJD():
     stamp_mjd = Time.now().mjd
     return stamp_mjd
@@ -27,12 +33,6 @@ def record_packets_into_memory(sock, MAX_PACKETS):
 	for i in range(MAX_PACKETS):
 		packet_array.append(sock.recv(num_bytes))
 	return packet_array
-def record_packets_into_memory2(sock, MAX_PACKETS):
-    packet_array = []
-    num_bytes = 8192
-    print "receiving packets"
-    packet_array.append(sock.recv(MAX_PACKETS))
-    return packet_array
 	
 def write_packets_from_memory(outfile, packet_array):
 	[outfile.write(x) for x in packet_array]
@@ -74,7 +74,7 @@ def write_header_to_file(outfile, Nacc=4096, fpga_clk_T=1e-08, Nchan=2048,
     hdr_ver = fmt_header_entry('1')
     hdr_sig = fmt_header_entry('LoCo')
     fmt_ver = fmt_header_entry('1')
-    station = fmt_header_entry('LoFASMII')
+    station = fmt_header_entry(STATION)
     fstart = fmt_header_entry('0')
     fstep = fmt_header_entry(str(BW/Nbins).split('.')[1]) #mhz
     #fstop = fmt_header_entry('200')
