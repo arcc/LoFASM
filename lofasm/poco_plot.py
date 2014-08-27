@@ -36,10 +36,10 @@ def plot_all_baselines(burst_obj):
 
 if __name__ == '__main__':
     import sys
-    import animate_lofasm as ani_lofasm
-    import parse_data as pdat
+    from lofasm import animate_lofasm as ani_lofasm
+    from lofasm import parse_data as pdat
     from optparse import OptionParser
-    import lofasm_dat_lib as lofasm
+    from lofasm import lofasm_dat_lib as lofasm
     
     p = OptionParser()
     p.set_usage('poco_ten_gbe.py <lofasm_data_filename> [options]')
@@ -95,7 +95,9 @@ if __name__ == '__main__':
         input_filename = opts.input_filename
         lofasm_input_file = open(input_filename, 'rb')
     hdr_dict = pdat.parse_file_header(lofasm_input_file)
+
     lofasm_station = hdr_dict[4][1]
+    
     #get past the header
     lofasm_input_file.seek(int(hdr_dict[3][1]))
     if opts.start_position < 0:
@@ -117,11 +119,12 @@ if __name__ == '__main__':
         CH_output = pdat.check_headers(lofasm_input_file, opts.packet_size_bytes, print_headers=True)
         exit(0)
 
-    #burst_raw = lofasm_input_file.read(burst_size_bytes)
-    #burst = lofasm.LoFASM_burst(lofasm_input_file.read(burst_size_bytes))
+    #get integration generator
     burst_generator = pdat.get_next_raw_burst(lofasm_input_file, loop_file=opts.loop_file)
-    
+
+    #plot single frame of all baselines
     if opts.plot_single_frame:
+        lines = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, lofasm_station, opts.norm_cross)
         burst = lofasm.LoFASM_burst(burst_generator.next())
         plot_all_baselines(burst)
         raw_input()
