@@ -4,8 +4,8 @@
 import socket, sys, os
 from datetime import datetime
 from astropy.time import Time
-import parse_data as pdat
-
+#import parse_data as pdat
+from lofasm import parse_data as pdat
 #hostname
 host = os.environ['STATION']
 
