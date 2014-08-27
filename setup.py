@@ -1,11 +1,11 @@
 #!/usr/bin/python
-#setup.py
+
 
 from distutils.core import setup
 
 setup(
     name='lofasm',
-    version='1.0',
+    version='0.1',
     author='Louis P. Dartez',
     author_email='louis.dartez@gmail.com',
     packages=['lofasm'],
