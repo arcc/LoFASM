@@ -1,8 +1,5 @@
 #!/opt/python2.7/bin/python2.7
-
-#TODO: add support for coarse delay change
-#TODO: add support for ADC histogram plotting.
-#TODO: add support for determining ADC input level 
+ 
 
 import corr,time,numpy,struct,sys,logging,pylab
 

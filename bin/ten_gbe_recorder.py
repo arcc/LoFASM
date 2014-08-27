@@ -4,7 +4,7 @@
 import socket, sys, os
 from datetime import datetime
 from astropy.time import Time
-from lofasm import parse_data as pdat
+import parse_data as pdat
 
 def getTimeStampMJD():
     stamp_mjd = Time.now().mjd
@@ -71,7 +71,7 @@ def write_header_to_file(outfile, Nacc=4096, fpga_clk_T=1e-08, Nchan=2048,
     msec_day = 86400 * 1000
 
     hdr_len = fmt_header_entry('96')
-    hdr_ver = fmt_header_entry('2')
+    hdr_ver = fmt_header_entry('1')
     hdr_sig = fmt_header_entry('LoCo')
     fmt_ver = fmt_header_entry('1')
     station = fmt_header_entry('LoFASMII')
