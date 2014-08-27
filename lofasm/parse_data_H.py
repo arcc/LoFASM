@@ -37,6 +37,18 @@ LoFASM_FHEADER_TEMPLATE = {
 		9: ['mjd_msec', None],
 		10: ['int_time', None],
 		11: ['Dfmt_ver', None],
+		12: ['notes', None]},
+    2: {1: ['hdr_sig', None],
+		2: ['hdr_ver', None],
+		3: ['hdr_len', None],
+		4: ['station', None],
+		5: ['Nbins', None],
+		6: ['fstart', None],
+		7: ['fstep', None],
+		8: ['mjd_day', None],
+		9: ['mjd_msec', None],
+		10: ['int_time', None],
+		11: ['Dfmt_ver', None],
 		12: ['notes', None]}
 	}
 LoFASM_SPECTRUM_HEADER_TEMPLATE = {
