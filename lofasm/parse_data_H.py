@@ -26,8 +26,8 @@ LoFASM_SPECTRA_KEY_TO_DESC = {
 	}
 
 LoFASM_FHEADER_TEMPLATE = {
-	1: {1: ['hdr_sig', None],
-		2: ['hdr_ver', None],
+	1: {1: ['hdr_sig', None], #bug in integration field exists in first header version
+		2: ['hdr_ver', None], #be sure to multiply 'int_time' by 2 to get accurate value
 		3: ['hdr_len', None],
 		4: ['station', None],
 		5: ['Nbins', None],

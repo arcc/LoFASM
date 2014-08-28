@@ -15,7 +15,11 @@ cross = ['AB','AC','AD','BC','BD','CD']
 beams = ['NS','EW']
 
 BASELINE_ID = {
-    'LoFASMI' : {},
+    'LoFASMI' : {
+        'A' : 'INS',
+        'B' : 'IEW',
+        'C' : 'ONS',
+        'D' : 'OEW'},
     'LoFASMII' : {
         'A' : 'INS',
         'B' : 'IEW',
