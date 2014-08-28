@@ -1,22 +1,10 @@
 # lofasm data lib
 import struct, sys, time
 import numpy as np
-#import corr
+
 HDR_V1_SIGNATURE = 14613675
 INTEGRATION_SIZE_B = 139264 #bytes
 
-#functions
-#def getRoachAccLen():
-#    try:
-#        fpga = corr.katcp_wrapper.FpgaClient('192.168.4.21')
-#    except:
-#        print "could not get accumulation length from ROACH! Exiting..."
-#        sys.exit()
-#    time.sleep(1)#
-
-#    accLen = fpga.read_uint('acc_len')
-#    del fpga
-#    return accLen
 
 #class definitions
 class LoFASM_burst:
