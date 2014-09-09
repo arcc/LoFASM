@@ -3,6 +3,7 @@ import lofasm_dat_lib as lofasm_dat
 import struct, sys
 import numpy as np
 import parse_data_H as pdat_H
+import roach_comm
 
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
 
@@ -14,7 +15,7 @@ def getSampleTime(Nacc):
 def getNumPackets(obs_dur):
     obs_dur = float(obs_dur)
     return int(pdat_H.PacketsPerSample * np.ceil(obs_dur /
-            getSampleTime(lofasm_dat.getRoachAccLen())))
+            getSampleTime(roach_comm.getRoachAccLen())))
 
 def freq2bin(freq):
 	rbw = 200.0/2048
