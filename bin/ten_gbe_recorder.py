@@ -15,13 +15,14 @@ host = os.environ['STATION']
 def getTimeStampMJD():
     stamp_mjd = Time.now().mjd
     return stamp_mjd
+
 def getTimeStampUTC():
     stamp_utc = Time.now().datetime.strftime('%Y%m%d_%H%M%S')
     return stamp_utc
+
 def create_socket(dev_ip='192.168.4.5', dev_port=60001):
     print "Setting up the socket interface"
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #sock.bind(('192.168.4.11',60001))
     sock.bind((dev_ip, dev_port))
     print "Created bound socket on %s:%i" % (dev_ip, dev_port)
     return sock
@@ -71,13 +72,12 @@ def write_header_to_file(outfile, Nacc=4096, fpga_clk_T=1e-08, Nchan=2048,
     msec_day = 86400 * 1000
 
     hdr_len = fmt_header_entry('96')
-    hdr_ver = fmt_header_entry('1')
+    hdr_ver = fmt_header_entry('2')
     hdr_sig = fmt_header_entry('LoCo')
     fmt_ver = fmt_header_entry('1')
     station = fmt_header_entry(host)
     fstart = fmt_header_entry('0')
     fstep = fmt_header_entry(str(BW/Nbins).split('.')[1]) #mhz
-    #fstop = fmt_header_entry('200')
     num_bins = fmt_header_entry(str(Nbins))
     mjd_day = fmt_header_entry(stamp_mjd[0])
     mjd_msec = fmt_header_entry(float('.'+stamp_mjd[1])*msec_day)
@@ -93,8 +93,6 @@ if __name__ == "__main__":
     from optparse import OptionParser
     p = OptionParser()
     p.set_usage('ten_gbe_recorder.py')
-    #p.add_option('--max_packets', dest='max_packets', type='int', default=1000, help='specify number of packets to write to disk.')
-    #p.add_option('-C', dest='continuous_write', help='Set to write data continously.')
     p.add_option('-t', dest='rec_dur', help='Set the duration of the observation in seconds.', default=5)
     p.add_option('--root_dir', dest='root_dir', type='str',  help='path pointing to root data dir. default is /data1', default='/data1')
     p.add_option('--note', dest='note', type='str', help='comments notes. anything longer than 8bytes will be truncated.', default=None)
@@ -122,6 +120,4 @@ if __name__ == "__main__":
     numPacketsToWrite = getNumberOfPackets(opts.rec_dur)
     write_packets_from_memory(output_file, record_packets_into_memory(
 		sock, numPacketsToWrite))
-	
-	
-	
+    
