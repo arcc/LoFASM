@@ -9,8 +9,6 @@ from lofasm import parse_data as pdat
 #hostname
 host = os.environ['STATION']
 
-
-
 # function defs
 def getTimeStampMJD():
     stamp_mjd = Time.now().mjd
