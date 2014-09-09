@@ -10,6 +10,8 @@ case "$station" in
 LoFASMI) echo "Setting up LoFASMI environment..."
 	;;
 LoFASMII) echo "Setting up LoFASMII environment..."
+	export LOFASMDATA_HOME=/data1
+	export LOFASMDATA_RECENT=$LOFASMDATA_HOME/latest
 	;;
 LoFASMIII) echo "Setting up LoFASMIII environment..."
 	;;
