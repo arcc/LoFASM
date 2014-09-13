@@ -13,7 +13,10 @@ latest_directory=$( ls -Art $data_home | tail -n 1)
 latest_filename=$( ls -Art $data_home/* | tail -n 1)
 
 #clear last copy
-rm $data_recent/*
+if [ -e $data_recent/* ] 
+    then
+        rm $data_recent/*
+fi
 
 #copy new file
-cp $latest_directory/$latest_filename $data_recent/
+cp $data_home/$latest_directory/$latest_filename $data_recent/
