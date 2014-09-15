@@ -9,7 +9,7 @@ setup(
     author='Louis P. Dartez',
     author_email='louis.dartez@gmail.com',
     packages=['lofasm'],
-    scripts=['bin/initialize.py','bin/ten_gbe_recorder.py','bin/poco_plot.py', 'bin/rec_snap.sh', 'bin/init_roach.sh', 'bin/get_adc_snaps.py'],
+    scripts=['bin/initialize.py','bin/ten_gbe_recorder.py','bin/poco_plot.py', 'bin/rec_snap.sh', 'bin/init_roach.sh', 'bin/get_adc_snaps.py', 'bin/get_adc_snaps.sh'],
     description='LoFASM Tools',
     long_description=open('README').read(),
     install_requires=[
