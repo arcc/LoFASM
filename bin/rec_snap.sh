@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # acquire data
-ten_gbe_recorder.py -t 15
+/usr/local/bin/ten_gbe_recorder.py -t 15
 
 data_home=$LOFASMDATA_HOME
 data_recent=$LOFASMDATA_RECENT
