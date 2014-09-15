@@ -110,7 +110,7 @@ if __name__ == "__main__":
     #get file handle
 
     output_file = open(root_dir+'/'+current_date+'/'+filename,'wb')
-    print output_file 
+     
     if opts.note:
         write_header_to_file(output_file, fileNotes=opts.note, Nacc=8192)
     else:
