@@ -108,8 +108,9 @@ if __name__ == "__main__":
     if current_date not in os.listdir(root_dir):
         os.mkdir(root_dir+'/'+current_date)
     #get file handle
+
     output_file = open(root_dir+'/'+current_date+'/'+filename,'wb')
-    
+    print output_file 
     if opts.note:
         write_header_to_file(output_file, fileNotes=opts.note, Nacc=8192)
     else:
