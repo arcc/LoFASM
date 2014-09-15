@@ -121,9 +121,14 @@ if __name__ == "__main__":
 
         #save data to disk
         timeStamp = getTimeStampUTC()
-        root_dir = '/data1/snaps/' 
-        fullFilenameI = root_dir + fname_I + timeStamp + ext
-        fullFilenameQ = root_dir + fname_Q + timeStamp + ext
+        try:
+            root_dir = os.environ['LOFASMDATA_HOME']
+        except KeyError as err:
+            print "The environment variable %s does not exist!" % err.message
+            exit()
+        save_dir = root_dir + '/snaps'
+        fullFilenameI = save_dir + fname_I + timeStamp + ext
+        fullFilenameQ = save_dir + fname_Q + timeStamp + ext
 
         f_I = open(fullFilenameI, 'w')
         f_Q = open(fullFilenameQ, 'w')
