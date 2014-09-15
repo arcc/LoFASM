@@ -127,7 +127,7 @@ if __name__ == "__main__":
         except KeyError as err:
             print "The environment variable %s does not exist!" % err.message
             exit()
-        save_dir = root_dir + '/snaps'
+        save_dir = root_dir + '/snaps/'
         fullFilenameI = save_dir + fname_I + timeStamp + ext
         fullFilenameQ = save_dir + fname_Q + timeStamp + ext
 
