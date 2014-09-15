@@ -55,7 +55,8 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     
 
-    import corr, mkid
+    import corr
+    from lofasm import mkid
     #from astropy.time import Time
 
     
