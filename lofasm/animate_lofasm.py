@@ -3,11 +3,9 @@
 from matplotlib import animation
 import matplotlib.pyplot as plt
 import numpy as np
-#import poco_ten_gbe as poco
 import parse_data as pdat
 import lofasm_dat_lib as lofasm
 
-fig = plt.figure(figsize=(10,10))
 
 FREQS = np.linspace(0, 200, 2048)
 autos = ['AA','BB','CC','DD']
@@ -37,10 +35,55 @@ BASELINE_ID = {
         'D' : 'INS'}
     }
 
+
+def plot_all_baselines(burst_obj, station, save_dir=''):
+    '''
+    plot all baselines at once given a single raw LoFASM integration burst.
+    '''
+    auto_baselines = ['AA', 'BB', 'CC', 'DD']
+    cross_baselines = ['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
+    fig = plt.figure(figsize=(15,9))
+
+    
+    auto_plots = [fig.add_subplot(4,4,i) for i in [1, 6, 11, 16]]
+    cross_plots = [fig.add_subplot(4,4,i) for i in 
+        [2, 3, 4, 7, 8, 12]]
+
+    
+    freqs = np.linspace(0, 200, 2048)
+    # set titles & plot
+    for i in range(len(cross_baselines)):
+        if i < 4:
+            auto_title = BASELINE_ID[station][auto_baselines[i][0]]+'x'+ BASELINE_ID[station][auto_baselines[i][1]]
+            auto_plots[i].set_title(auto_title)
+            auto_plots[i].plot(freqs, 10*np.log10(burst_obj.autos[auto_baselines[i]]))
+            auto_plots[i].set_xlim(0, 100)
+            auto_plots[i].grid()
+            auto_plots[i].set_xlabel('Frequency (MHz)')
+            auto_plots[i].set_ylabel('10*log(power) (arb.)') 
+
+        cross_title = BASELINE_ID[station][cross_baselines[i][0]]+'x'+BASELINE_ID[station][cross_baselines[i][1]]
+        cross_plots[i].set_title(cross_title)
+        cross_plots[i].plot(freqs, 
+            10*np.log10(np.abs(burst_obj.cross[cross_baselines[i]])))
+        cross_plots[i].set_xlim(0, 100)
+        cross_plots[i].set_xlabel('')
+        cross_plots[i].grid()
+    fig.subplots_adjust(hspace=0.35)
+        
+  
+    if save_dir:
+        print "Saving LoFASM Figure as %s" % save_dir
+        fig.savefig(save_dir)
+    else:
+        fig.show()
+    
 def setup_all_plots(xmin, xmax, ymin, ymax, station, norm_cross=False):
     '''
     setup all cross-power plots
     '''
+    fig = plt.figure(figsize=(10,10))
+    
     auto_baselines = autos #['AA', 'BB', 'CC', 'DD']
     cross_baselines = cross #['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
     #fig = plt.figure()
@@ -54,7 +97,7 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, norm_cross=False):
     for i in range(len(cross_baselines)):
 
         if i < 4:
-            print 'auto baseline: .%s.' % auto_baselines[i]
+            #print 'auto baseline: .%s.' % auto_baselines[i]
             auto_title = BASELINE_ID[station][auto_baselines[i][0]]
             auto_subplots[i].set_title(auto_title)
             auto_subplots[i].set_xlim(xmin, xmax)
@@ -83,15 +126,11 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, norm_cross=False):
 
 
 def setup_beam_plots(xmin, xmax, ymin, ymax):
-	'''
-	setup both beam plots
-	'''
-	beam_subplots = [fig.add_subplot(1,2,i) for i in range(len(beams))]
-	beam_lines=[]
+    fig = plt.figure(figsize=(10,10))
+    beam_subplots = [fig.add_subplot(1,2,i) for i in range(len(beams))]
+    beam_lines=[]
 
-	#freqs = np.linspace(0, 200, 2048)
-	# set titles & plot
-	for i in range(len(beams)):
+    for i in range(len(beams)):
 		beam_subplots[i].set_title(beams[i])
 		beam_subplots[i].set_xlim(xmin, xmax)
 		beam_subplots[i].set_ylim(ymin, ymax)
@@ -99,43 +138,45 @@ def setup_beam_plots(xmin, xmax, ymin, ymax):
 		beam_subplots[i].grid()
 		beam_lines.append(beam_subplots[i].plot([],[])[0])
 
-
-	return tuple(beam_lines)
+    return tuple(beam_lines)
 
 def setup_single_plot(baseline, xmin=0, xmax=200, ymin=0, ymax=100, norm_cross=False):
-	'''
-	setup single cross-power plot
-	'''
-	subplot = fig.add_subplot(1,1,1)
-	subplot.set_title(baseline)
-	subplot.set_xlim([xmin, xmax])
-	subplot.set_ylabel('Arb. Power (dBm)')
-	subplot.set_xlabel('MHz')
-	subplot.set_ylim(ymin, ymax)
-	subplot.grid()
+    '''
+    setup single cross-power plot
+    '''
+    fig = plt.figure(figsize=(10,10))
 
-	if norm_cross:
-		plot_line = {}
-		plot_line['real'], = subplot.plot([],[])
-		plot_line['imag'], = subplot.plot([],[])
-	else:
-		plot_line, = subplot.plot([],[])
-	return plot_line
+    subplot = fig.add_subplot(1,1,1)
+    subplot.set_title(baseline)
+    subplot.set_xlim([xmin, xmax])
+    subplot.set_ylabel('Arb. Power (dBm)')
+    subplot.set_xlabel('MHz')
+    subplot.set_ylim(ymin, ymax)
+    subplot.grid()
 
+    if norm_cross:
+        plot_line = {}
+        plot_line['real'], = subplot.plot([],[])
+        plot_line['imag'], = subplot.plot([],[])
+    else:
+        plot_line, = subplot.plot([],[])
+
+    return plot_line
 
 def setup_color_plot(baseline, time_width_ms, xmin=0, xmax=200,
  ymin=0, ymax=100, samp_period_ms=84.8):
+    '''
+    setup time-frequency plot for a single baseline
+    '''
+    fig = plt.figure(figsize=(10,10))
 
-	'''
-	setup time-frequency plot for a single baseline
-	'''
-	num_spectra = np.ceil(time_width_ms/float(samp_period_ms))
-	empty_image = np.ones((2048,num_spectra))
-	subplot = fig.add_subplot(1,1,1)
-	subplot.set_title(baseline+'colormap')
-	subplot.grid()
-	timeFreq_plot = subplot.imshow(empty_image)
-	return timeFreq_plot
+    num_spectra = np.ceil(time_width_ms/float(samp_period_ms))
+    empty_image = np.ones((2048,num_spectra))
+    subplot = fig.add_subplot(1,1,1)
+    subplot.set_title(baseline+'colormap')
+    subplot.grid()
+    timeFreq_plot = subplot.imshow(empty_image)
+    return timeFreq_plot
 
 def update_all_baseline_plots(i, fig, burst_gen, lines, norm_cross=False):
     print i

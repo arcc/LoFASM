@@ -237,36 +237,36 @@ def get_number_of_integrations(file_obj):
 	return num_integrations
 
 
-def get_next_raw_burst(file_obj, packet_size_bytes=8192, 
-	packets_per_burst=17, loop_file=False):
-	'''
-	Usage: burst_generator = get_next_raw_burst(<file_object>\
-		[, packet_size_bytes, packets_per_burst, loop_file]) 
-	Python generator that yields a string containing data from the next 17
-	 LoFASM packets in file_obj that make up a single \'burst\'. 
+def get_next_raw_burst(file_obj, packet_size_bytes=8192, packets_per_burst=17, loop_file=False):
+    '''
+    Usage: burst_generator = get_next_raw_burst(<file_object>\
+        [, packet_size_bytes, packets_per_burst, loop_file]) 
+    Python generator that yields a string containing data from the next 17
+    LoFASM packets in file_obj that make up a single \'burst\'. 
 	
-	If file_obj's pointer is not at zero, then assume it is in the desired
-	start position and begin reading from that point in the file.
-	'''
-	#print "getting new data"
-	file_start_position = file_obj.tell()
-	burst_size = packet_size_bytes * packets_per_burst
-
-
-	while 1:
-		raw_dat = file_obj.read(burst_size)
-		if (not raw_dat) or (len(raw_dat) < burst_size):
-			if loop_file:
-				print "Reached end of file. Starting over..."
-				file_obj.seek(file_start_position)
-				raw_dat = file_obj.read(burst_size)
-				yield raw_dat
-			else:
+    If file_obj's pointer is not at zero, then assume it is in the desired
+    start position and begin reading from that point in the file.
+    '''
+    #print "getting new data"
+    file_start_position = file_obj.tell()
+    burst_size = packet_size_bytes * packets_per_burst
+    while 1:
+        raw_dat = file_obj.read(burst_size)
+        if (not raw_dat) or (len(raw_dat) < burst_size):
+            if loop_file:
+                print "Reached end of file. Starting over..."
+                file_obj.seek(file_start_position)
+                raw_dat = file_obj.read(burst_size)
+                yield lofasm_dat.LoFASM_burst(raw_dat)
+				#yield raw_dat
+            else:
 				print "No more data to read in %s" % file_obj.name
 				print "Exiting..."
 				exit()
-		else:
-			yield raw_dat
+        else:
+			#yield raw_dat
+            yield lofasm_dat.LoFASM_burst(raw_dat)
+
 
 def find_first_hdr_packet(file_obj, packet_size_bytes=8192, hdr_size=8):
 	'''

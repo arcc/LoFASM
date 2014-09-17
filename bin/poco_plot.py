@@ -100,6 +100,13 @@ if __name__ == '__main__':
     
     #get past the header
     lofasm_input_file.seek(int(hdr_dict[3][1]))
+
+     #check file headers
+    if opts.check_headers:
+        CH_errcnt = pdat.check_headers(lofasm_input_file, opts.packet_size_bytes, print_headers=True)
+        print CH_errcnt
+        exit(0)
+    
     if opts.start_position < 0:
         print "Scanning %s for first header packet..." % lofasm_input_file.name
         lofasm_input_file = pdat.find_first_hdr_packet(lofasm_input_file)
@@ -107,6 +114,7 @@ if __name__ == '__main__':
     else:
         print "Skipping to specified location: %i" %( opts.start_position)
         lofasm_input_file.seek(opts.start_position)
+        
     burst_size_bytes = opts.packet_size_bytes * 17
     filesize_bytes = pdat.get_filesize(lofasm_input_file)
     num_frames = int((filesize_bytes - opts.start_position) / burst_size_bytes) - 1
@@ -114,10 +122,7 @@ if __name__ == '__main__':
     if opts.getFileSize:
         print pdat.get_filesize(lofasm_input_file)
         exit(0)
-    #check file headers
-    if opts.check_headers:
-        CH_output = pdat.check_headers(lofasm_input_file, opts.packet_size_bytes, print_headers=True)
-        exit(0)
+   
 
     #get integration generator
     burst_generator = pdat.get_next_raw_burst(lofasm_input_file, loop_file=opts.loop_file)
