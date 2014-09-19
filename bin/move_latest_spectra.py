@@ -9,7 +9,7 @@ data_home = os.environ['LOFASMDATA_HOME']
 data_recent = os.environ['LOFASMDATA_RECENT']
 
 buffer_time = datetime.timedelta(hours = 24)
-now = datetime.datetime.utcnow()
+now =datetime.datetime.utcnow()
 
 #get latest lofasm files
 latest_files = future.get_spectra_range(now - buffer_time, now, data_home)
@@ -38,6 +38,7 @@ for f in ls_recent:
 for latest_file in latest_files:
     if latest_file in ls_recent:
         #file is already in recent directory
+        print "leave-alone: %s" % (latest_file.name)
         pass
     else:
         #file needs to placed in the recent directory
