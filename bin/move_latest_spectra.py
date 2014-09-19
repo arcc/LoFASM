@@ -9,7 +9,7 @@ data_home = os.environ['LOFASMDATA_HOME']
 data_recent = os.environ['LOFASMDATA_RECENT']
 
 buffer_time = datetime.timedelta(hours = 24)
-now =datetime.datetime.utcnow()
+now = datetime.datetime.utcnow()
 
 #get latest lofasm files
 latest_files = future.get_spectra_range(now - buffer_time, now, data_home)
@@ -26,6 +26,7 @@ for item in ls_recent:
 ls_recent.sort()
 ls_recent.reverse() #get latest files first
 
+
 for f in ls_recent:
     if f in latest_files:
         latest_files.remove(f)
@@ -35,6 +36,7 @@ for f in ls_recent:
         #print rm_cmd
         syscmd(rm_cmd)
 
+        
 for latest_file in latest_files:
     if latest_file in ls_recent:
         #file is already in recent directory

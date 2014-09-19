@@ -7,10 +7,31 @@ import subprocess
 
 ##future##
 
+class ComparableMixin(object):
+    def _compare(self, other, method):
+        try:
+            return method(self._cmpkey(), other._cmpkey())
+        except (AttributeError, TypeError):
+            #no _cmpkey() or wrong type
+            return NotImplemented
+
+    def __lt__(self, other):
+        return self._compare(other, lambda s,o: s < o)
+    def __le__(self, other):
+        return self._compare(other, lambda s,o: s <= o)
+    def __eq__(self, other):
+        return self._compare(other, lambda s,o: s==o)
+    def __gt__(self, other):
+        return self._compare(other, lambda s,o: s > o)
+    def __ge__(self, other):
+        return self._compare(other, lambda s,o: s <= o)
+    def __ne__(self, other):
+        return self._compare(other, lambda s,o: s != o)
+    
 
 
 
-class LoFASM_file(object):
+class LoFASM_file(ComparableMixin):
     def __init__(self, pathtofile):
         if os.path.isdir(pathtofile):
             print "please provide a full path."
@@ -44,6 +65,11 @@ class LoFASM_file(object):
             self.name = filename
             
             self.date = file_datetime(self.name)
+
+    def _cmpkey(self):
+        #key for rich comparisons
+        return self.date
+        
             
     def get_local_list(self):
         self.local_list = []
@@ -52,6 +78,11 @@ class LoFASM_file(object):
                 self.local_list.append(item)
         self.local_list.sort()
         return self.local_list
+    
+
+
+
+
 
 def syscmd(cmd):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
