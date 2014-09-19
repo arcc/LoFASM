@@ -5,11 +5,11 @@ import os
 import datetime
 
 
-data_home = '/Volumes/data/LoFASM2/data1' #os.environ['LOFASMDATA_HOME']
-data_recent = '/Volumes/data/LoFASM2/data1/latest' #os.environ['LOFASMDATA_RECENT']
+data_home = os.environ['LOFASMDATA_HOME']
+data_recent = os.environ['LOFASMDATA_RECENT']
 
 buffer_time = datetime.timedelta(hours = 24)
-now = datetime.datetime(2014,8,2)#datetime.datetime.utcnow()
+now = datetime.datetime.utcnow()
 
 #get latest lofasm files
 latest_files = future.get_spectra_range(now - buffer_time, now, data_home)
