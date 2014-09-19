@@ -4,6 +4,7 @@ import struct, sys
 import numpy as np
 import parse_data_H as pdat_H
 import roach_comm
+import datetime
 
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
 
@@ -26,11 +27,11 @@ def bin2freq(bin):
 	return bin * rbw
 		
 def parse_filename(filename):
-	'''returns the file's time stamp as a list
+	'''return the file's UTC time stamp as a list
 	[YYmmdd, HHMMSS]
 	'''
 
-	if filename[-7]== '.lofsam':
+	if filename[-7:]== '.lofasm':
 		filename = filename.rstrip('.lofasm')
 		parse_list = filename.split('_')
 	else:
@@ -39,8 +40,10 @@ def parse_filename(filename):
 	date = parse_list[0]
 	time = parse_list[1]
 	pol = filename[(len(date)+len(time)+2):]
+    
 	return [date, time, pol]
 
+        
 def spectrum_conv_code(code_str):
 	return LoFASM_SPECTRA_KEY_TO_DESC[code_str]
 
