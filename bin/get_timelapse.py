@@ -14,10 +14,10 @@ station = os.environ['STATION']
 pow_ext = '.pow'
 dates_ext = '.dates'
 
-outputFileBase = data_home + '/timelapse' 
+outFileBase = data_home + '/timelapse/timelapse' 
 
 bufferLength = datetime.timedelta(hours = 24)
-now = datetime.datetime.utcnow()
+now = datetime.datetime(2014,8,1) #datetime.datetime.utcnow()
 
 
 
@@ -26,7 +26,7 @@ timelapseDict = {'AA':[],'BB':[],'CC':[],'DD':[]}
 
 freq_range = (36,39) #MHz
 
-
+print "processing %i files" % len(fileList)
 
 
 for lofasmFile in fileList:
@@ -37,11 +37,11 @@ for lofasmFile in fileList:
         #get integration for this polarization as numpy array
         integration = np.array(lofasm_int.autos[pol])
         intMean = integration[startBin:endBin].mean()
-        timelapseDict[pol].append((intmean,lofasmFile.date))
+        timelapseDict[pol].append((intMean,lofasmFile.date))
     lofasmFile._file_obj.close()
 
 for pol in timelapseDict.keys():
-    outFilePow = open(outputFileBase + '_' + str(pol) + pow_ext , 'w')
+    outFilePow = open(outFileBase + '_' + str(pol) + pow_ext , 'w')
     outFileDates = open(outFileBase + '_' + str(pol) + dates_ext, 'w')
 
     for pow, date in timelapseDict[pol]:

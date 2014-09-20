@@ -8,7 +8,28 @@ import datetime
 
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
 
-
+BASELINE_ID = {
+    'LoFASMI' : {
+        'A' : 'INS',
+        'B' : 'IEW',
+        'C' : 'ONS',
+        'D' : 'OEW'},
+    'LoFASMII' : {
+        'A' : 'INS',
+        'B' : 'IEW',
+        'C' : 'ONS',
+        'D' : 'OEW'},
+    'LoFASM3' : {
+        'A' : 'ONS',
+        'B' : 'OEW',
+        'C' : 'INS',
+        'D' : 'IEW'},
+    'LoFASMIV' : {
+        'A' : 'OEW',
+        'B' : 'ONS',
+        'C' : 'IEW',
+        'D' : 'INS'}
+    }
 
 ##### Function Definitions
 def getSampleTime(Nacc):
