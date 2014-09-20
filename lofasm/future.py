@@ -149,7 +149,7 @@ def get_spectra_range(start_date, end_date, data_home=''):
         try:
             year = int(item)
         except ValueError as err:
-            print "could not get year from %s, skipping!" % item
+            #print "could not get year from %s, skipping!" % item
             pass
 
         if year:
@@ -171,7 +171,7 @@ def get_spectra_range(start_date, end_date, data_home=''):
 
         if datetime.date(dir_date.year,dir_date.month,dir_date.day) < datetime.date(buffer_start.year, buffer_start.month, buffer_start.day):
             #print "moving on to next directory"
-            print dir_date, " is before ", buffer_start
+            #print dir_date, " is before ", buffer_start
             #move on to next directory
             pass
         else:
