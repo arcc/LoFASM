@@ -9,7 +9,6 @@ import os
 import datetime
 
 data_home = os.environ['LOFASMDATA_HOME']
-data_recent = os.environ['LOFASMDATA_RECENT']
 station = os.environ['STATION']
 pow_ext = '.pow'
 dates_ext = '.dates'
@@ -17,7 +16,7 @@ dates_ext = '.dates'
 outFileBase = data_home + '/timelapse/timelapse' 
 
 bufferLength = datetime.timedelta(hours = 24)
-now = datetime.datetime(2014,8,1) #datetime.datetime.utcnow()
+now = datetime.datetime.utcnow()
 
 
 
