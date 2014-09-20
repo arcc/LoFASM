@@ -78,6 +78,10 @@ class LoFASM_file(ComparableMixin):
                 self.local_list.append(item)
         self.local_list.sort()
         return self.local_list
+
+    def getFileSize(self):
+        '''return total file size in bytes'''
+        return get_total_file_size(self.parent + '/' + self.name)
     
 
 def get_total_file_size(fname):
