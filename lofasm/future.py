@@ -65,11 +65,26 @@ class LoFASM_file(ComparableMixin):
             self.name = filename
             
             self.date = file_datetime(self.name)
+            self._file_obj = None
+            self._startPos = None
+            self._burstGenerator = None
 
     def _cmpkey(self):
         #key for rich comparisons
         return self.date
-        
+    def _openFile(self):
+        self._file_obj = open(self.parent + '/' + self.name, 'rb')
+    def getFileHdr(self):
+        if self._file_obj:
+            return pdat.parse_file_header(self._file_obj)
+        else:
+            self._openFile()
+            return self.getFileHdr()
+    
+    def getFileObj(self):
+        if not self._file_obj:
+            self._openFile()
+        return self._file_obj
             
     def get_local_list(self):
         self.local_list = []
@@ -82,6 +97,26 @@ class LoFASM_file(ComparableMixin):
     def getFileSize(self):
         '''return total file size in bytes'''
         return get_total_file_size(self.parent + '/' + self.name)
+
+    def _getBurstGenerator(self):
+        if self._burstGenerator:
+            return self._burstGenerator
+        #otherwise
+        fileHdr = self.getFileHdr()
+        if not self._startPos:
+            self._file_obj.seek(fileHdr[3][1])
+        else:
+            assert(type(offset) == int)
+            self._file_obj.seek(offset)
+        self._burstGenerator = pdat.get_next_raw_burst(self._file_obj)
+        return self._getBurstGenerator()
+    
+    def getNextIntegration(self):
+        bgen = self._getBurstGenerator()
+        return bgen.next()
+
+    
+        
     
 
 def get_total_file_size(fname):
@@ -201,7 +236,8 @@ def get_spectra_range(start_date, end_date, data_home=''):
                 lofasm_file = LoFASM_file(pathToFile)
     
                 if lofasm_file.date >= buffer_start:
-                    #print "Adding %s" % lofasm_file.name
-                    file_buffer.append(lofasm_file)
+                    if lofasm_file.getFileSize() > 100: #weed out bad files
+                        #print "Adding %s" % lofasm_file.name
+                        file_buffer.append(lofasm_file)
 
     return file_buffer
