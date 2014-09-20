@@ -16,19 +16,18 @@ now = datetime.datetime.utcnow()
 latest_files = future.get_spectra_range(now - buffer_time, now, data_home)
 
 #get list of files in recent directory
-ls_recent = os.listdir(data_recent)
-for item in ls_recent:
-    if item[-7:] != '.lofasm':
-        #remove non-lofasm files
-        ls_recent.remove(item)
-    else:
-        ls_recent[ls_recent.index(item)] = future.LoFASM_file(data_recent+'/'+item)
+listdir = os.listdir(data_recent)
+listdir.sort()
+listdir.reverse() #get latest files first
 
-ls_recent.sort()
-ls_recent.reverse() #get latest files first
+recent_files = []
+
+for item in listdir:
+    if item[-7:] == '.lofasm':
+        recent_files.append(future.LoFASM_file(data_recent+'/'+item))
 
 
-for f in ls_recent:
+for f in recent_files:
     if f in latest_files:
         latest_files.remove(f)
     else:
