@@ -80,7 +80,13 @@ class LoFASM_file(ComparableMixin):
         return self.local_list
     
 
-
+def get_total_file_size(fname):
+    if not os.path.isfile(fname):
+        print "bad file name"
+        return None
+    else:
+        size_cmd = "ls -l %s | awk '{print $5}'" % fname
+        return int(syscmd(size_cmd).rstrip('\n'))
 
 
 

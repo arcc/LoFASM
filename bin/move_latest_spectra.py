@@ -1,6 +1,7 @@
 from lofasm import parse_data as pdat
 from lofasm import future
 from lofasm.future import syscmd
+
 import os
 import datetime
 
@@ -38,9 +39,7 @@ for f in ls_recent:
 
         
 for latest_file in latest_files:
-    if latest_file in ls_recent:
-        #file is already in recent directory
-        print "leave-alone: %s" % (latest_file.name)
+    if future.get_total_file_size(latest_file) < 100:
         pass
     else:
         #file needs to placed in the recent directory
