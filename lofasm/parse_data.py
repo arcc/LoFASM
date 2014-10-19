@@ -1,9 +1,8 @@
-# python file for parsing LoCo Data
+# python file for parsing LoFASM Correlator Data
 import lofasm_dat_lib as lofasm_dat
 import struct, sys
 import numpy as np
 import parse_data_H as pdat_H
-import roach_comm
 import datetime
 
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
@@ -33,11 +32,11 @@ BASELINE_ID = {
 
 ##### Function Definitions
 def getSampleTime(Nacc):
+    """
+    Return the sample time corresponding to the number
+    of accumulations, Nacc.
+    """
     return pdat_H.T_fpga * pdat_H.FFT_cycles * Nacc
-def getNumPackets(obs_dur):
-    obs_dur = float(obs_dur)
-    return int(pdat_H.PacketsPerSample * np.ceil(obs_dur /
-            getSampleTime(roach_comm.getRoachAccLen())))
 
 def freq2bin(freq):
 	rbw = 200.0/2048
@@ -78,7 +77,7 @@ def fmt_header_entry(entry_str, fmt_len=8):
         return entry_str[:fmt_len] #truncate
     elif entry_len < fmt_len:
         diff = fmt_len - entry_len
-        return ' '*diff + entry_str #pad front with white space
+        return ' '*diff + entry_str #pad frnt with white space
     else:
         return entry_str
 

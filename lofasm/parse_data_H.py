@@ -7,6 +7,8 @@ LoFASM_FHDR_SIG = 'LoCo'
 T_fpga = 1e-08
 Nchan = 2048
 FFT_cycles = Nchan >> 1
+
+#number of network packets in each integration
 PacketsPerSample = 17
 
 

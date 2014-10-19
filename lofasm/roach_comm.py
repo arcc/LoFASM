@@ -16,3 +16,12 @@ fpga = corr.katcp_wrapper.FpgaClient(roach_ip)
 
 def getRoachAccLen():
     return fpga.read_uint('acc_len')
+
+def getNumPacketsFromDuration(obs_dur):
+    """
+    Return the number of network packets corresponding to
+    an interval of time.
+    """
+    obs_dur = float(obs_dur)
+    return int(pdat_H.PacketsPerSample * np.ceil(obs_dur /
+            getSampleTime(getRoachAccLen())))
