@@ -1,5 +1,5 @@
 #!/opt/python2.7/bin/python2.7
-# LoFASM Data Parser
+# LoFASM Data Plotter
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -98,19 +98,10 @@ if __name__ == '__main__':
 
     lofasm_station = hdr_dict[4][1]
     
-    #get past the header
-    lofasm_input_file.seek(int(hdr_dict[3][1]))
-
-     #check file headers
-    if opts.check_headers:
-        CH_errcnt = pdat.check_headers(lofasm_input_file, opts.packet_size_bytes, print_headers=True)
-        print CH_errcnt
-        exit(0)
-    
+   
+  
     if opts.start_position < 0:
-        print "Scanning %s for first header packet..." % lofasm_input_file.name
-        lofasm_input_file = pdat.find_first_hdr_packet(lofasm_input_file)
-        print "Found first header packet at location: %i" % (lofasm_input_file.tell())
+        print "Starting from location 0."
     else:
         print "Skipping to specified location: %i" %( opts.start_position)
         lofasm_input_file.seek(opts.start_position)
@@ -119,25 +110,25 @@ if __name__ == '__main__':
     filesize_bytes = pdat.get_filesize(lofasm_input_file)
     num_frames = int((filesize_bytes - opts.start_position) / burst_size_bytes) - 1
 
+    #get filesize and exit
     if opts.getFileSize:
         print pdat.get_filesize(lofasm_input_file)
         exit(0)
    
 
-    #get integration generator
-    burst_generator = pdat.get_next_raw_burst(lofasm_input_file, loop_file=opts.loop_file)
+    #get file crawler
+    crawler = pdat.LoFASMFileCrawler(opts.input_filename)
 
     #plot single frame of all baselines
     if opts.plot_single_frame:
-        lines = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, lofasm_station, opts.norm_cross)
-        burst = lofasm.LoFASM_burst(burst_generator.next())
-        plot_all_baselines(burst)
+        lines = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, lofasm_station, crawler, opts.norm_cross)
+        plot_all_baselines(crawler)
         raw_input()
-    elif opts.animate_all:
-        lines = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, lofasm_station, opts.norm_cross)
-        anim = ani_lofasm.animation.FuncAnimation(ani_lofasm.fig, 
-            ani_lofasm.update_all_baseline_plots, fargs=(ani_lofasm.fig, 
-                burst_generator, lines, opts.norm_cross), frames=num_frames, interval=opts.frame_dur, 
+    elif opts.animate_all: #Animate all baselines in time
+        lines, fig = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, lofasm_station, crawler, opts.norm_cross)
+        anim = ani_lofasm.animation.FuncAnimation(fig, 
+            ani_lofasm.update_all_baseline_plots, fargs=(fig, 
+                crawler, lines, opts.norm_cross), frames=num_frames, interval=opts.frame_dur, 
                 )
         #print "saving video."
         #print anim.save('test.avi', codec='avi')

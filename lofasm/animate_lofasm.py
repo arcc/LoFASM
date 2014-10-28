@@ -78,15 +78,15 @@ def plot_all_baselines(burst_obj, station, save_dir=''):
     else:
         fig.show()
     
-def setup_all_plots(xmin, xmax, ymin, ymax, station, norm_cross=False):
+def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
     '''
-    setup all cross-power plots
+    setup all auto and cross-power plots
     '''
     fig = plt.figure(figsize=(10,10))
     
     auto_baselines = autos #['AA', 'BB', 'CC', 'DD']
     cross_baselines = cross #['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
-    #fig = plt.figure()
+    
     auto_subplots = [fig.add_subplot(4,4,i) for i in [1, 6, 11, 16]]
     cross_subplots = [fig.add_subplot(4,4,i) for i in [2, 3, 4, 7, 8, 12]]
     auto_lines = []
@@ -121,8 +121,8 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, norm_cross=False):
             cross_subplots[i].set_ylim(ymin, ymax)
             cross_lines.append(cross_subplots[i].plot([],[])[0])
 
-
-    return tuple(auto_lines+cross_lines)
+    update_all_baseline_plots(0,fig,crawler,auto_lines+cross_lines,forward=False)
+    return [auto_lines+cross_lines, fig]
 
 
 def setup_beam_plots(xmin, xmax, ymin, ymax):
@@ -178,16 +178,17 @@ def setup_color_plot(baseline, time_width_ms, xmin=0, xmax=200,
     timeFreq_plot = subplot.imshow(empty_image)
     return timeFreq_plot
 
-def update_all_baseline_plots(i, fig, burst_gen, lines, norm_cross=False):
+def update_all_baseline_plots(i, fig, crawler, lines, norm_cross=False, forward=True):
     print i
     baselines = ['AA', 'BB', 'CC', 'DD', 'AB', 'AC', 'AD', 'BC', 'BD', 'CD']
 
     #get next integration
-    burst_raw = burst_gen.next()
-    pdat.print_hdr(pdat.parse_hdr(burst_raw))
-    burst = lofasm.LoFASM_burst(burst_raw)
-
-
+    if forward:
+        crawler.forward()
+    #burst = burst_gen.next()
+    #print burst.hdr
+    #print crawler.getIntegrationHeader()
+    burst = crawler
     # set titles & plot
     #plt.title("Frame %i " % i)
     for k in range(len(baselines)):
