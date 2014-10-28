@@ -3,7 +3,6 @@ import struct, sys, time
 import numpy as np
 import parse_data_H as pdat_H
 import datetime
-import lofasm_dat_lib as llib
 
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
 HDR_V1_SIGNATURE = 14613675
@@ -594,7 +593,7 @@ class LoFASMFileCrawler(object):
         Update object's burst data by incrementng by N integrations.
         '''
         self._move_ptr(N-1)
-        self._burst = llib.LoFASM_burst(self._lofasm_file.read(self._int_size))
+        self._burst = LoFASM_burst(self._lofasm_file.read(self._int_size))
         self._update_ptr()
         self._int_hdr = self._burst.hdr
         print self._int_hdr
