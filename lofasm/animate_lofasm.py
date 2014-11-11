@@ -38,19 +38,21 @@ BASELINE_ID = {
 
 def plot_all_baselines(burst_obj, station, save_dir=''):
     '''
-    plot all baselines at once given a single raw LoFASM integration burst.
+    Plot all baselines at once given a single raw LoFASM integration burst.
+    burst_obj can either be a LoFASM_burst or LoFASMFileCrawler object.
     '''
     auto_baselines = ['AA', 'BB', 'CC', 'DD']
     cross_baselines = ['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
     fig = plt.figure(figsize=(15,9))
 
-    
+    #add individual plots and retain handles
     auto_plots = [fig.add_subplot(4,4,i) for i in [1, 6, 11, 16]]
     cross_plots = [fig.add_subplot(4,4,i) for i in 
         [2, 3, 4, 7, 8, 12]]
 
-    
+    #create frequency xaxis array
     freqs = np.linspace(0, 200, 2048)
+    
     # set titles & plot
     for i in range(len(cross_baselines)):
         if i < 4:

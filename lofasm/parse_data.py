@@ -540,7 +540,7 @@ class LoFASMFileCrawler(object):
     '''
     File crawler for LoFASM data files.
     '''
-    _int_hdr = {}
+    _int_hdr = {} #integration
     _file_hdr = {}
     _acc_num_ref = None
     _acc_num = None
