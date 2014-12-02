@@ -549,6 +549,7 @@ class LoFASMFileCrawler(object):
     _lofasm_file = None
     _burst = None #integration data
     _lofasm_file_end = None
+    _print_int_headers = False
 
     autos = None
     cross = None
@@ -594,15 +595,16 @@ class LoFASMFileCrawler(object):
         '''
         self._move_ptr(N-1)
         self._burst = LoFASM_burst(self._lofasm_file.read(self._int_size))
+        self._burst.create_LoFASM_beams()
         self._update_ptr()
         self._int_hdr = self._burst.hdr
-        print self._int_hdr
         self._acc_num = self._int_hdr['acc_num']
-
         self.autos = self._burst.autos
         self.cross = self._burst.cross
-        
-        
+        self.beams = self._burst.beams
+        if self._print_int_headers:
+            print self._int_hdr
+               
     def _get_file_end_loc(self):
         '''Return end pointer value.'''
         freeze_ptr = self._lofasm_file.tell()
@@ -616,9 +618,11 @@ class LoFASMFileCrawler(object):
         self._update_ptr()
         self._lofasm_file.seek(self._ptr_loc + N * self._int_size)
         self._update_ptr()
+        
     def _update_ptr(self):
         '''Update pointer to LoFASM file.'''
         self._ptr_loc = self._lofasm_file.tell()
+        
     def forward(self, N=1):
         '''Move forward by N integrations.'''
 
@@ -648,24 +652,48 @@ class LoFASMFileCrawler(object):
     def getIntegrationHeader(self):
         '''Return integration header as a dictionary.'''
         return self._int_hdr
+    
     def getFileHeader(self):
         '''Return LoFASM file header as a dictionary.'''
         return self._file_hdr
+    
     def getAccNum(self):
         '''Return accumulation number.'''
         return self._acc_num
+    
     def getAccReference(self):
         '''Return accumulation reference value.'''
         return self._acc_num_ref
+    
     def getFilePtr(self):
         '''Return file pointer location.'''
         return self._ptr_loc
+    
     def getIntegrationSize(self):
         '''Return LoFASM integration size in bytes.'''
         return self._int_size
+    
     def getFilename(self):
         '''Return filename.'''
         return self._lofasm_file.name
+
+    def print_int_headers(self, state=None):
+        '''
+        Set self._print_int_headers to boolean(state).
+        If state is NoneType then print current value
+        of self._print_int_headers.
+        '''
+        
+        if state == None:
+            print "Print Integration Headers: ", bool(self._print_int_headers)
+            return
+        
+        s = bool(state)
+        if self._print_int_headers != s:
+            print "Setting value to ", str(s)
+            self._print_int_headers = s        
+
+        
 
     def __repr__(self):
         return "LoFASMFileCrawler %s acc: %i" % (self.getFilename(), self._acc_num)
