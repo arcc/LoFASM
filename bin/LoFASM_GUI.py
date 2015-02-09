@@ -1,101 +1,170 @@
-import Tkinter as Tk
-from lofasm import parse_data as pdat
-import matplotlib.pyplot as plt
+#! /usr/bin/env python
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.figure import Figure
 import matplotlib.animation as animation
-import numpy as np
+from lofasm import parse_data as pdat
 import sys
-import datetime
+import numpy as np
+#from matplotlib import style
+
+import Tkinter as tk
+import ttk
 
 
-low_freq = 0
-upper_freq = 100
-low_power = 0
-upper_power = 100
-x = np.linspace(0, 200, 2048)
+LARGE_FONT= ("Verdana", 12)
+#style.use("ggplot")
 
-#this function gets the new values from the entry field and updates them
-def get():
-  if lfEntry.get() is not '':         # If the Entry field is not empty 
-    low_freq = lfEntry.get()  
-    print 'new low freq is '+low_freq        # Get the new value 
-    Tk.Label(master=root, text=str(low_freq)+' MHz').grid(row=1, column=2,sticky='E')
-    #return low_freq
+f = Figure(figsize=(5,5), dpi=100)
+a = f.add_subplot(111)
+crawler = pdat.LoFASMFileCrawler(sys.argv[1])
+global play
+play = False
 
-  if ufEntry.get() is not '':         # If the Entry field is not empty 
-    upper_freq = ufEntry.get()          # Get the new value 
-    Tk.Label(master=root, text=str(upper_freq)+' MHz').grid(row=2, column=2,sticky='E')
+def animate(i):
+    global play
+    x = np.linspace(0, 200, 2048)
+    y = 10*np.log10(crawler.autos['AA'])
+    if play == True:
+        a.clear()
+        a.plot(x, y, linewidth=0.4)
+        crawler.forward()
 
-  if lpEntry.get() is not '':         # If the Entry field is not empty 
-    low_power = lpEntry.get()          # Get the new value 
-    Tk.Label(master=root, text=str(low_power)+' dB').grid(row=3, column=2,sticky='E')
+    
 
-  if upEntry.get() is not '':         # If the Entry field is not empty 
-    upper_power = upEntry.get()          # Get the new value 
-    Tk.Label(master=root, text=str(upper_power)+' dB').grid(row=4, column=2,sticky='E')
+    
+            
 
+class SeaofBTCapp(tk.Tk):
 
-#this functions updates the array (is called by plot())
-def animate(i, crawler, line):
-  #x = np.linspace(0, 200, 2048)
-  y = 10*np.log10(crawler.autos['AA']) #only plots AA baseline
-  line.set_data(x, y)
-  delta_t = float(format(i*0.09765625,'.2f'))
-  delta_t_formated = str(datetime.timedelta(seconds=delta_t))[:-4]
-  plt.title('T+ '+delta_t_formated)
-  crawler.forward() #move to next integration
-  return line,
+    def __init__(self, *args, **kwargs):
+        
+        tk.Tk.__init__(self, *args, **kwargs)
 
-#This function plots the data array
-def plot():
-
-  crawler = pdat.LoFASMFileCrawler(sys.argv[1])
-
-  fig = plt.figure()
-  print low_freq
-  ax = plt.axes(xlim=(low_freq, upper_freq), ylim=(low_power, upper_power))
-  line, = ax.plot([], [], lw=.6)
-
-  plt.xlabel('Frequency (MHz)')
-  plt.ylabel('Power')
-  # call the animator.  blit=True means only re-draw the parts that have changed.
-  anim = animation.FuncAnimation(fig, animate, fargs=(crawler, line), init_func=None,frames=10000, interval=10, blit=False)
-  plt.show()
+        #tk.Tk.iconbitmap(self, default="clienticon.ico")
+        tk.Tk.wm_title(self, "Sea of BTC client")
+        
+        
+        container = tk.Frame(self)
+        container.pack(side="top", fill="both", expand = True)
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+        menubar = tk.Menu(container)
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Save settings", command=lambda: popupmsg('Not supported just yet!'))
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit", command=quit)
+        menubar.add_cascade(label="File", menu=filemenu)
 
 
-#Create a background image object and save it to 'root'
-root = Tk.Tk()
-root.wm_title("LoFASM Data Viewer")
+        tk.Tk.config(self, menu=menubar)
+        self.frames = {}
 
-#Buttons
-button_plot = Tk.Button(root,text='plot',command=plot).grid(row=6,column=0)
-button_help = Tk.Button(root,text='help').grid(row=6,column=1)
-button_get  = Tk.Button(root,text='get',command=get).grid(row=6,column=2)
-button_quit = Tk.Button(root,text='quit').grid(row=7,column=0)
+        for F in (StartPage, PageOne, PageTwo, PageThree):
 
-#Labels
-Tk.Label(master=root, text='File Name:').grid(row=0, column=0,sticky='E')
-Tk.Label(master=root, text=sys.argv[1]).grid(row=0, column=1,columnspan=2)#.split('/')[-1][:20]+'...').grid(row=0, column=1)
-Tk.Label(master=root, text="Lower Frequency:").grid(row=1,column=0,sticky='E')
-Tk.Label(master=root, text="Upper Frequency:").grid(row=2,column=0,sticky='E')
-Tk.Label(master=root, text="Upper Power:").grid(row=3,column=0,sticky='E')
-Tk.Label(master=root, text="Lower Power:").grid(row=4,column=0,sticky='E')
+            frame = F(container, self)
 
-Tk.Label(master=root, text=str(low_freq)+' MHz').grid(row=1, column=2,sticky='E')
-Tk.Label(master=root, text=str(upper_freq)+' MHz').grid(row=2, column=2,sticky='E')
-Tk.Label(master=root, text=str(low_power)+' dBm').grid(row=3, column=2,sticky='E')
-Tk.Label(master=root, text=str(upper_power)+' dBm').grid(row=4, column=2,sticky='E')
+            self.frames[F] = frame
+
+            frame.grid(row=0, column=0, sticky="nsew")
+
+        self.show_frame(StartPage)
 
 
-#entry fields
-lfEntry = Tk.Entry(master=root)
-lfEntry.grid(row=1, column=1)
-ufEntry = Tk.Entry(master=root)
-ufEntry.grid(row=2, column=1)
-upEntry = Tk.Entry(master=root)
-upEntry.grid(row=3, column=1)
-lpEntry = Tk.Entry(master=root)
-lpEntry.grid(row=4, column=1)
+    def show_frame(self, cont):
+
+        frame = self.frames[cont]
+        frame.tkraise()
+
+    def plot(self , cont):
+        global play
+        if play == False:
+            play = True
+        else:
+            play = False
+            print "stopped"
+            
+        
+
+        
+class StartPage(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self,parent)
+        label = tk.Label(self, text="Start Page", font=LARGE_FONT)
+        label.pack(pady=10,padx=10)
+
+        button = ttk.Button(self, text="Visit Page 1",
+                            command=lambda: controller.show_frame(PageOne))
+        button.pack()
+
+        button2 = ttk.Button(self, text="Visit Page 2",
+                            command=lambda: controller.show_frame(PageTwo))
+        button2.pack()
+
+        button3 = ttk.Button(self, text="Graph Page",
+                            command=lambda: controller.show_frame(PageThree))
+        button3.pack()
 
 
-#so it stays
-root.mainloop()
+class PageOne(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="Page One!!!", font=LARGE_FONT)
+        label.pack(pady=10,padx=10)
+
+        button1 = ttk.Button(self, text="Back to Home",
+                            command=lambda: controller.show_frame(StartPage))
+        button1.pack()
+
+        button2 = ttk.Button(self, text="Page Two",
+                            command=lambda: controller.show_frame(PageTwo))
+        button2.pack()
+
+
+class PageTwo(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        label = tk.Label(self, text="Page Two!!!", font=LARGE_FONT)
+        label.grid(row=0 , column=0)#pack(pady=10,padx=10)
+
+        button1 = ttk.Button(self, text="Back to Home",
+                            command=lambda: controller.show_frame(StartPage))
+        button1.grid(row=1 , column=0)
+
+        button2 = ttk.Button(self, text="Page One",
+                            command=lambda: controller.show_frame(PageOne))
+        button2.grid(row=1 , column=1)
+
+
+class PageThree(tk.Frame):
+
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+        #label = tk.Label(self, text="Graph Page!", font=LARGE_FONT)
+        #label.pack(pady=10,padx=10)
+
+        button1 = ttk.Button(self, text="Back to Home",
+                            command=lambda: controller.show_frame(StartPage))
+        button1.pack()
+        
+        button2 = ttk.Button(self, text="Plot",
+                            command=lambda: controller.plot(play))
+        button2.pack()
+
+        canvas = FigureCanvasTkAgg(f, self)
+        canvas.show()
+        canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+
+        toolbar = NavigationToolbar2TkAgg(canvas, self)
+        toolbar.update()
+        canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+
+app = SeaofBTCapp()
+ani = animation.FuncAnimation(f, animate, interval=100,init_func=None,blit=False)
+app.mainloop()
