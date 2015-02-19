@@ -7,6 +7,7 @@ import matplotlib.animation as animation
 from lofasm import parse_data as pdat
 import sys
 import numpy as np
+import argparse
 #from matplotlib import style
 
 import Tkinter as tk
@@ -16,34 +17,82 @@ import ttk
 LARGE_FONT= ("Verdana", 12)
 #style.use("ggplot")
 
+
+
+#############################################
+#############################################
+#### this uses argparse to create a help menu 
+parser = argparse.ArgumentParser()
+
+parser.add_argument('-lf', '--lower_frequency', action='store', dest='lower_freq',
+default = 0, help='What is the lower frequency?')
+
+parser.add_argument('-uf', '--upper_frequency', action='store', dest='upper_freq',
+default = 100, help='What is the upper frequency?')
+
+parser.add_argument('-up', '--upper_power', action='store', dest='upper_power',
+default = 100, help='What is the upper power?')
+
+parser.add_argument('-lp', '--lower_power', action='store', dest='lower_power',
+default = 0, help='What is the lower power?')
+
+parser.add_argument('-sf', '--start_frame', action='store', dest='start_frame',
+default = 0, help='What frame do you want to start on? (each frame is 40ms)')
+
+parser.add_argument('-rl', '--read_length', action='store', dest='read_length',
+default = 1000, help='How many accumulations do you want to plot?')
+
+parser.add_argument('-as', '--accumulation_stride', action='store', dest='accumulation_stride',
+default = 5, help='How many frames do you want to accumulate into each plot?')
+
+parser.add_argument('-d', '--delay', action='store', dest='delay',
+default = 0.2, help='How long do you want to wait until redrawing the plot?')
+
+parser.add_argument('-f', '--file_name', action='store', dest= 'file_name',
+default = '', help='What file do you want to read?')
+
+parser.add_argument('-cr', '--correlation', action='store', dest='correlation',
+default = 'AA', help='Which correlation do you want to plot?')
+
+parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+
+results = parser.parse_args()
+
 f = Figure(figsize=(5,5), dpi=100)
 a = f.add_subplot(111)
-crawler = pdat.LoFASMFileCrawler(sys.argv[1])
-global play
+
+
+global play , crawler
 play = False
+crawler = pdat.LoFASMFileCrawler(results.file_name)
 
 def animate(i):
     global play
     x = np.linspace(0, 200, 2048)
+
     y = 10*np.log10(crawler.autos['AA'])
     if play == True:
         a.clear()
-        a.plot(x, y, linewidth=0.4)
+        a.plot(x , y , linewidth=0.3)
+        a.xlim=(int(results.lower_freq) , int(results.upper_freq))
+        a.ylim=(int(results.lower_power) , int(results.upper_power))
         crawler.forward()
+    else:
+        pass
 
     
 
     
             
 
-class SeaofBTCapp(tk.Tk):
+class LoFASMGUIapp(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         
         tk.Tk.__init__(self, *args, **kwargs)
 
         #tk.Tk.iconbitmap(self, default="clienticon.ico")
-        tk.Tk.wm_title(self, "Sea of BTC client")
+        tk.Tk.wm_title(self, "LoFASM Client")
         
         
         container = tk.Frame(self)
@@ -84,6 +133,14 @@ class SeaofBTCapp(tk.Tk):
         else:
             play = False
             print "stopped"
+'''
+    def get(self , cont):
+        if self.lfEntry.get() is not '':                   # If the Entry field is not empty 
+            results.lower_freq          = self.lfEntry.get() # Get the new value
+            self.l7.destroy()                                # and clear the old label   
+            self.l7 = tk.Label(master=self, text="Lower Frequency:").grid(row=1,column=0,sticky='E')
+            print "The new Lower Frequency is ",results.lower_freq #print to terminal for shits and gigs
+'''
             
         
 
@@ -95,17 +152,17 @@ class StartPage(tk.Frame):
         label = tk.Label(self, text="Start Page", font=LARGE_FONT)
         label.pack(pady=10,padx=10)
 
-        button = ttk.Button(self, text="Visit Page 1",
+        self.button = ttk.Button(self, text="Visit Page 1",
                             command=lambda: controller.show_frame(PageOne))
-        button.pack()
+        self.button.pack()
 
-        button2 = ttk.Button(self, text="Visit Page 2",
+        self.button2 = ttk.Button(self, text="Visit Page 2",
                             command=lambda: controller.show_frame(PageTwo))
-        button2.pack()
+        self.button2.pack()
 
-        button3 = ttk.Button(self, text="Graph Page",
+        self.button3 = ttk.Button(self, text="Graph Page",
                             command=lambda: controller.show_frame(PageThree))
-        button3.pack()
+        self.button3.pack()
 
 
 class PageOne(tk.Frame):
@@ -147,24 +204,84 @@ class PageThree(tk.Frame):
 
         #label = tk.Label(self, text="Graph Page!", font=LARGE_FONT)
         #label.pack(pady=10,padx=10)
-
+        '''
         button1 = ttk.Button(self, text="Back to Home",
                             command=lambda: controller.show_frame(StartPage))
-        button1.pack()
+        button1.grid(row=0 , column=0)
         
         button2 = ttk.Button(self, text="Plot",
                             command=lambda: controller.plot(play))
-        button2.pack()
+        button2.grid(row=0 , column=1)
+        '''
+
+        #Buttons
+        self.button_open = tk.Button(self,text='open').grid(row=0,column=2)
+        self.button_plot = tk.Button(self,text='plot',
+            command=lambda: controller.plot(play)).grid(row=6,column=0)
+        self.button_help = tk.Button(self,text='help').grid(row=6,column=1)
+        self.button_get  = tk.Button(self,text='get').grid(row=6,column=2)
+        self.button_quit = tk.Button(self,text='quit').grid(row=7,column=0)
+        self.button_home = tk.Button(self,text='Home',
+            command=lambda: controller.show_frame(StartPage)).grid(row=7 , column=1)
+
+        #Labels
+        self.l1=tk.Label(master=self, text='File Name:')
+        self.l1.grid(row=0, column=0,sticky='E')
+
+        self.l2=tk.Label(master=self, text=results.file_name)
+        self.l2.grid(row=0, column=1)
+
+        self.l3=tk.Label(master=self, text="Lower Frequency:")
+        self.l3.grid(row=1,column=0,sticky='E')
+
+        self.l4=tk.Label(master=self, text="Upper Frequency:")
+        self.l4.grid(row=2,column=0,sticky='E')
+
+        self.l5=tk.Label(master=self, text="Upper Power:")
+        self.l5.grid(row=3,column=0,sticky='E')
+
+        self.l6=tk.Label(master=self, text="Lower Power:")
+        self.l6.grid(row=4,column=0,sticky='E')
+
+        self.l7=tk.Label(master=self, text=str(results.lower_freq)+' MHz')
+        self.l7.grid(row=1, column=2,sticky='E')
+
+        self.l8=tk.Label(master=self, text=str(results.upper_freq)+' MHz')
+        self.l8.grid(row=2, column=2,sticky='E')
+
+        self.l9=tk.Label(master=self, text=str(results.lower_power)+' dBm')
+        self.l9.grid(row=3, column=2,sticky='E')
+
+        self.l10=tk.Label(master=self, text=str(results.upper_power)+' dBm')
+        self.l10.grid(row=4, column=2,sticky='E')
+
+
+        #entry fields
+        self.lfEntry = tk.Entry(master=self)
+        self.lfEntry.grid(row=1, column=1)
+        self.ufEntry = tk.Entry(master=self)
+        self.ufEntry.grid(row=2, column=1)
+        self.upEntry = tk.Entry(master=self)
+        self.upEntry.grid(row=3, column=1)
+        self.lpEntry = tk.Entry(master=self)
+        self.lpEntry.grid(row=4, column=1)
+
 
         canvas = FigureCanvasTkAgg(f, self)
         canvas.show()
-        canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-
+        canvas.get_tk_widget().grid(row=0 , column=3,rowspan=1000)#.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        '''
         toolbar = NavigationToolbar2TkAgg(canvas, self)
         toolbar.update()
-        canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        canvas._tkcanvas.grid(row=1 , column=3)#pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        '''
+
+    
+
+  
+            
 
 
-app = SeaofBTCapp()
+app = LoFASMGUIapp()
 ani = animation.FuncAnimation(f, animate, interval=100,init_func=None,blit=False)
 app.mainloop()
