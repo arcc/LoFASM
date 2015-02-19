@@ -8,6 +8,7 @@ from lofasm import parse_data as pdat
 import sys
 import numpy as np
 import argparse
+matplotlib.pyplot.ion()
 #from matplotlib import style
 
 import Tkinter as tk
@@ -62,21 +63,26 @@ f = Figure(figsize=(5,5), dpi=100)
 a = f.add_subplot(111)
 
 
-global play , crawler
+global play , crawler , x
 play = False
 crawler = pdat.LoFASMFileCrawler(results.file_name)
+x = np.linspace(0, 200, 2048)
+
+#line=a.plot([],[])[0]
 
 def animate(i):
-    global play
-    x = np.linspace(0, 200, 2048)
+    global play , x
+    
 
-    y = 10*np.log10(crawler.autos['AA'])
+    y = 10*np.log10(crawler.autos[results.correlation])
     if play == True:
         a.clear()
+        #line.set_data(x,y)
         a.plot(x , y , linewidth=0.3)
         a.xlim=(int(results.lower_freq) , int(results.upper_freq))
         a.ylim=(int(results.lower_power) , int(results.upper_power))
         crawler.forward()
+        
     else:
         pass
 
@@ -105,9 +111,9 @@ class LoFASMGUIapp(tk.Tk):
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=quit)
         menubar.add_cascade(label="File", menu=filemenu)
-
-
         tk.Tk.config(self, menu=menubar)
+
+
         self.frames = {}
 
         for F in (StartPage, PageOne, PageTwo, PageThree):
@@ -118,31 +124,27 @@ class LoFASMGUIapp(tk.Tk):
 
             frame.grid(row=0, column=0, sticky="nsew")
 
-        self.show_frame(StartPage)
+        self.show_frame(PageThree)
 
 
     def show_frame(self, cont):
+        '''
+        '''
 
         frame = self.frames[cont]
         frame.tkraise()
 
-    def plot(self , cont):
+    def plot(self):
+        '''
+        '''
         global play
         if play == False:
             play = True
         else:
             play = False
             print "stopped"
-'''
-    def get(self , cont):
-        if self.lfEntry.get() is not '':                   # If the Entry field is not empty 
-            results.lower_freq          = self.lfEntry.get() # Get the new value
-            self.l7.destroy()                                # and clear the old label   
-            self.l7 = tk.Label(master=self, text="Lower Frequency:").grid(row=1,column=0,sticky='E')
-            print "The new Lower Frequency is ",results.lower_freq #print to terminal for shits and gigs
-'''
-            
-        
+
+ 
 
         
 class StartPage(tk.Frame):
@@ -202,24 +204,14 @@ class PageThree(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 
-        #label = tk.Label(self, text="Graph Page!", font=LARGE_FONT)
-        #label.pack(pady=10,padx=10)
-        '''
-        button1 = ttk.Button(self, text="Back to Home",
-                            command=lambda: controller.show_frame(StartPage))
-        button1.grid(row=0 , column=0)
-        
-        button2 = ttk.Button(self, text="Plot",
-                            command=lambda: controller.plot(play))
-        button2.grid(row=0 , column=1)
-        '''
 
         #Buttons
         self.button_open = tk.Button(self,text='open').grid(row=0,column=2)
         self.button_plot = tk.Button(self,text='plot',
-            command=lambda: controller.plot(play)).grid(row=6,column=0)
+            command=lambda: controller.plot()).grid(row=6,column=0)
         self.button_help = tk.Button(self,text='help').grid(row=6,column=1)
-        self.button_get  = tk.Button(self,text='get').grid(row=6,column=2)
+        self.button_get  = tk.Button(self,text='get',
+            command = self.get).grid(row=6,column=2)
         self.button_quit = tk.Button(self,text='quit').grid(row=7,column=0)
         self.button_home = tk.Button(self,text='Home',
             command=lambda: controller.show_frame(StartPage)).grid(row=7 , column=1)
@@ -276,6 +268,17 @@ class PageThree(tk.Frame):
         canvas._tkcanvas.grid(row=1 , column=3)#pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         '''
 
+    def get(self):
+        '''
+        '''
+        if self.lfEntry.get():                   # If the Entry field is not empty 
+            results.lower_freq = self.lfEntry.get() # Get the new value
+            self.l7.configure(text=str(results.lower_freq)+' MHz') # update label
+            print "The new Lower Frequency is ",results.lower_freq #print to terminal for shits and gigs
+
+            
+        
+
     
 
   
@@ -283,5 +286,5 @@ class PageThree(tk.Frame):
 
 
 app = LoFASMGUIapp()
-ani = animation.FuncAnimation(f, animate, interval=100,init_func=None,blit=False)
+ani = animation.FuncAnimation(f, animate, interval=50,init_func=None,blit=False)
 app.mainloop()
