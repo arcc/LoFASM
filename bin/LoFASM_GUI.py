@@ -11,6 +11,7 @@ import argparse
 from tkFileDialog import askopenfilename
 matplotlib.pyplot.ion()
 from lofasm.filter import running_median
+import time
 #from matplotlib import style
 
 import Tkinter as tk
@@ -57,6 +58,7 @@ default = '50', help='How many frames to running median?')
 parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 
 results = parser.parse_args()
+results.file_name = '/Users/andrewdanford/Desktop/DataAnalysis/20140912_174502.lofasm'
 
 
 
@@ -81,7 +83,7 @@ class LoFASMGUIapp(tk.Tk):
         filemenu = tk.Menu(menubar, tearoff=0)
         filemenu.add_command(label="Save settings")
         filemenu.add_separator()
-        filemenu.add_command(label="Exit", command=quit)
+        filemenu.add_command(label="Exit")#, command=exit)
         menubar.add_cascade(label="File", menu=filemenu)
         tk.Tk.config(self, menu=menubar)
 
@@ -156,6 +158,7 @@ class PageThree(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.freqs = np.linspace(0, 200, 2048)
+        self.crawler = pdat.LoFASMFileCrawler(results.file_name)
         self.create_figure()
         self.populate_page()
         self.play=True
@@ -257,9 +260,11 @@ class PageThree(tk.Frame):
         self.fig = Figure(figsize=(4,3), dpi=100)
         self.pow_spec_plot = self.fig.add_subplot(111)
         self.pow_spec_plot.set_xlim(0,100)
+        self.pow_spec_plot.set_ylim(0,100)
         self.line, = self.pow_spec_plot.plot([1,2,3],[1,2,3])
         #line.set_ydata([1,2,3])
         self.line.set_data(self.freqs,np.zeros(len(self.freqs)))
+        print "figure got created"
         '''
         f2 = Figure(figsize=(7.5,3) , dpi=100)
         a2 = f.add_subplot(111)
@@ -267,6 +272,7 @@ class PageThree(tk.Frame):
 
     def get(self):
         '''
+        retrieve values 
         '''
         if self.correlation_variable.get():
             results.current_correlation = self.correlation_variable.get()
@@ -286,10 +292,9 @@ class PageThree(tk.Frame):
 
     def _open(self): 
         results.file_name = askopenfilename(filetypes=[("allfiles","*"),("binary files","*.dat"),("FITS files","*.fits"),("LoFASM Data Files","*.lofasm")]) #open data file, currently .lofasm
-        self.crawler = pdat.LoFASMFileCrawler(results.file_name)
+        
         tk.Label(master=self,text=results.file_name.split('/')[-1][:20]+'...').grid(row=0, column=1)
         
-
     def animate(self,i):
         power = 10*np.log10(self.crawler.autos[results.current_correlation])
         print "animate DID get run"
@@ -324,16 +329,13 @@ class PageThree(tk.Frame):
         else:
             self.play = False
             print "paused" 
-
-try:
-    app = LoFASMGUIapp()
-
-    f = app.frames[PageThree].fig
-    animate = app.frames[PageThree].animate
-    ani = animation.FuncAnimation(f, animate, interval=50,init_func=None,blit=False)
-    app.mainloop()
-except KeyboardInterrupt:
-    exit()
+if __name__ == '__main__':
+    try:
+        app = LoFASMGUIapp()
+        anim = animation.FuncAnimation(app.frames[PageThree].fig , app.frames[PageThree].animate, init_func=None,frames=10000, interval=83, blit=False)
+        app.mainloop()
+    except KeyboardInterrupt:
+        exit()
 
 
 
