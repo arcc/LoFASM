@@ -7,8 +7,8 @@ import datetime
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
 HDR_V1_SIGNATURE = 14613675
 INTEGRATION_SIZE_B = 139264 #bytes
+START_DATA = 204896
 PACKET_SIZE_B = 8192
-
 BASELINE_ID = {
     'LoFASMI' : {
         'A' : 'INS',
@@ -41,8 +41,11 @@ def getSampleTime(Nacc):
     return pdat_H.T_fpga * pdat_H.FFT_cycles * Nacc
 
 def freq2bin(freq):
-	rbw = 200.0/2048
-	return freq / rbw
+    '''
+    get bin number corresponding to frequency freq
+    '''
+    rbw = 200.0/2048
+    return int(freq / rbw)
 
 def bin2freq(bin):
 	rbw = 200.0/2048
@@ -104,7 +107,7 @@ def parse_file_header(file_obj, fileType='lofasm'):
 
 	#check file signature
 	if file_sig != pdat_H.LoFASM_FHDR_SIG:
-		#put file pointer back (probably not necessary)
+		#put file pointer back 
 		file_obj.seek(freeze_pointer)
 		raise pdat_H.Header_Error(file_obj.name + 'may not be a proper LoFASM File.',
 			'File Signature ' + file_sig + ' not recognized.')
@@ -194,7 +197,7 @@ def is_header(hdr_raw, print_header=False):
 	else:
 		return False
 
-def check_headers(file_obj, packet_size_bytes=8192, verbose=False, print_headers=False):
+def check_headers(file_obj, packet_size_bytes=PACKET_SIZE_B, verbose=False, print_headers=False):
     '''
     Iterate through LoFASM Data file and check that all the header packets
     are in place.
@@ -202,6 +205,7 @@ def check_headers(file_obj, packet_size_bytes=8192, verbose=False, print_headers
     Note: The verbose keyword argument is no longer used. It is being left in the definition
     for now for compatibility purposes.
     '''
+
     freeze_pointer = file_obj.tell()
 
     #get file header
@@ -211,7 +215,10 @@ def check_headers(file_obj, packet_size_bytes=8192, verbose=False, print_headers
     file_obj.seek(file_hdr[3][1])
     
     filesize_bytes = get_filesize(file_obj)
+
+    #get number of network packets in lofasm file
     number_of_packets = filesize_bytes / packet_size_bytes
+
     packet_counter = 0 
     err_counter = 0
     best_loc = None
@@ -220,10 +227,10 @@ def check_headers(file_obj, packet_size_bytes=8192, verbose=False, print_headers
 
     #iterate through lofasm network packets
     for i in range(number_of_packets): 
+        #read next packet in file
         block = file_obj.read(packet_size_bytes)
-        #print file_obj.tell() - packet_size_bytes
-        #raw_input()
-        packet_counter += 1 #increment number or packets read
+        
+        packet_counter += 1 #increment number of packets read
 		
         if is_header(block):
             if first_header:
@@ -245,6 +252,8 @@ def check_headers(file_obj, packet_size_bytes=8192, verbose=False, print_headers
                 print_msg += str(hdr_dict[key]) + "|"
             print_msg += "\n"
             packet_counter = 0 #reset packet counter
+        else:
+            pass
 
     #restore file pointer
     file_obj.seek(freeze_pointer)
@@ -254,11 +263,13 @@ def check_headers(file_obj, packet_size_bytes=8192, verbose=False, print_headers
     return (best_loc, err_counter)
 
 def get_filesize(file_obj):
-	'''Usage: get_filesize(file_obj)
-	returns file size (in bytes) of file pointed to by file_obj.'''
+	'''
+    Usage: get_filesize(file_obj)
+	returns file size (in bytes) of file pointed to by file_obj.
+    '''
 
 	freeze_pointer = file_obj.tell()
-	file_obj.seek(0,2) #go to end of file
+	file_obj.seek(0,2) #move to end of file
 	end_pointer = file_obj.tell()
 	file_obj.seek(freeze_pointer)
 
@@ -312,16 +323,15 @@ def get_next_raw_burst(file_obj, packet_size_bytes=None, packets_per_burst=None,
             yield LoFASM_burst(raw_dat)
 
 
-def find_first_hdr_packet(file_obj, packet_size_bytes=8192, hdr_size=8):
+def find_first_hdr_packet(file_obj, packet_size_bytes=PACKET_SIZE_B, hdr_size=8):
 	'''
-        Return start location of first valid header packet in file.
+    Return start location of first valid header packet in file.
 	'''
 	#total number of packets in file
-	num_packets = get_filesize(file_obj)/packet_size_bytes
+	num_packets = get_filesize(file_obj) / packet_size_bytes
 
 	for i in range(num_packets):
 		#read packet header
-
 		pkt_hdr = file_obj.read(hdr_size)
 
 		#if header is valid and the next packet is not a header packet
@@ -340,7 +350,7 @@ def find_first_hdr_packet(file_obj, packet_size_bytes=8192, hdr_size=8):
 		file_obj.seek(file_obj.tell() + packet_size_bytes - hdr_size)
 	print "Finished searching: did not find valid header in %s" % file_obj.name
 
-def is_next_packet_header(file_obj, packet_size_bytes=8192, hdr_size_bytes=8):
+def is_next_packet_header(file_obj, packet_size_bytes=PACKET_SIZE_B, hdr_size_bytes=8):
 	'''
 	Check if the next packet is a header packet
 	'''
@@ -359,9 +369,15 @@ def is_next_packet_header(file_obj, packet_size_bytes=8192, hdr_size_bytes=8):
     
 ####Class Definitions
 class LoFASM_burst:
-    autos = {}
-    cross = {}
-    hdr = {}
+    '''
+    class to represent an entire LoFASM Burst sequence.
+    A LoFASM Burst is a collection of 17 UDP network packets.
+    The first packet is always the header packet. 
+    The 16 network packets that follow raw LoFASM filterbank 
+    data.
+    '''
+
+
     __fmt_autos = '>L'
     __fmt_cross = '>l'
     __fmt_beams = '>f'
@@ -370,7 +386,14 @@ class LoFASM_burst:
     __type_cross = complex
     __type_beams = np.float64
 
-    def __init__(self, burst_string, packet_size=8192):
+    def __init__(self, burst_string, packet_size=PACKET_SIZE_B):
+        '''
+        initialize LoFASM Burst instance
+        '''
+
+        self.autos = {}
+        self.cross = {}
+        self.hdr = {}
 
         #read header packet
         hdr_packet = burst_string[:packet_size]
@@ -394,24 +417,26 @@ class LoFASM_burst:
         burst_complex_even_val = struct.unpack("12288".join(self.__fmt_cross), burst_complex_even_bin)
         burst_complex_odd_val = struct.unpack("12288".join(self.__fmt_cross), burst_complex_odd_bin)
 
-        AABB_even = burst_real_even_val[:2048]
-        CCDD_even = burst_real_even_val[2048:]
-        AABB_odd = burst_real_odd_val[:2048]
-        CCDD_odd = burst_real_odd_val[2048:]
+        blocksize = 2048
 
-        AB_even = self.__cross_make_complex(burst_complex_even_val[:2048])
-        AC_even = self.__cross_make_complex(burst_complex_even_val[2048:2048*2])
-        AD_even = self.__cross_make_complex(burst_complex_even_val[2048*2:2048*3])
-        BC_even = self.__cross_make_complex(burst_complex_even_val[2048*3:2048*4])
-        BD_even = self.__cross_make_complex(burst_complex_even_val[2048*4:2048*5])
-        CD_even = self.__cross_make_complex(burst_complex_even_val[2048*5:])
+        AABB_even = burst_real_even_val[:blocksize]
+        CCDD_even = burst_real_even_val[blocksize:]
+        AABB_odd = burst_real_odd_val[:blocksize]
+        CCDD_odd = burst_real_odd_val[blocksize:]
 
-        AB_odd = self.__cross_make_complex(burst_complex_odd_val[:2048])
-        AC_odd = self.__cross_make_complex(burst_complex_odd_val[2048:2048*2])
-        AD_odd = self.__cross_make_complex(burst_complex_odd_val[2048*2:2048*3])
-        BC_odd = self.__cross_make_complex(burst_complex_odd_val[2048*3:2048*4])
-        BD_odd = self.__cross_make_complex(burst_complex_odd_val[2048*4:2048*5])
-        CD_odd = self.__cross_make_complex(burst_complex_odd_val[2048*5:])
+        AB_even = self.__cross_make_complex(burst_complex_even_val[:blocksize])
+        AC_even = self.__cross_make_complex(burst_complex_even_val[blocksize:blocksize*2])
+        AD_even = self.__cross_make_complex(burst_complex_even_val[blocksize*2:blocksize*3])
+        BC_even = self.__cross_make_complex(burst_complex_even_val[blocksize*3:blocksize*4])
+        BD_even = self.__cross_make_complex(burst_complex_even_val[blocksize*4:blocksize*5])
+        CD_even = self.__cross_make_complex(burst_complex_even_val[blocksize*5:])
+
+        AB_odd = self.__cross_make_complex(burst_complex_odd_val[:blocksize])
+        AC_odd = self.__cross_make_complex(burst_complex_odd_val[blocksize:blocksize*2])
+        AD_odd = self.__cross_make_complex(burst_complex_odd_val[blocksize*2:blocksize*3])
+        BC_odd = self.__cross_make_complex(burst_complex_odd_val[blocksize*3:blocksize*4])
+        BD_odd = self.__cross_make_complex(burst_complex_odd_val[blocksize*4:blocksize*5])
+        CD_odd = self.__cross_make_complex(burst_complex_odd_val[blocksize*5:])
 
         AA_even, BB_even = self.__split_autos(AABB_even)
         AA_odd, BB_odd = self.__split_autos(AABB_odd)
@@ -485,12 +510,21 @@ class LoFASM_burst:
     def pack_binary(self, spect):
         '''
         Convert spectrum data into writable binary string
+
+        usage: pack_binary(spect)
+        returns: binary str containing data in spect
+
+        the data type of the information stored in spect
+        must correspond to one of the data types used in 
+        LoFASM Bursts. (int, np.complex, or np.float64)
+
+        all elements in spect must be of the same data type.
         '''
 
         bin_str = ''
         
         #check whether spect contains int or complex values
-        if(type(spect[0]) is self.__type_autos):
+        if (type(spect[0]) is self.__type_autos):
             format = self.__fmt_autos
             for val in spect:
                 bin_str += struct.pack(format, val)
@@ -511,19 +545,29 @@ class LoFASM_burst:
         Return the data type used for
         auto correlation data.
         '''
+
         return self.__fmt_autos
+
     def getCrossCorrelationDataType(self):
         '''
         Return the data type used for
         cross correlation data.
         '''
         return self.__fmt_cross
+
     def getBeamDataType(self):
         '''
         Return the data type used for beamed data.
         '''
         return self.__fmt_beams
+
     def __gen_LoFASM_beams(self, Ai=1.0, Aq=1.0):
+        '''
+        generate LoFASM beams and store them in self.beams
+
+        this method creates and initializes self.beams.
+        '''
+
         self.beams = {}
         AA_pow = np.array(self.autos['AA'])
         BB_pow = np.array(self.autos['BB'])
@@ -533,6 +577,7 @@ class LoFASM_burst:
         AC_cross = np.array(self.cross['AC'])
         self.beams['BN'] = BB_pow + DD_pow + (2/(Ai*Aq)) * np.real(BD_cross)
         self.beams['BE'] = AA_pow + CC_pow + (2/(Ai*Aq)) * np.real(AC_cross)
+
     def create_LoFASM_beams(self):
         self.__gen_LoFASM_beams()
 
@@ -540,30 +585,40 @@ class LoFASMFileCrawler(object):
     '''
     File crawler for LoFASM data files.
     '''
-    _int_hdr = {} #integration
-    _file_hdr = {}
-    _acc_num_ref = None
-    _acc_num = None
-    _ptr_loc = None
-    _int_size = None
-    _lofasm_file = None
-    _burst = None #integration data
-    _lofasm_file_end = None
-    _print_int_headers = False
 
-    autos = None
-    cross = None
-    beams = None
-    def __init__(self, filename):
 
-        #check file extension
-        file_ext = filename[-7:]
-        if file_ext != '.lofasm':
-            print "Warning: file extension not recognized. Attempting to open anyway."
+    def __init__(self, filename, scan_file=False):
+        '''
+        initialize LoFASM File Crawler instance
+        '''
+
+        #class attributes
+        self._int_hdr = {} #integration header
+        self._file_hdr = {} #file header
+        self._acc_num_ref = None #first integration id
+        self._acc_num = None #current integration id
+        self._ptr_loc = None #location of file pointer
+        self._int_size = None 
+        self._lofasm_file = None #file handle
+        self._burst = None #integration data
+        self._lofasm_file_end = None    
+
+        self.autos = None
+        self.cross = None
+        self.beams = None    
 
         #open file
         try:
-            self._lofasm_file = open(filename, 'rb')
+            if type(filename) is file:
+                self._lofasm_file = filename
+            else:
+                #check file extension
+                file_ext = filename[-7:]
+                if file_ext != '.lofasm':
+                    print "Warning: file extension not recognized. Attempting to open anyway."
+
+                #get file handler
+                self._lofasm_file = open(filename, 'rb')
         except IOError as err:
             print "Error opening ", filename
             print err.message
@@ -577,10 +632,15 @@ class LoFASMFileCrawler(object):
         #get integration/burst size 
         self._int_size = INTEGRATION_SIZE_B
 
-        data_loc, errno = check_headers(self._lofasm_file)
+        #get start location of data
+        if scan_file:
+            data_loc, errno = check_headers(self._lofasm_file)
+        else:
+            data_loc, errno = START_DATA, -1
         
         #move file pointer to data location
         self._lofasm_file.seek(data_loc)
+
         self._update_ptr()
 
         self._update_data()
@@ -650,31 +710,45 @@ class LoFASMFileCrawler(object):
             print "Beginning of file"
     
     def getIntegrationHeader(self):
-        '''Return integration header as a dictionary.'''
+        '''
+        Return integration header as a dictionary.
+        '''
         return self._int_hdr
     
     def getFileHeader(self):
-        '''Return LoFASM file header as a dictionary.'''
+        '''
+        Return LoFASM file header as a dictionary.
+        '''
         return self._file_hdr
     
     def getAccNum(self):
-        '''Return accumulation number.'''
+        '''
+        Return accumulation number.
+        '''
         return self._acc_num
     
     def getAccReference(self):
-        '''Return accumulation reference value.'''
+        '''
+        Return accumulation reference value.
+        '''
         return self._acc_num_ref
     
     def getFilePtr(self):
-        '''Return file pointer location.'''
+        '''
+        Return file pointer location.
+        '''
         return self._ptr_loc
     
     def getIntegrationSize(self):
-        '''Return LoFASM integration size in bytes.'''
+        '''
+        Return LoFASM integration size in bytes.
+        '''
         return self._int_size
     
     def getFilename(self):
-        '''Return filename.'''
+        '''
+        Return filename.
+        '''
         return self._lofasm_file.name
 
     def print_int_headers(self, state=None):
@@ -696,5 +770,5 @@ class LoFASMFileCrawler(object):
         
 
     def __repr__(self):
-        return "LoFASMFileCrawler %s acc: %i" % (self.getFilename(), self._acc_num)
+        return "LoFASMFileCrawler %s" % (self.getFilename())
     
