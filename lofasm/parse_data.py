@@ -63,10 +63,10 @@ def parse_filename(filename):
 		filename = filename.rstrip('.lsf')
 		parse_list = filename.split('_')
 	date = parse_list[0]
-	time = parse_list[1]
-	pol = filename[(len(date)+len(time)+2):]
+	timestamp = parse_list[1]
+	pol = filename[(len(date)+len(timestamp)+2):]
     
-	return [date, time, pol]
+	return [date, timestamp, pol]
 
         
 def spectrum_conv_code(code_str):
@@ -606,6 +606,7 @@ class LoFASMFileCrawler(object):
         self.autos = None
         self.cross = None
         self.beams = None    
+
 
         #open file
         try:
