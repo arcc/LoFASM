@@ -68,7 +68,6 @@ def parse_filename(filename):
     
 	return [date, timestamp, pol]
 
-        
 def spectrum_conv_code(code_str):
 	return LoFASM_SPECTRA_KEY_TO_DESC[code_str]
 
@@ -93,7 +92,6 @@ def gen_spectrum_hdr_string(hdr_dict):
 		field += 1
 		hdr_str += fmt_header_entry(hdr_dict[field][1])
 	return hdr_str
-
 
 def parse_file_header(file_obj, fileType='lofasm'):
 
@@ -150,10 +148,6 @@ def parse_file_header(file_obj, fileType='lofasm'):
 
 	return fhdr_field_dict
 
-
-
-
-
 def parse_hdr(hdr, hdr_size_bytes=8, version=1):
 	'''
     Usage: parse_hdr(<64bit_string>,[version])
@@ -189,7 +183,8 @@ def is_header(hdr_raw, print_header=False):
 	returns boolean
 	'''
 	hdr_dict = parse_hdr(hdr_raw)
-	#print hdr_dict['signature']
+	
+    #confirm LoFASM network packet
 	if hdr_dict['signature'] == HDR_V1_SIGNATURE:
 		if print_header:
 			print_hdr(hdr_dict)
@@ -282,7 +277,6 @@ def get_number_of_integrations(file_obj):
 	num_integrations = fileSize / INTEGRATION_SIZE_B
 	return num_integrations
 
-
 def get_next_raw_burst(file_obj, packet_size_bytes=None, packets_per_burst=None, loop_file=False):
     '''
     Usage:
@@ -321,7 +315,6 @@ def get_next_raw_burst(file_obj, packet_size_bytes=None, packets_per_burst=None,
         else:
 			#yield raw_dat
             yield LoFASM_burst(raw_dat)
-
 
 def find_first_hdr_packet(file_obj, packet_size_bytes=PACKET_SIZE_B, hdr_size=8):
 	'''
@@ -417,13 +410,15 @@ class LoFASM_burst:
         burst_complex_even_val = struct.unpack("12288".join(self.__fmt_cross), burst_complex_even_bin)
         burst_complex_odd_val = struct.unpack("12288".join(self.__fmt_cross), burst_complex_odd_bin)
 
-        blocksize = 2048
+        blocksize = 2048 #values
 
+        #read blocks
         AABB_even = burst_real_even_val[:blocksize]
         CCDD_even = burst_real_even_val[blocksize:]
         AABB_odd = burst_real_odd_val[:blocksize]
         CCDD_odd = burst_real_odd_val[blocksize:]
 
+        #get lists of complex values
         AB_even = self.__cross_make_complex(burst_complex_even_val[:blocksize])
         AC_even = self.__cross_make_complex(burst_complex_even_val[blocksize:blocksize*2])
         AD_even = self.__cross_make_complex(burst_complex_even_val[blocksize*2:blocksize*3])
@@ -438,11 +433,13 @@ class LoFASM_burst:
         BD_odd = self.__cross_make_complex(burst_complex_odd_val[blocksize*4:blocksize*5])
         CD_odd = self.__cross_make_complex(burst_complex_odd_val[blocksize*5:])
 
+        #seperate different inputs
         AA_even, BB_even = self.__split_autos(AABB_even)
         AA_odd, BB_odd = self.__split_autos(AABB_odd)
         CC_even, DD_even = self.__split_autos(CCDD_even)
         CC_odd, DD_odd = self.__split_autos(CCDD_odd)
 
+        #create power spectrum for each input and the cross correlations
         self.autos['AA'] = self.__interleave_even_odd(AA_even, AA_odd)
         self.autos['BB'] = self.__interleave_even_odd(BB_even, BB_odd)
         self.autos['CC'] = self.__interleave_even_odd(CC_even, CC_odd)
@@ -587,9 +584,17 @@ class LoFASMFileCrawler(object):
     '''
 
 
-    def __init__(self, filename, scan_file=False):
+    def __init__(self, filename, scan_file=False, start_loc=None):
         '''
         initialize LoFASM File Crawler instance
+
+        Usage: crawler = LoFASMFileCrawler(filename, [scan_file, start_loc])
+
+        Where scan_file is a boolean value. If True then scan and print the all 
+        integration headers in file. This is an optional argrument. 
+
+        start_loc is the start location. If start_loc is set then scan_file
+        will be ignored and the crawler will be initiated at start_loc. 
         '''
 
         #class attributes
@@ -601,7 +606,8 @@ class LoFASMFileCrawler(object):
         self._int_size = None 
         self._lofasm_file = None #file handle
         self._burst = None #integration data
-        self._lofasm_file_end = None    
+        self._lofasm_file_end = None
+        self._print_int_headers = False  
 
         self.autos = None
         self.cross = None
@@ -636,9 +642,11 @@ class LoFASMFileCrawler(object):
         #get start location of data
         if scan_file:
             data_loc, errno = check_headers(self._lofasm_file)
+        elif start_loc:
+            data_loc, errno = start_loc, 0
         else:
-            data_loc, errno = START_DATA, -1
-        
+            data_loc, errno = START_DATA, 0
+         
         #move file pointer to data location
         self._lofasm_file.seek(data_loc)
 
@@ -695,7 +703,7 @@ class LoFASMFileCrawler(object):
         if (self._lofasm_file_end - self._ptr_loc) >= N*INTEGRATION_SIZE_B:
             self._update_data(N)
         else:
-            print "End of file"
+            raise pdat_H.EOF_Error
         
     def backward(self, N=1):
         '''Move back to previous integration.'''
