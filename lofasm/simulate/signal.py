@@ -19,4 +19,4 @@ def square_wave(f, fsamp=11.92, T=1.0, offset=0):
 
 	t = np.linspace(0, T, fsamp * T, endpoint=False)
 
-	return signal.square(2*np.pi*f*t + offset) + 1, t
+	return signal.square(2*np.pi*f*t + offset), t
