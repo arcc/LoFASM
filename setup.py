@@ -18,7 +18,8 @@ setup(
     install_requires=[
         "matplotlib >= 1.1.1",
         "numpy >= 1.6.2",
-        ],
+        "scipy",
+        "astropy"],
 )
 
 
