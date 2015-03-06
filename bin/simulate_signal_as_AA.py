@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 
 #simulate square wave in LoFASM data format
 #inject signal into AA polarization 
