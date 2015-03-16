@@ -30,6 +30,8 @@ if __name__ == "__main__":
 	#create signal
 	f = 1/args.period
 	s, t = signal.square_wave(f, T=args.duration)
+	#constant offset to avoid zero values
+	s += 2
 	num_samples = len(s)
 
 	#open file for writing
@@ -47,13 +49,16 @@ if __name__ == "__main__":
 	#create empty LoFASM Burst
 	burst = data.Burst()
 
+
+	ones = np.ones(1024)
+	zeros = np.zeros(1024)
+
 	#generate LoFASM Bursts and write them to disk
 	for dataSample in s:
 
 		#generate spectrum for AA
 		#this places the same value in all frequency bins
-		spect = np.ones(1024) * dataSample
-		zeros = np.zeros(1024)
+		spect = ones * dataSample
 
 		packet = data.RealPacket((spect, zeros))
 
