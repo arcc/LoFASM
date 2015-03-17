@@ -19,7 +19,7 @@ def fmt_header_entry(entry_str, fmt_len=8):
     else:
         return entry_str
 
-def write_header_to_file(outfile, host, Nacc=4096, fpga_clk_T=1e-08, 
+def write_header_to_file(outfile, host, Nacc=8192, fpga_clk_T=1e-08, 
 	Nchan=2048, fileNotes=' '):
     '''
     prepends data file with LoFASM spectrometer header.

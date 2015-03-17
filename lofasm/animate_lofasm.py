@@ -32,7 +32,12 @@ BASELINE_ID = {
         'A' : 'OEW',
         'B' : 'ONS',
         'C' : 'IEW',
-        'D' : 'INS'}
+        'D' : 'INS'},
+    'simdata' : {
+        'A' : 'AAA',
+        'B' : 'BBB', 
+        'C' : 'CCC', 
+        'D' : 'DDD'}
     }
 
 

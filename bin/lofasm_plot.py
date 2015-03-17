@@ -61,8 +61,6 @@ if __name__ == '__main__':
     p.add_option('--animate_all', dest='animate_all', 
         action='store_true', help='set to animate all baselines starting from ' 
         + 'starting position.')
-    p.add_option('--animate_baseline', dest='animate_baseline', type='str', default='',
-        help='select baseline to plot')
     p.add_option('--animate_beams', dest='animate_beams', action='store_true', 
         help='animate LoFASM Beams')
     p.add_option('--TimeFrequencyPlot', dest='TimeFrequencyPlot', type='str',
@@ -129,24 +127,6 @@ if __name__ == '__main__':
             ani_lofasm.update_all_baseline_plots, fargs=(fig, 
                 crawler, lines, opts.norm_cross), frames=num_frames, interval=opts.frame_dur, 
                 )
-        #print "saving video."
-        #print anim.save('test.avi', codec='avi')
-        ani_lofasm.plt.show()
-    elif opts.animate_baseline:
-        print "Plotting %s" % opts.animate_baseline
-
-        plot_line = ani_lofasm.setup_single_plot(opts.animate_baseline, opts.xmin, opts.xmax, opts.ymin, opts.ymax, opts.norm_cross)
-        anim = ani_lofasm.animation.FuncAnimation(ani_lofasm.fig, 
-            ani_lofasm.update_baseline_plot, fargs=(ani_lofasm.fig, 
-                burst_generator, plot_line, opts.animate_baseline, opts.norm_cross), frames=num_frames, interval=opts.frame_dur, 
-                )
-        ani_lofasm.plt.show()
-        print "DONE"
-        if opts.animate_beams:
-            lines = ani_lofasm.setup_beam_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax)
-            anim = ani_lofasm.animation.FuncAnimation(ani_lofasm.fig, 
-                    ani_lofasm.update_beam_plots, fargs=(ani_lofasm.fig, 
-                    burst_generator, lines), frames=num_frames, interval=opts.frame_dur)
         #print "saving video."
         #print anim.save('test.avi', codec='avi')
         ani_lofasm.plt.show()

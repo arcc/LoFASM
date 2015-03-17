@@ -3,6 +3,7 @@ import struct, sys, time
 import numpy as np
 import parse_data_H as pdat_H
 import datetime
+from astropy.time import Time, TimeDelta
 
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
 HDR_V1_SIGNATURE = 14613675
@@ -583,7 +584,6 @@ class LoFASMFileCrawler(object):
     File crawler for LoFASM data files.
     '''
 
-
     def __init__(self, filename, scan_file=False, start_loc=None):
         '''
         initialize LoFASM File Crawler instance
@@ -606,12 +606,14 @@ class LoFASMFileCrawler(object):
         self._int_size = None 
         self._lofasm_file = None #file handle
         self._burst = None #integration data
-        self._lofasm_file_end = None
-        self._print_int_headers = False  
+        self._lofasm_file_end = None #EOF
+        self._print_int_headers = False
+        self._data_start = None #pointer location at start of data
+        self._int_time = None #TimeDelta(0.0, format='sec')
 
         self.autos = None
         self.cross = None
-        self.beams = None    
+        self.beams = None
 
 
         #open file
@@ -643,39 +645,73 @@ class LoFASMFileCrawler(object):
         #get start location of data
         if scan_file:
             print "Scanning file..."
-            data_loc, errno = check_headers(self._lofasm_file)
+            self._data_start, errno = check_headers(self._lofasm_file)
         elif start_loc:
-            data_loc, errno = start_loc, 0
+            self._data_start, errno = start_loc, 0
         else:
-            data_loc, errno = START_DATA, 0
+            self._data_start, errno = START_DATA, 0
          
         #move file pointer to data location
-        self._lofasm_file.seek(data_loc)
+        self._lofasm_file.seek(self._data_start)
 
         self._update_ptr()
 
+        #get times
+        self.int_time = TimeDelta(float(self._file_hdr[10][1]), format='sec')
+        mjd_start = float(self._file_hdr[8][1]) + float(self._file_hdr[9][1])/1000/86400
+        self.time_start = Time(mjd_start, format='mjd')
+        self.time = self.time_start
+
+
+        #increment to next integration
         self._update_data()
 
         #set reference accumulation number
         self._acc_num_ref = self._acc_num
 
+        #update time
+        self._update_time()
+        
+    def _update(self, N=1):
+        '''
+        run update sequences
+        1. update data arrays
+        2. update time stamps
+        '''
+
+        self._update_data(N)
+        self._update_time()
+
+    def _update_time(self):
+        '''
+        update time attribute according to current integration
+        '''
+        self.time = self.time_start + (self._acc_num - self._acc_num_ref)*self.int_time
 
     def _update_data(self, N=1):
         '''
         Update object's burst data by incrementng by N integrations.
         '''
+
+        #read and update pointers
         self._move_ptr(N-1)
         self._burst = LoFASM_burst(self._lofasm_file.read(self._int_size))
         self._burst.create_LoFASM_beams()
         self._update_ptr()
+
+        #update integration header and accumulation number
         self._int_hdr = self._burst.hdr
         self._acc_num = self._int_hdr['acc_num']
+
+        #update data arrays
         self.autos = self._burst.autos
         self.cross = self._burst.cross
         self.beams = self._burst.beams
+
+
         if self._print_int_headers:
             print self._int_hdr
-               
+
     def _get_file_end_loc(self):
         '''Return end pointer value.'''
         freeze_ptr = self._lofasm_file.tell()
@@ -691,7 +727,9 @@ class LoFASMFileCrawler(object):
         self._update_ptr()
         
     def _update_ptr(self):
-        '''Update pointer to LoFASM file.'''
+        '''
+        Update pointer to LoFASM file.
+        '''
         self._ptr_loc = self._lofasm_file.tell()
         
     def forward(self, N=1):
@@ -703,7 +741,7 @@ class LoFASMFileCrawler(object):
         
         #check boundaries
         if (self._lofasm_file_end - self._ptr_loc) >= N*INTEGRATION_SIZE_B:
-            self._update_data(N)
+            self._update(N)
         else:
             raise pdat_H.EOF_Error
         
@@ -716,9 +754,17 @@ class LoFASMFileCrawler(object):
 
         #check boundaries
         if self._ptr_loc >= N*INTEGRATION_SIZE_B:
-            self._update_data(-N)
+            self._update(-N)
         else:
             print "Beginning of file"
+
+    def reset(self):
+        '''
+        move back to first integration in file
+        '''
+        self._lofasm_file.seek(self._data_start)
+        self._update_ptr()
+        self._update()
     
     def getIntegrationHeader(self):
         '''
@@ -777,8 +823,6 @@ class LoFASMFileCrawler(object):
         if self._print_int_headers != s:
             print "Setting value to ", str(s)
             self._print_int_headers = s        
-
-        
 
     def __repr__(self):
         return "LoFASMFileCrawler %s" % (self.getFilename())
