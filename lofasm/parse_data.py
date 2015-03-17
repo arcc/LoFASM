@@ -626,6 +626,7 @@ class LoFASMFileCrawler(object):
 
                 #get file handler
                 self._lofasm_file = open(filename, 'rb')
+                
         except IOError as err:
             print "Error opening ", filename
             print err.message
@@ -641,6 +642,7 @@ class LoFASMFileCrawler(object):
 
         #get start location of data
         if scan_file:
+            print "Scanning file..."
             data_loc, errno = check_headers(self._lofasm_file)
         elif start_loc:
             data_loc, errno = start_loc, 0
