@@ -6,7 +6,6 @@ import numpy as np
 import parse_data as pdat
 import lofasm_dat_lib as lofasm
 
-
 FREQS = np.linspace(0, 200, 2048)
 autos = ['AA','BB','CC','DD']
 cross = ['AB','AC','AD','BC','BD','CD']
@@ -39,7 +38,6 @@ BASELINE_ID = {
         'C' : 'CCC', 
         'D' : 'DDD'}
     }
-
 
 def plot_all_baselines(burst_obj, station, save_dir=''):
     '''
@@ -131,7 +129,6 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
     update_all_baseline_plots(0,fig,crawler,auto_lines+cross_lines,forward=False)
     return [auto_lines+cross_lines, fig]
 
-
 def setup_beam_plots(xmin, xmax, ymin, ymax):
     fig = plt.figure(figsize=(10,10))
     beam_subplots = [fig.add_subplot(1,2,i) for i in range(len(beams))]
@@ -209,7 +206,6 @@ def update_all_baseline_plots(i, fig, crawler, lines, norm_cross=False, forward=
 			lines[k]['real'].set_data(FREQS, np.real(norm_val))
 			lines[k]['imag'].set_data(FREQS, np.imag(norm_val))
         else:
-#			lines[k].set_data(FREQS, 10*np.log10(np.abs(burst.cross[baselines[k]])))
 			lines[k].set_data(FREQS, 10*np.log10(np.abs(np.real(burst.cross[baselines[k]]))))
 			#print np.imag(burst.cross[baselines[k]])
 			#stop
@@ -259,8 +255,6 @@ def update_beam_plots(i, fig, burst_gen, lines):
 
 	#raw_input('press enter')
     return lines
-
-
 
 def update_baseline_plot(i, fig, burst_gen, plot_line, baseline, norm_cross=False):
     print i

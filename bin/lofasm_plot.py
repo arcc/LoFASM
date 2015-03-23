@@ -131,7 +131,6 @@ if __name__ == '__main__':
         #print anim.save('test.avi', codec='avi')
         ani_lofasm.plt.show()
     elif opts.TimeFrequencyPlot:
-        print "colormap requested!"
         plot_im = ani_lofasm.setup_color_plot(opts.TimeFrequencyPlot, opts.TF_PlotWidth, opts.xmin, opts.xmax, opts.ymin, opts.ymax)
     else:
         print "No instructions given. Exiting."
