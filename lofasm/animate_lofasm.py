@@ -89,27 +89,44 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
     '''
     fig = plt.figure(figsize=(10,10))
     
-    auto_baselines = autos #['AA', 'BB', 'CC', 'DD']
-    cross_baselines = cross #['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
+    auto_baselines = autos 
+    cross_baselines = cross 
     
-    auto_subplots = [fig.add_subplot(4,4,i) for i in [1, 6, 11, 16]]
-    cross_subplots = [fig.add_subplot(4,4,i) for i in [2, 3, 4, 7, 8, 12]]
+    auto_subplots = [plt.subplot2grid((4,4),(i,i)) for i in range(4)]
+    cross_subplots = [plt.subplot2grid((4,4),(0,1)), 
+                      plt.subplot2grid((4,4),(0,2)),
+                      plt.subplot2grid((4,4),(0,3)),
+                      plt.subplot2grid((4,4),(1,2)),
+                      plt.subplot2grid((4,4),(1,3)),
+                      plt.subplot2grid((4,4),(2,3))]
+    overlay_plot = plt.subplot2grid((4,4),(2,0), colspan=2, rowspan=2)
+
     auto_lines = []
     cross_lines = []
+    overlay_lines = []
+
     fig.subplots_adjust(hspace=0.5)
-    #freqs = np.linspace(0, 200, 2048)
+    
 	# set titles & plot
     for i in range(len(cross_baselines)):
 
         if i < 4:
-            #print 'auto baseline: .%s.' % auto_baselines[i]
+            #autos
             auto_title = BASELINE_ID[station][auto_baselines[i][0]]
             auto_subplots[i].set_title(auto_title)
             auto_subplots[i].set_xlim(xmin, xmax)
             auto_subplots[i].set_ylim(ymin, ymax)
             auto_subplots[i].grid()
-            #auto_subplots[i].set_ylim(5.85, 6.05)
             auto_lines.append(auto_subplots[i].plot([],[])[0])
+
+            #overlays
+            overlay_title = 'All Channels'
+            if i == 0:
+                overlay_plot.set_title(overlay_title)
+                overlay_plot.set_xlim(xmin, xmax)
+                overlay_plot.set_ylim(ymin, ymax)
+                overlay_plot.grid()
+            overlay_lines.append(overlay_plot.plot([],[])[0])
 
         cross_title = BASELINE_ID[station][cross_baselines[i][0]] + 'x' + BASELINE_ID[station][cross_baselines[i][1]]
         cross_subplots[i].set_title(cross_title)
@@ -126,8 +143,8 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
             cross_subplots[i].set_ylim(ymin, ymax)
             cross_lines.append(cross_subplots[i].plot([],[])[0])
 
-    update_all_baseline_plots(0,fig,crawler,auto_lines+cross_lines,forward=False)
-    return [auto_lines+cross_lines, fig]
+    update_all_baseline_plots(0,fig,crawler,auto_lines+cross_lines+overlay_lines,forward=False)
+    return [auto_lines+cross_lines+overlay_lines, fig]
 
 def setup_beam_plots(xmin, xmax, ymin, ymax):
     fig = plt.figure(figsize=(10,10))
@@ -189,29 +206,26 @@ def update_all_baseline_plots(i, fig, crawler, lines, norm_cross=False, forward=
     #get next integration
     if forward:
         crawler.forward()
-    #burst = burst_gen.next()
-    #print burst.hdr
-    #print crawler.getIntegrationHeader()
+    
     burst = crawler
-    # set titles & plot
-    #plt.title("Frame %i " % i)
+    
     for k in range(len(baselines)):
         if k < 4:
-
+            #autos
             lines[k].set_data(FREQS, 10*np.log10(burst.autos[baselines[k]]))
-			#lines[i].set_xlim(0, 200)
+            #overlays
+            lines[-(k+1)].set_data(FREQS,10*np.log10(burst.autos[baselines[k]]))
+			
         elif norm_cross:
-			#lines[i].set_title(cross_baselines[i])
+			
 			norm_val = np.array(burst.cross[baselines[k]])/np.sqrt(np.array(burst.autos[baselines[k][0]*2])*np.array(burst.autos[baselines[k][1]*2]))
 			lines[k]['real'].set_data(FREQS, np.real(norm_val))
 			lines[k]['imag'].set_data(FREQS, np.imag(norm_val))
         else:
 			lines[k].set_data(FREQS, 10*np.log10(np.abs(np.real(burst.cross[baselines[k]]))))
-			#print np.imag(burst.cross[baselines[k]])
-			#stop
-			#lines[i].set_xlim(0, 200)
+			
 	
-	#raw_input('press enter')
+	
     return lines
 
 def update_beam_plots(i, fig, burst_gen, lines):
