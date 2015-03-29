@@ -66,9 +66,9 @@ if __name__ == '__main__':
     p.add_option('--TimeFrequencyPlot', dest='TimeFrequencyPlot', type='str',
         help='select baseline (NS or EW) to plot TimexFrequency (colormap)')
     p.add_option('--getfilesize',dest='getFileSize',action='store_true')
-    p.add_option('--xmin', dest='xmin', type='float', default=0,
+    p.add_option('--xmin', dest='xmin', type='float', default=18,
         help='set the xmin value to plot')
-    p.add_option('--xmax', dest='xmax', type='float', default=100,
+    p.add_option('--xmax', dest='xmax', type='float', default=80,
         help='set the xmax value to plot')
     p.add_option('--ymin', dest='ymin', type='float', default=0,
         help='set the ymin value to plot')
