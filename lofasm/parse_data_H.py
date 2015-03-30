@@ -75,3 +75,9 @@ class Header_Error:
 	def __init__(self, strerror='', msg=None):
 		self.strerror = strerror
 		self.msg = msg
+
+class EOF_Error:
+	def __init__(self, msg=''):
+		self.strerror = "End of LoFASM File has been reached."
+		if msg:
+			print self.msg

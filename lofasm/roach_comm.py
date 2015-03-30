@@ -1,7 +1,9 @@
 #library for functions that require talking to the ROACH Board
 
-import corr
-import os
+import os, time
+from parse_data_H import T_fpga, FFT_cycles, PacketsPerSample
+import numpy as np
+
 
 #get ROACH ip from environment variable
 try:
@@ -12,9 +14,17 @@ except KeyError as err:
     roach_ip = '192.168.4.21'
 
 #connect to roach board
-fpga = corr.katcp_wrapper.FpgaClient(roach_ip)
+def connect_roach():
+    import corr
+    fpga = corr.katcp_wrapper.FpgaClient(roach_ip)
+    time.sleep(0.5)
+    return fpga
+
+def getSampleTime(Nacc):
+    return T_fpga * FFT_cycles * Nacc
 
 def getRoachAccLen():
+    fpga = connect_roach()
     return fpga.read_uint('acc_len')
 
 def getNumPacketsFromDuration(obs_dur):
@@ -23,5 +33,5 @@ def getNumPacketsFromDuration(obs_dur):
     an interval of time.
     """
     obs_dur = float(obs_dur)
-    return int(pdat_H.PacketsPerSample * np.ceil(obs_dur /
+    return int(PacketsPerSample * np.ceil(obs_dur /
             getSampleTime(getRoachAccLen())))

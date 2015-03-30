@@ -1,4 +1,4 @@
-#!/opt/python2.7/bin/python2.7
+#!/usr/bin/env python2.7
 # LoFASM Data Plotter
 import matplotlib.pyplot as plt
 import numpy as np
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     from lofasm import lofasm_dat_lib as lofasm
     
     p = OptionParser()
-    p.set_usage('poco_ten_gbe.py <lofasm_data_filename> [options]')
+    p.set_usage('lofasm_plot.py <lofasm_data_filename> [options]')
     p.set_description(__doc__)
     p.add_option('-f', '--filename', dest='input_filename', type='str',
         help="path to LoFASM Data file to be opened.")
@@ -61,8 +61,6 @@ if __name__ == '__main__':
     p.add_option('--animate_all', dest='animate_all', 
         action='store_true', help='set to animate all baselines starting from ' 
         + 'starting position.')
-    p.add_option('--animate_baseline', dest='animate_baseline', type='str', default='',
-        help='select baseline to plot')
     p.add_option('--animate_beams', dest='animate_beams', action='store_true', 
         help='animate LoFASM Beams')
     p.add_option('--TimeFrequencyPlot', dest='TimeFrequencyPlot', type='str',
@@ -89,7 +87,7 @@ if __name__ == '__main__':
     opts, args = p.parse_args(sys.argv[1:])
     
     if not opts.input_filename:
-        print "Please provide an input LoFASM file."
+        print "Please provide the path to the target LoFASM file using -f."
         exit()
     else:
         input_filename = opts.input_filename
@@ -99,12 +97,15 @@ if __name__ == '__main__':
     lofasm_station = hdr_dict[4][1]
     
    
-  
+    #get starting location (beginning of data)
     if opts.start_position < 0:
         print "Starting from location 0."
+        crawler = pdat.LoFASMFileCrawler(opts.input_filename, scan_file=True)
     else:
         print "Skipping to specified location: %i" %( opts.start_position)
-        lofasm_input_file.seek(opts.start_position)
+        lofasm_input_file.seek(opts.start_position) #is this still necessary?
+        crawler = pdat.LoFASMFileCrawler(opts.input_filename, start_loc=opts.start_position)
+        print crawler.getFileHeader()
         
     burst_size_bytes = opts.packet_size_bytes * 17
     filesize_bytes = pdat.get_filesize(lofasm_input_file)
@@ -114,10 +115,6 @@ if __name__ == '__main__':
     if opts.getFileSize:
         print pdat.get_filesize(lofasm_input_file)
         exit(0)
-   
-
-    #get file crawler
-    crawler = pdat.LoFASMFileCrawler(opts.input_filename)
 
     #plot single frame of all baselines
     if opts.plot_single_frame:
@@ -133,26 +130,7 @@ if __name__ == '__main__':
         #print "saving video."
         #print anim.save('test.avi', codec='avi')
         ani_lofasm.plt.show()
-    elif opts.animate_baseline:
-        print "Plotting %s" % opts.animate_baseline
-
-        plot_line = ani_lofasm.setup_single_plot(opts.animate_baseline, opts.xmin, opts.xmax, opts.ymin, opts.ymax, opts.norm_cross)
-        anim = ani_lofasm.animation.FuncAnimation(ani_lofasm.fig, 
-            ani_lofasm.update_baseline_plot, fargs=(ani_lofasm.fig, 
-                burst_generator, plot_line, opts.animate_baseline, opts.norm_cross), frames=num_frames, interval=opts.frame_dur, 
-                )
-        ani_lofasm.plt.show()
-        print "DONE"
-        if opts.animate_beams:
-            lines = ani_lofasm.setup_beam_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax)
-            anim = ani_lofasm.animation.FuncAnimation(ani_lofasm.fig, 
-                    ani_lofasm.update_beam_plots, fargs=(ani_lofasm.fig, 
-                    burst_generator, lines), frames=num_frames, interval=opts.frame_dur)
-        #print "saving video."
-        #print anim.save('test.avi', codec='avi')
-        ani_lofasm.plt.show()
     elif opts.TimeFrequencyPlot:
-        print "colormap requested!"
         plot_im = ani_lofasm.setup_color_plot(opts.TimeFrequencyPlot, opts.TF_PlotWidth, opts.xmin, opts.xmax, opts.ymin, opts.ymax)
     else:
         print "No instructions given. Exiting."
