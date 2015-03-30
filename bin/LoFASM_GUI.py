@@ -12,12 +12,10 @@ from tkFileDialog import askopenfilename
 matplotlib.pyplot.ion()
 from lofasm.filter import running_median
 import time
-#from matplotlib import style
-
 import Tkinter as tk
 import ttk
+import matplotlib.pyplot as plt
 
-#############################################
 #############################################
 #### this uses argparse to create a help menu 
 parser = argparse.ArgumentParser()
@@ -60,9 +58,6 @@ parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 results = parser.parse_args()
 results.file_name = '/Users/andrewdanford/Desktop/DataAnalysis/20140912_174502.lofasm'
 
-
-
-#line=a.plot([],[])[0]
 
 
 class LoFASMGUIapp(tk.Tk):
@@ -158,10 +153,15 @@ class PageThree(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.freqs = np.linspace(0, 200, 2048)
+        self.filter_bank_data = np.zeros((2048,126))
         self.crawler = pdat.LoFASMFileCrawler(results.file_name)
+        data = 10*np.log10(self.crawler.autos[results.current_correlation])
+        self.filter_bank_data = np.hstack((self.filter_bank_data, data.reshape((2048,1))))
+        
         self.create_figure()
         self.populate_page()
-        self.play=True
+        self.play=False
+
 
     def populate_page(self):
         '''
@@ -172,7 +172,7 @@ class PageThree(tk.Frame):
         #Gui Row 0
         self.file_name_label=tk.Label(master=self, text='File Name:')
         self.file_name_label.grid(row=0, column=0,sticky='E')
-        self.current_file_name_label=tk.Label(master=self, text=results.file_name)
+        self.current_file_name_label=tk.Label(master=self, text=results.file_name.split('/')[-1])
         self.current_file_name_label.grid(row=0, column=1)
         self.button_open = tk.Button(self,text='open',command=lambda: self._open()).grid(row=0,column=2)
 
@@ -237,38 +237,52 @@ class PageThree(tk.Frame):
         self.button_home = tk.Button(self,text='Home',command=lambda: controller.show_frame(StartPage)).grid(row=7 , column=0,sticky=tk.W+tk.E+tk.N+tk.S)
         #Gui Row 8
         tk.Button(self,text='newfunc').grid(row=8,column=0,sticky=tk.W+tk.E+tk.N+tk.S)
+        self.button_plot2 = tk.Button(self,text='colorplot').grid(row=8, column=1, columnspan=2, rowspan=1,sticky=tk.W+tk.E+tk.N+tk.S)
+
 
         #Create canvas's for the matplotlib figures
         canvas = FigureCanvasTkAgg(self.fig, self)
         canvas.show()
         canvas.get_tk_widget().grid(row=0 , column=3,rowspan=11)#.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
         '''
-        canvas2 = FigureCanvasTkAgg(f2 , self)
+        canvas2 = FigureCanvasTkAgg(self.fig2 , self)
         canvas2.show()
         canvas2.get_tk_widget().grid(row=11 , column=0 , columnspan=4)
         
         
         toolbar = NavigationToolbar2TkAgg(canvas, self)
         toolbar.update()
-        canvas._tkcanvas.grid(row=1 , column=3)#pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        canvas._tkcanvas.grid(row=1 , column=12)#pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         '''
+        
 
     def create_figure(self):
         '''
         create matplotlib figures
         '''
-        self.fig = Figure(figsize=(4,3), dpi=100)
-        self.pow_spec_plot = self.fig.add_subplot(111)
+        self.fig = Figure(figsize=(8,6), dpi=75)
+        self.pow_spec_plot = self.fig.add_subplot(211)
         self.pow_spec_plot.set_xlim(0,100)
         self.pow_spec_plot.set_ylim(0,100)
-        self.line, = self.pow_spec_plot.plot([1,2,3],[1,2,3])
-        #line.set_ydata([1,2,3])
+        self.pow_spec_plot.set_ylabel('Power (dBm)')
+        self.pow_spec_plot.set_xlabel('Frequency (MHz)')
+        self.line, = self.pow_spec_plot.plot([],[],linewidth=0.3)
         self.line.set_data(self.freqs,np.zeros(len(self.freqs)))
-        print "figure got created"
-        '''
-        f2 = Figure(figsize=(7.5,3) , dpi=100)
-        a2 = f.add_subplot(111)
-        '''
+
+
+
+        #self.fig2 = Figure(figsize=(12,4), dpi=75)
+        self.filter_bank_plot = self.fig.add_subplot(212)
+        self.im = self.filter_bank_plot.imshow(self.filter_bank_data, aspect='auto')#, cmap='spectral')
+        #self.im.set_data(self.filter_bank_data)
+        self.filter_bank_plot.set_ylim(0,1000)
+        self.filter_bank_plot.set_xlabel('Time (bins)')
+        self.filter_bank_plot.set_ylabel('Frequency (MHz)')
+        self.fig.colorbar(self.im, orientation='vertical')
+        #self.filter_bank_plot.show()
+
+        
+
 
     def get(self):
         '''
@@ -277,62 +291,104 @@ class PageThree(tk.Frame):
         if self.correlation_variable.get():
             results.current_correlation = self.correlation_variable.get()
             self.current_correlation_label.configure(text=results.current_correlation)
-        if self.lfEntry.get():                   # If the Entry field is not empty 
+
+        if self.lfEntry.get() or self.ufEntry.get():                   # If the Entry field is not empty 
             results.lower_freq = self.lfEntry.get() # Get the new value
             self.l7.configure(text=str(results.lower_freq)+' MHz') # update label
+            self.pow_spec_plot.set_xlim(int(results.lower_freq),int(results.upper_freq))
+
         if self.ufEntry.get():                   # If the Entry field is not empty 
             results.upper_freq = self.ufEntry.get() # Get the new value
             self.l8.configure(text=str(results.upper_freq)+' MHz') # update label
+            self.pow_spec_plot.set_xlim(int(results.lower_freq),int(results.upper_freq))
+
         if self.upEntry.get():                   # If the Entry field is not empty 
             results.upper_power = self.upEntry.get() # Get the new value
             self.l9.configure(text=str(results.upper_power)+' dBm') # update label
+            self.pow_spec_plot.set_ylim(int(results.lower_power),int(results.upper_power))
+
         if self.lpEntry.get():                   # If the Entry field is not empty 
             results.lower_power = self.lpEntry.get() # Get the new value
             self.l10.configure(text=str(results.lower_power)+' dBm') # update label
+            self.pow_spec_plot.set_ylim(int(results.lower_power),int(results.upper_power))
 
     def _open(self): 
         results.file_name = askopenfilename(filetypes=[("allfiles","*"),("binary files","*.dat"),("FITS files","*.fits"),("LoFASM Data Files","*.lofasm")]) #open data file, currently .lofasm
-        
         tk.Label(master=self,text=results.file_name.split('/')[-1][:20]+'...').grid(row=0, column=1)
         
     def animate(self,i):
-        power = 10*np.log10(self.crawler.autos[results.current_correlation])
-        print "animate DID get run"
+
+        corr=list(results.current_correlation)
+        if corr[0]==corr[1]:
+            power = 10*np.log10(self.crawler.autos[results.current_correlation])
+        else:
+            power = 10*np.log10(self.crawler.cross[results.current_correlation])
+
 
         if self.play == True:
-            print 'i should be plotting'
-            #self.pow_spec_plot.clear()
-            #line.set_data(x,y)
-            #self.pow_spec_plot.plot(self.freqs , power , linewidth=0.3)
-            print len(self.freqs)
-            print len(power)
             self.line.set_ydata(power)
-            #self.pow_spec_plot.xlim=(int(results.lower_freq) , int(results.upper_freq))
-            #self.pow_spec_plot.ylim=(int(results.lower_power) , int(results.upper_power))
-
-            #self.pow_spec_plot.plot(self.freqs, 10*np.log10(running_median(crawler.autos[results.current_correlation],results.running_median_window)),'r')
-            #a.xlim=(int(results.lower_freq) , int(results.upper_freq))
-            #a.ylim=(int(results.lower_power) , int(results.upper_power))
-            #a2.plot()
             self.crawler.forward()
-            return self.line,
-            
+            #self.im.set_data(power.reshape((2048,1)))
+            #print self.im
+            #self.im = self.im[1:]
+
+            self.filter_bank_data = np.hstack((self.filter_bank_data,(power).reshape((2048,1))))
+            self.filter_bank_data = np.delete(self.filter_bank_data,0,1)
+            self.im.set_data(self.filter_bank_data)
+
+            #return self.line, 
+            #return self.im,
         else:
             pass
+
+    def animate2(self,i):
+
+        corr=list(results.current_correlation)
+        if corr[0]==corr[1]:
+            power = 10*np.log10(self.crawler.autos[results.current_correlation])
+        else:
+            power = 10*np.log10(self.crawler.cross[results.current_correlation])
+
+
+        if self.play == True:
+            self.crawler.forward()
+            #stuff = np.linspace(0,500,2048)
+            #print power[300:500]
+            self.filter_bank_data = np.hstack((self.filter_bank_data,(power).reshape((2048,1))))
+            
+            self.filter_bank_data = np.delete(self.filter_bank_data,0,1)
+            print self.filter_bank_data[400:500,-1]
+            #self.im.autoscale()
+
+            self.im.set_data(self.filter_bank_data)
+            #self.crawler.forward()
+
+            return  self.im,
+        else:
+            pass
+
+
 
     def plot(self):
         '''
         '''
         if self.play == False:
             self.play = True
+            self.pow_spec_plot.set_xlim(results.lower_freq,results.upper_freq)
+            self.pow_spec_plot.set_ylim(results.lower_power,results.upper_power)
             print 'playing'
         else:
             self.play = False
             print "paused" 
+
+
+
+
 if __name__ == '__main__':
     try:
         app = LoFASMGUIapp()
-        anim = animation.FuncAnimation(app.frames[PageThree].fig , app.frames[PageThree].animate, init_func=None,frames=10000, interval=83, blit=False)
+        anim = animation.FuncAnimation(app.frames[PageThree].fig , app.frames[PageThree].animate, init_func=None,frames=10000, interval=83.*1.5, blit=False)
+        #anim2 = animation.FuncAnimation(app.frames[PageThree].fig2 , app.frames[PageThree].animate2, init_func=None,frames=10000, interval=83, blit=False)
         app.mainloop()
     except KeyboardInterrupt:
         exit()
