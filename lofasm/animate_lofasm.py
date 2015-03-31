@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import parse_data as pdat
 import lofasm_dat_lib as lofasm
+import sys
 
 FREQS = np.linspace(0, 200, 2048)
 autos = ['AA','BB','CC','DD']
@@ -100,15 +101,19 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
             cross_subplots[i].set_ylim(ymin, ymax)
             cross_lines.append(cross_subplots[i].plot([],[])[0])
 
-    update_all_baseline_plots(0,fig,crawler,auto_lines+cross_lines+overlay_lines,forward=False)
+    update_all_baseline_plots(0, fig, crawler, auto_lines+cross_lines+overlay_lines, forward=False)
     return [auto_lines+cross_lines+overlay_lines, fig]
 
 def update_all_baseline_plots(i, fig, crawler, lines, norm_cross=False, forward=True):
-
-    #get next integration
-    if forward:
-        crawler.forward()
     
+    if forward:
+        try:
+            crawler.forward()
+        except EOFError as err:
+            print err
+            raw_input("End of File. Press enter to quit.")
+            sys.exit()
+
     burst = crawler
     
     for k in range(len(BASELINES)):

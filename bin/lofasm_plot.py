@@ -73,13 +73,21 @@ if __name__ == '__main__':
     #plot single frame of all baselines
     try:
         lines, fig = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, lofasm_station, crawler)
+        
+        if crawler.getAccNum() != crawler.getAccReference():
+            crawler.forward()
+        
         anim = ani_lofasm.animation.FuncAnimation(fig, 
             ani_lofasm.update_all_baseline_plots, 
             fargs=(fig, crawler, lines), 
             frames=num_frames, interval=opts.frame_dur,)
+
         #print "saving video."
         #print anim.save('test.avi', codec='avi')
         ani_lofasm.plt.show()
     except KeyboardInterrupt:
         exit()
+    except EOFError as err:
+        print err
+        raw_input("press enter to quit.")
 
