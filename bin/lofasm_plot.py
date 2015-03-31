@@ -21,7 +21,7 @@ if __name__ == '__main__':
     p.add_option('--check_headers', dest='check_headers', action='store_true',
         help='Set flag to print out header information from each packet '
         + 'in file.')
-    p.add_option('--start_position', dest='start_position', type='int', 
+    p.add_option('-s', '--start_position', dest='start_position', type='int', 
         default=-1, 
         help='Set file start position. This is also the number \
         of bytes to skip at the beginning of the file.')
@@ -73,9 +73,6 @@ if __name__ == '__main__':
     #plot single frame of all baselines
     try:
         lines, fig = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, lofasm_station, crawler)
-        
-        if crawler.getAccNum() != crawler.getAccReference():
-            crawler.forward()
         
         anim = ani_lofasm.animation.FuncAnimation(fig, 
             ani_lofasm.update_all_baseline_plots, 
