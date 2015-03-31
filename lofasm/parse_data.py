@@ -2,6 +2,7 @@
 import struct, sys, time
 import numpy as np
 import parse_data_H as pdat_H
+from parse_data_H import IntegrationError
 import datetime
 from astropy.time import Time, TimeDelta
 
@@ -588,7 +589,7 @@ class LoFASMFileCrawler(object):
         '''
         initialize LoFASM File Crawler instance
 
-        Usage: crawler = LoFASMFileCrawler(filename, [scan_file, start_loc])
+        Usage: crawler = LoFASMFileCrawler(filename, [scan_file][, start_loc])
 
         Where scan_file is a boolean value. If True then scan and print the all 
         integration headers in file. This is an optional argrument. 
@@ -712,6 +713,10 @@ class LoFASMFileCrawler(object):
         if self._print_int_headers:
             print self._int_hdr
 
+        #validate integration
+        if self._int_hdr['signature'] != HDR_V1_SIGNATURE:
+            raise IntegrationError("bad integration data")
+
     def _get_file_end_loc(self):
         '''Return end pointer value.'''
         freeze_ptr = self._lofasm_file.tell()
@@ -743,7 +748,7 @@ class LoFASMFileCrawler(object):
         if (self._lofasm_file_end - self._ptr_loc) >= N*INTEGRATION_SIZE_B:
             self._update(N)
         else:
-            raise pdat_H.EOF_Error
+            raise EOFError
         
     def backward(self, N=1):
         '''Move back to previous integration.'''
