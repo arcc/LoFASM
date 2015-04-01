@@ -44,7 +44,7 @@ def getSampleTime(Nacc):
 
 def freq2bin(freq):
     '''
-    get bin number corresponding to frequency freq
+    Return bin number corresponding to frequency freq
     '''
     rbw = 200.0/2048
     return int(freq / rbw)
@@ -55,7 +55,7 @@ def bin2freq(bin):
 		
 def parse_filename(filename):
 	'''return the file's UTC time stamp as a list
-	[YYmmdd, HHMMSS]
+	[YYmmdd, HHMMSS, pol]
 	'''
 
 	if filename[-7:]== '.lofasm':
@@ -74,7 +74,7 @@ def spectrum_conv_code(code_str):
 	return LoFASM_SPECTRA_KEY_TO_DESC[code_str]
 
 def fmt_header_entry(entry_str, fmt_len=8):
-    '''ensure that every header entry is 8 characters long. if longer, then
+    '''ensure that every header entry is fmt_len characters long. if longer, then
     truncate. if shorter, then pad with white space. returns formatted string'''
     entry_str = str(entry_str)
     entry_len = len(entry_str)
@@ -453,7 +453,6 @@ class LoFASM_burst:
         self.cross['BC'] = self.__interleave_even_odd(BC_even, BC_odd)
         self.cross['BD'] = self.__interleave_even_odd(BD_even, BD_odd)
         self.cross['CD'] = self.__interleave_even_odd(CD_even, CD_odd)
-        
 
     def __split_autos(self, XXYY_list):
         '''
