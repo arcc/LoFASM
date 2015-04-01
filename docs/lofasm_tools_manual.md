@@ -38,13 +38,11 @@ In order to install the _lofasm_ Python package, the following conditions must b
 *  astropy is installed (version to be confirmed)
 
 ### Cloning into the LoFASM repo
-The LoFASM Tools are hosted at _lofasm.phys.utb.edu_ in a Git repository. The repository can be downloaded by using the Git clone command in the directory you would like the repository to copied in.
+The LoFASM Tools are hosted at [ARCC's Github Account](https://github.com/arcc). The repository can be downloaded by using the Git clone command in the directory you would like the repository to copied in.
 
-	git clone git@lofasm.phys.utb.edu:~/lofasm.git
+	git clone git@github.com:arcc/lofasm.git
 	
 >If you want to save the lofasm repo in the directory _~/repos_ then navigate there with `cd ~/repos` before running the command above.
-
-The Git command will ask you for a password. This password is `goLoFASM!2015`.
 
 If all goes well, a new directory called `lofasm` should appear in your local directory. Use `ls` to check if the repository was created.
 
