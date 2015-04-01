@@ -13,6 +13,7 @@ To install run the setup.py script with root permissions
 * astropy
 * matplotlib
 
+__Refer to the _docs_ directory for more information.__
 
 
 
