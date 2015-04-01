@@ -12,15 +12,12 @@ if __name__ == '__main__':
 #    from lofasm import lofasm_dat_lib as lofasm
     
     p = OptionParser()
-    p.set_usage('lofasm_plot.py <lofasm_data_filename> [options]')
+    p.set_usage('lofasm_plot.py -f lofasm_data_filename [options]')
     p.set_description(__doc__)
     p.add_option('-f', '--filename', dest='input_filename', type='str',
         help="path to LoFASM Data file to be opened.")
     p.add_option('--packet_size_bytes', dest='packet_size_bytes', type='int',
         default=8192, help="Set the size of each packet in bytes.")
-    p.add_option('--check_headers', dest='check_headers', action='store_true',
-        help='Set flag to print out header information from each packet '
-        + 'in file.')
     p.add_option('-s', '--start_position', dest='start_position', type='int', 
         default=-1, 
         help='Set file start position. This is also the number \
