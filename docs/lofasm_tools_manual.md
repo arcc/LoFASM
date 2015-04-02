@@ -40,7 +40,7 @@ In order to install the _lofasm_ Python package, the following conditions must b
 ### Cloning into the LoFASM repo
 The LoFASM Tools are hosted at [ARCC's Github Account](https://github.com/arcc). The repository can be downloaded by using the Git clone command in the directory you would like the repository to copied in.
 
-	git clone git@github.com:arcc/lofasm.git
+	git clone https://github.com/arcc/lofasm.git
 	
 >If you want to save the lofasm repo in the directory _~/repos_ then navigate there with `cd ~/repos` before running the command above.
 

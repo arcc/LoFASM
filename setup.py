@@ -14,7 +14,7 @@ setup(
     'bin/get_adc_snaps.sh', 'bin/simulate_signal_as_AA.py',
     'bin/simulate_zeros_as_AA.py', 'bin/lofasm-chop.py'],
     description='LoFASM Tools',
-    long_description=open('README').read(),
+    long_description=open('README.md').read(),
     install_requires=[
         "matplotlib >= 1.1.1",
         "numpy >= 1.6.2",
