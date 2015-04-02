@@ -2,6 +2,11 @@
 # LoFASM Tools Python Package
 ---
 
+Tools for working on filterbank data from the Low Frequency All Sky Monitor (LoFASM).
+LoFASM is a phased dipole antenna array designed to monitor the skies for radio 
+transients. LoFASM's band of interest is 5-88MHz. LoFASM was built and designed by 
+a group of students and professor at the University of Texas at Brownsville.
+
 ## Installation
 
 ### Mac OSX and Linux
