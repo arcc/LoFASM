@@ -4,7 +4,7 @@ from matplotlib import animation
 import matplotlib.pyplot as plt
 import numpy as np
 import parse_data as pdat
-import lofasm_dat_lib as lofasm
+#import lofasm_dat_lib as lofasm
 import sys
 
 FREQS = np.linspace(0, 200, 2048)
