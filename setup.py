@@ -8,7 +8,9 @@ setup(
     version='0.1',
     author='Louis P. Dartez',
     author_email='louis.dartez@gmail.com',
+
     packages=['lofasm', 'lofasm.simulate'],
+
     scripts=['bin/initialize.py','bin/ten_gbe_recorder.py','bin/lofasm_plot.py',
     'bin/rec_snap.sh', 'bin/init_roach.sh', 'bin/simulate_signal_as_AA.py',
     'bin/simulate_zeros_as_AA.py', 'bin/lofasm-chop.py'],
