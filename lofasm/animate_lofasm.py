@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import parse_data as pdat
 import lofasm_dat_lib as lofasm
+import sys
 
 FREQS = np.linspace(0, 200, 2048)
 autos = ['AA','BB','CC','DD']
@@ -38,50 +39,7 @@ BASELINE_ID = {
         'C' : 'CCC', 
         'D' : 'DDD'}
     }
-
-def plot_all_baselines(burst_obj, station, save_dir=''):
-    '''
-    Plot all baselines at once given a single raw LoFASM integration burst.
-    burst_obj can either be a LoFASM_burst or LoFASMFileCrawler object.
-    '''
-    auto_baselines = ['AA', 'BB', 'CC', 'DD']
-    cross_baselines = ['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
-    fig = plt.figure(figsize=(15,9))
-
-    #add individual plots and retain handles
-    auto_plots = [fig.add_subplot(4,4,i) for i in [1, 6, 11, 16]]
-    cross_plots = [fig.add_subplot(4,4,i) for i in 
-        [2, 3, 4, 7, 8, 12]]
-
-    #create frequency xaxis array
-    freqs = np.linspace(0, 200, 2048)
-    
-    # set titles & plot
-    for i in range(len(cross_baselines)):
-        if i < 4:
-            auto_title = BASELINE_ID[station][auto_baselines[i][0]]+'x'+ BASELINE_ID[station][auto_baselines[i][1]]
-            auto_plots[i].set_title(auto_title)
-            auto_plots[i].plot(freqs, 10*np.log10(burst_obj.autos[auto_baselines[i]]))
-            auto_plots[i].set_xlim(0, 100)
-            auto_plots[i].grid()
-            auto_plots[i].set_xlabel('Frequency (MHz)')
-            auto_plots[i].set_ylabel('10*log(power) (arb.)') 
-
-        cross_title = BASELINE_ID[station][cross_baselines[i][0]]+'x'+BASELINE_ID[station][cross_baselines[i][1]]
-        cross_plots[i].set_title(cross_title)
-        cross_plots[i].plot(freqs, 
-            10*np.log10(np.abs(burst_obj.cross[cross_baselines[i]])))
-        cross_plots[i].set_xlim(0, 100)
-        cross_plots[i].set_xlabel('')
-        cross_plots[i].grid()
-    fig.subplots_adjust(hspace=0.35)
-        
-  
-    if save_dir:
-        print "Saving LoFASM Figure as %s" % save_dir
-        fig.savefig(save_dir)
-    else:
-        fig.show()
+BASELINES = ['AA', 'BB', 'CC', 'DD', 'AB', 'AC', 'AD', 'BC', 'BD', 'CD']
     
 def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
     '''
@@ -89,27 +47,44 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
     '''
     fig = plt.figure(figsize=(10,10))
     
-    auto_baselines = autos #['AA', 'BB', 'CC', 'DD']
-    cross_baselines = cross #['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
+    auto_baselines = autos 
+    cross_baselines = cross 
     
-    auto_subplots = [fig.add_subplot(4,4,i) for i in [1, 6, 11, 16]]
-    cross_subplots = [fig.add_subplot(4,4,i) for i in [2, 3, 4, 7, 8, 12]]
+    auto_subplots = [plt.subplot2grid((4,4),(i,i)) for i in range(4)]
+    cross_subplots = [plt.subplot2grid((4,4),(0,1)), 
+                      plt.subplot2grid((4,4),(0,2)),
+                      plt.subplot2grid((4,4),(0,3)),
+                      plt.subplot2grid((4,4),(1,2)),
+                      plt.subplot2grid((4,4),(1,3)),
+                      plt.subplot2grid((4,4),(2,3))]
+    overlay_plot = plt.subplot2grid((4,4),(2,0), colspan=2, rowspan=2)
+
     auto_lines = []
     cross_lines = []
+    overlay_lines = []
+
     fig.subplots_adjust(hspace=0.5)
-    #freqs = np.linspace(0, 200, 2048)
+    
 	# set titles & plot
     for i in range(len(cross_baselines)):
 
         if i < 4:
-            #print 'auto baseline: .%s.' % auto_baselines[i]
+            #autos
             auto_title = BASELINE_ID[station][auto_baselines[i][0]]
             auto_subplots[i].set_title(auto_title)
             auto_subplots[i].set_xlim(xmin, xmax)
             auto_subplots[i].set_ylim(ymin, ymax)
             auto_subplots[i].grid()
-            #auto_subplots[i].set_ylim(5.85, 6.05)
             auto_lines.append(auto_subplots[i].plot([],[])[0])
+
+            #overlays
+            overlay_title = 'All Channels'
+            if i == 0:
+                overlay_plot.set_title(overlay_title)
+                overlay_plot.set_xlim(xmin, xmax)
+                overlay_plot.set_ylim(ymin, ymax)
+                overlay_plot.grid()
+            overlay_lines.append(overlay_plot.plot([],[])[0])
 
         cross_title = BASELINE_ID[station][cross_baselines[i][0]] + 'x' + BASELINE_ID[station][cross_baselines[i][1]]
         cross_subplots[i].set_title(cross_title)
@@ -126,170 +101,38 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
             cross_subplots[i].set_ylim(ymin, ymax)
             cross_lines.append(cross_subplots[i].plot([],[])[0])
 
-    update_all_baseline_plots(0,fig,crawler,auto_lines+cross_lines,forward=False)
-    return [auto_lines+cross_lines, fig]
-
-def setup_beam_plots(xmin, xmax, ymin, ymax):
-    fig = plt.figure(figsize=(10,10))
-    beam_subplots = [fig.add_subplot(1,2,i) for i in range(len(beams))]
-    beam_lines=[]
-
-    for i in range(len(beams)):
-		beam_subplots[i].set_title(beams[i])
-		beam_subplots[i].set_xlim(xmin, xmax)
-		beam_subplots[i].set_ylim(ymin, ymax)
-		#cross_subplots[i].set_ylim(5.85, 6.05)
-		beam_subplots[i].grid()
-		beam_lines.append(beam_subplots[i].plot([],[])[0])
-
-    return tuple(beam_lines)
-
-def setup_single_plot(baseline, xmin=0, xmax=200, ymin=0, ymax=100, norm_cross=False):
-    '''
-    setup single cross-power plot
-    '''
-    fig = plt.figure(figsize=(10,10))
-
-    subplot = fig.add_subplot(1,1,1)
-    subplot.set_title(baseline)
-    subplot.set_xlim([xmin, xmax])
-    subplot.set_ylabel('Arb. Power (dBm)')
-    subplot.set_xlabel('MHz')
-    subplot.set_ylim(ymin, ymax)
-    subplot.grid()
-
-    if norm_cross:
-        plot_line = {}
-        plot_line['real'], = subplot.plot([],[])
-        plot_line['imag'], = subplot.plot([],[])
-    else:
-        plot_line, = subplot.plot([],[])
-
-    return plot_line
-
-def setup_color_plot(baseline, time_width_ms, xmin=0, xmax=200,
- ymin=0, ymax=100, samp_period_ms=84.8):
-    '''
-    setup time-frequency plot for a single baseline
-    '''
-    fig = plt.figure(figsize=(10,10))
-
-    num_spectra = np.ceil(time_width_ms/float(samp_period_ms))
-    empty_image = np.ones((2048,num_spectra))
-    subplot = fig.add_subplot(1,1,1)
-    subplot.set_title(baseline+'colormap')
-    subplot.grid()
-    timeFreq_plot = subplot.imshow(empty_image)
-    return timeFreq_plot
+    update_all_baseline_plots(0, fig, crawler, auto_lines+cross_lines+overlay_lines, forward=False)
+    return [auto_lines+cross_lines+overlay_lines, fig]
 
 def update_all_baseline_plots(i, fig, crawler, lines, norm_cross=False, forward=True):
-    print i
-    baselines = ['AA', 'BB', 'CC', 'DD', 'AB', 'AC', 'AD', 'BC', 'BD', 'CD']
-
-    #get next integration
+    
     if forward:
-        crawler.forward()
-    #burst = burst_gen.next()
-    #print burst.hdr
-    #print crawler.getIntegrationHeader()
-    burst = crawler
-    # set titles & plot
-    #plt.title("Frame %i " % i)
-    for k in range(len(baselines)):
-        if k < 4:
+        try:
+            crawler.forward()
+        except EOFError as err:
+            print err
+            raw_input("End of File. Press enter to quit.")
+            sys.exit()
 
-            lines[k].set_data(FREQS, 10*np.log10(burst.autos[baselines[k]]))
-			#lines[i].set_xlim(0, 200)
+    burst = crawler
+    
+    for k in range(len(BASELINES)):
+        if k < 4:
+            #autos
+            lines[k].set_data(FREQS, 10*np.log10(burst.autos[BASELINES[k]]))
+            #overlays
+            lines[-(k+1)].set_data(FREQS,10*np.log10(burst.autos[BASELINES[k]]))
+			
         elif norm_cross:
-			#lines[i].set_title(cross_baselines[i])
-			norm_val = np.array(burst.cross[baselines[k]])/np.sqrt(np.array(burst.autos[baselines[k][0]*2])*np.array(burst.autos[baselines[k][1]*2]))
+			
+			norm_val = np.array(burst.cross[BASELINES[k]])/np.sqrt(np.array(burst.autos[BASELINES[k][0]*2])*np.array(burst.autos[BASELINES[k][1]*2]))
 			lines[k]['real'].set_data(FREQS, np.real(norm_val))
 			lines[k]['imag'].set_data(FREQS, np.imag(norm_val))
         else:
-			lines[k].set_data(FREQS, 10*np.log10(np.abs(np.real(burst.cross[baselines[k]]))))
-			#print np.imag(burst.cross[baselines[k]])
-			#stop
-			#lines[i].set_xlim(0, 200)
+			lines[k].set_data(FREQS, 10*np.log10(np.abs(np.real(burst.cross[BASELINES[k]]))))
+			
 	
-	#raw_input('press enter')
-    return lines
-
-def update_beam_plots(i, fig, burst_gen, lines):
-    '''
-	plot both beams at once.
-	'''
-    print i
-	#auto_baselines = ['AA', 'BB', 'CC', 'DD']
-	#cross_baselines = ['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
-    baselines = ['NS','EW']
-	#fig = plt.figure()
-	#auto_plots = [fig.add_subplot(4,4,i) for i in [1, 6, 11, 16]]
-	#cross_plots = [fig.add_subplot(4,4,i) for i in 
-	#	[2, 3, 4, 7, 8, 12]]
-
-    burst_raw = burst_gen.next()
-    pdat.print_hdr(pdat.parse_hdr(burst_raw))
-    burst = lofasm.LoFASM_burst(burst_raw)
 	
-	#freqs = np.linspace(0, 200, 2048)
-	# set titles & plot
-    plt.title("Frame %i " % i)
-    for k in range(len(baselines)):
-        if baselines[k] == 'NS':
-            beam = lofasm.gen_LoFASM_beam(burst.autos['BB'], burst.autos['DD'], burst.cross['BD'])
-        elif baselines[k] == 'EW':
-            beam = lofasm.gen_LoFASM_beam(burst.autos['AA'], burst.autos['CC'], burst.cross['AC'])
-        lines[k].set_data(FREQS,10*np.log10(beam))
-
-		#if k < 4:
-			#lines[i].title(i)
-		#	lines[k].set_data(FREQS, 
-		#		10*np.log10(burst.autos[baselines[k]]))
-			#lines[i].set_xlim(0, 200)
-		#else:
-			#lines[i].set_title(cross_baselines[i])
-		#	lines[k].set_data(FREQS, 
-				#take absolute value for cross products
-		#		10*np.log10(np.abs(burst.cross[baselines[k]])))
-			#lines[i].set_xlim(0, 200)
-
-	#raw_input('press enter')
     return lines
-
-def update_baseline_plot(i, fig, burst_gen, plot_line, baseline, norm_cross=False):
-    print i
-    burst_raw = burst_gen.next()
-    pdat.print_hdr(pdat.parse_hdr(burst_raw))
-    burst = lofasm.LoFASM_burst(burst_raw)
-    plt.title(baseline+': Frame %i' % i)
-    if baseline in autos:
-        print 'updating auto %s' % baseline
-        plot_line.set_data(FREQS,10*np.log10(burst.autos[baseline]))
-    elif baseline in cross:
-        print 'updating cross %s' % baseline
-        if norm_cross:
-            norm_val = np.array(burst.cross[baseline])/np.sqrt(np.array(burst.autos[baseline[0]*2])*np.array(burst.autos[baseline[1]*2]))
-            plot_line['real'].set_data(FREQS, np.real(norm_val))
-            plot_line['imag'].set_data(FREQS, np.imag(norm_val))
-        else:
-            plot_line.set_data(FREQS, 10*np.log10(np.abs(burst.cross[baseline])))
-    elif baseline in beams:
-        print 'updating BEAM %s' % baseline
-		#create LoFASM Beam
-        print "Generating LoFASM Beam: %s" % baseline
-
-        if baseline == 'NS':
-            beam = lofasm.gen_LoFASM_beam(burst.autos['BB'], 
-				burst.autos['DD'], burst.cross['BD'])
-        elif baseline == 'EW':
-            beam = lofasm.gen_LoFASM_beam(burst.autos['AA'], 
-				burst.autos['CC'], burst.cross['AC'])
-        else:
-            print 'unrecognized beam'
-            print 'exiting'
-            exit(0)
-        plot_line.set_data(FREQS,10*np.log10(beam))
-
-    return plot_line
 
 

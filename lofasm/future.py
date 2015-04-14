@@ -28,9 +28,6 @@ class ComparableMixin(object):
     def __ne__(self, other):
         return self._compare(other, lambda s,o: s != o)
     
-
-
-
 class LoFASM_file(ComparableMixin):
     def __init__(self, pathtofile):
         if os.path.isdir(pathtofile):
@@ -72,8 +69,10 @@ class LoFASM_file(ComparableMixin):
     def _cmpkey(self):
         #key for rich comparisons
         return self.date
+    
     def _openFile(self):
         self._file_obj = open(self.parent + '/' + self.name, 'rb')
+    
     def getFileHdr(self):
         if self._file_obj:
             return pdat.parse_file_header(self._file_obj)
@@ -115,10 +114,6 @@ class LoFASM_file(ComparableMixin):
         bgen = self._getBurstGenerator()
         return bgen.next()
 
-    
-        
-    
-
 def get_total_file_size(fname):
     if not os.path.isfile(fname):
         print "bad file name"
@@ -126,8 +121,6 @@ def get_total_file_size(fname):
     else:
         size_cmd = "ls -l %s | awk '{print $5}'" % fname
         return int(syscmd(size_cmd).rstrip('\n'))
-
-
 
 def syscmd(cmd):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
@@ -137,7 +130,6 @@ def syscmd(cmd):
         print cmd
     return output
          
-
 def file_datetime(filename):
     """return datetime.datetime object from filename"""
 

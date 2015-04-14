@@ -15,6 +15,7 @@ import time
 import Tkinter as tk
 import ttk
 import matplotlib.pyplot as plt
+import thread
 
 #############################################
 #### this uses argparse to create a help menu 
@@ -85,7 +86,7 @@ class LoFASMGUIapp(tk.Tk):
 
         self.frames = {}
 
-        for F in (StartPage, PageOne, PageTwo, PageThree):
+        for F in (StartPage, PageOne, GraphPage):
 
             frame = F(container, self)
 
@@ -93,7 +94,7 @@ class LoFASMGUIapp(tk.Tk):
 
             frame.grid(row=0, column=0, sticky="nsew")
 
-        self.show_frame(PageThree)
+        self.show_frame(GraphPage)
 
 
     def show_frame(self, cont):
@@ -113,12 +114,8 @@ class StartPage(tk.Frame):
                             command=lambda: controller.show_frame(PageOne))
         self.button.pack()
 
-        self.button2 = ttk.Button(self, text="Visit Page 2",
-                            command=lambda: controller.show_frame(PageTwo))
-        self.button2.pack()
-
         self.button3 = ttk.Button(self, text="Graph Page",
-                            command=lambda: controller.show_frame(PageThree))
+                            command=lambda: controller.show_frame(GraphPage))
         self.button3.pack()
 class PageOne(tk.Frame):
 
@@ -131,33 +128,36 @@ class PageOne(tk.Frame):
                             command=lambda: controller.show_frame(StartPage))
         button1.pack()
 
-        button2 = ttk.Button(self, text="Page Two",
-                            command=lambda: controller.show_frame(PageTwo))
-        button2.pack()
-class PageTwo(tk.Frame):
 
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Page Two!!!")
-        label.grid(row=0 , column=0)
 
-        button1 = ttk.Button(self, text="Back to Home",
-                            command=lambda: controller.show_frame(StartPage))
-        button1.grid(row=1 , column=0)
-
-        button2 = ttk.Button(self, text="Page One",
-                            command=lambda: controller.show_frame(PageOne))
-        button2.grid(row=1 , column=1)
-class PageThree(tk.Frame):
+class GraphPage(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.freqs = np.linspace(0, 200, 2048)
-        self.filter_bank_data = np.zeros((2048,126))
-        self.crawler = pdat.LoFASMFileCrawler(results.file_name)
-        data = 10*np.log10(self.crawler.autos[results.current_correlation])
-        self.filter_bank_data = np.hstack((self.filter_bank_data, data.reshape((2048,1))))
+        self.filter_bank_data = np.zeros((2048,65))
+        self.t = 0
+
+        self.button_home = tk.Button(self,text='Home',command=lambda: controller.show_frame(StartPage)).grid(row=9 , column=0)
+
+        self.top = tk.Toplevel()
+        self.top.title("About this application...")
+
+        msg = tk.Message(self.top, text='about_message')
+        msg.pack()
+
+        button = tk.Button(self.top, text="Dismiss", command=self.top.destroy)
+        button.pack()
+
+        self.crawler_mid = pdat.LoFASMFileCrawler(results.file_name)
+        self.crawler_front = pdat.LoFASMFileCrawler(results.file_name)
+        for i in range(63):
+            data = 10*np.log10(self.crawler_front.autos[results.current_correlation])
+            self.filter_bank_data = np.hstack((self.filter_bank_data, data.reshape((2048,1))))
+            self.crawler_front.forward()
+        print np.shape(self.filter_bank_data)
         
+
         self.create_figure()
         self.populate_page()
         self.play=False
@@ -187,20 +187,22 @@ class PageThree(tk.Frame):
         self.current_correlation_label.grid(row=1,column=2)
 
         #Gui Row 2
-        self.l3=tk.Label(master=self, text="Lower Frequency:")
-        self.l3.grid(row=2,column=0,sticky='E')
-        self.lfEntry = tk.Entry(master=self)
-        self.lfEntry.grid(row=2, column=1)
-        self.l7=tk.Label(master=self, text=str(results.lower_freq)+' MHz')
-        self.l7.grid(row=2, column=2,sticky='E')
+        self.l4=tk.Label(master=self, text="Upper Frequency:")
+        self.l4.grid(row=2,column=0,sticky='E')
+        self.ufEntry = tk.Entry(master=self)
+        self.ufEntry.grid(row=2, column=1)
+        self.l8=tk.Label(master=self, text=str(results.upper_freq)+' MHz')
+        self.l8.grid(row=2, column=2,sticky='E')
+
 
         #Gui Row 3
-        self.l4=tk.Label(master=self, text="Upper Frequency:")
-        self.l4.grid(row=3,column=0,sticky='E')
-        self.ufEntry = tk.Entry(master=self)
-        self.ufEntry.grid(row=3, column=1)
-        self.l8=tk.Label(master=self, text=str(results.upper_freq)+' MHz')
-        self.l8.grid(row=3, column=2,sticky='E')
+        self.l3=tk.Label(master=self, text="Lower Frequency:")
+        self.l3.grid(row=3,column=0,sticky='E')
+        self.lfEntry = tk.Entry(master=self)
+        self.lfEntry.grid(row=3, column=1)
+        self.l7=tk.Label(master=self, text=str(results.lower_freq)+' MHz')
+        self.l7.grid(row=3, column=2,sticky='E')
+
 
 
 
@@ -209,8 +211,8 @@ class PageThree(tk.Frame):
         self.l5.grid(row=4,column=0,sticky='E')
         self.upEntry = tk.Entry(master=self)
         self.upEntry.grid(row=4, column=1)
-        self.l10=tk.Label(master=self, text=str(results.upper_power)+' dBm')
-        self.l10.grid(row=5, column=2,sticky='E')
+        self.l9=tk.Label(master=self, text=str(results.upper_power)+' dBm')
+        self.l9.grid(row=4, column=2,sticky='E')
 
 
         #Gui Row 5
@@ -218,32 +220,60 @@ class PageThree(tk.Frame):
         self.l6.grid(row=5,column=0,sticky='E')
         self.lpEntry = tk.Entry(master=self)
         self.lpEntry.grid(row=5, column=1)
-        self.l9=tk.Label(master=self, text=str(results.lower_power)+' dBm')
-        self.l9.grid(row=4, column=2,sticky='E')
+        self.l10=tk.Label(master=self, text=str(results.lower_power)+' dBm')
+        self.l10.grid(row=5, column=2,sticky='E')
 
-        #Gui Row 6
-        self.button_help = tk.Button(self,text='help').grid(row=6,column=0,sticky=tk.W+tk.E+tk.N+tk.S)#make the help button taller
+        #GUI row 6
+        self.label_acc_stride=tk.Label(master=self, text="Acc stride:")
+        self.label_acc_stride.grid(row=6,column=0,sticky='E')
+        self.label_acc_stride_Entry = tk.Entry(master=self)
+        self.label_acc_stride_Entry.grid(row=6, column=1)
+        self.l12=tk.Label(master=self, text=str(results.accumulation_stride)+' integrations')
+        self.l12.grid(row=6, column=2,sticky='E')
+
+        #gui Row 7
+        self.label_power=tk.Label(master=self, text="Start Time:")
+        self.label_power.grid(row=7,column=0,sticky='E')
+        self.label_power_Entry = tk.Entry(master=self)
+        self.label_power_Entry.grid(row=7, column=1)
+        self.l11=tk.Label(master=self, text='T+ 00:00:00.00')
+        self.l11.grid(row=7, column=2,sticky='E')
+
+
+
+        #Gui Row 8
+        self.button_help = tk.Button(self,text='help').grid(row=8,column=0)#,sticky=tk.W+tk.E+tk.N+tk.S)#make the help button taller
         plot_runningmedian = tk.StringVar()
         plot_runningmedian.set("L") # initialize
         radiobutton_median = tk.Radiobutton(self, text='plot running median',variable=plot_runningmedian)
-        radiobutton_median.grid(row=6,column=1)
-        self.button_get  = tk.Button(self,text='get',command=lambda: self.get()).grid(row=6,column=2)
+        radiobutton_median.grid(row=8,column=1)
+        self.button_get  = tk.Button(self,text='get',command=lambda: self.get()).grid(row=8,column=2)
 
-        #Gui Row 7
+        #Gui Row 9
         
-        self.button_plot = tk.Button(self,text='plot',command=lambda: self.plot()).grid(row=7, column=1, columnspan=2, rowspan=1,sticky=tk.W+tk.E+tk.N+tk.S)
+        self.button_plot = tk.Button(self,text='plot',command=lambda: self.plot()).grid(row=9, column=1, columnspan=2, rowspan=1)#,sticky=tk.W+tk.E+tk.N+tk.S)
         #self.button_quit = tk.Button(self,text='quit').grid(row=7,column=0)
 
-        self.button_home = tk.Button(self,text='Home',command=lambda: controller.show_frame(StartPage)).grid(row=7 , column=0,sticky=tk.W+tk.E+tk.N+tk.S)
+        #self.button_home = tk.Button(self,text='Home',command=lambda: controller.show_frame(StartPage)).grid(row=7 , column=0)#,sticky=tk.W+tk.E+tk.N+tk.S)
         #Gui Row 8
-        tk.Button(self,text='newfunc').grid(row=8,column=0,sticky=tk.W+tk.E+tk.N+tk.S)
-        self.button_plot2 = tk.Button(self,text='colorplot').grid(row=8, column=1, columnspan=2, rowspan=1,sticky=tk.W+tk.E+tk.N+tk.S)
+        tk.Button(self,text='newfunc').grid(row=10,column=0,sticky=tk.W+tk.E+tk.N+tk.S)
+        self.button_plot2 = tk.Button(self,text='colorplot').grid(row=10, column=1, columnspan=2, rowspan=1)#,sticky=tk.W+tk.E+tk.N+tk.S)
 
+
+        #pause play step button
+
+        tk.Button(self,text='step back').grid(row=0,column=3,sticky=tk.W+tk.E)
+        tk.Button(self,text='play/pause',command=lambda: self.plot()).grid(row=0,column=4,sticky=tk.W+tk.E)
+        tk.Button(self,text='step forward',command=lambda: self.step_forward()).grid(row=0,column=5,sticky=tk.W+tk.E)
+        #tk.Scale(self, from_=0, to=200, orient=tk.HORIZONTAL).grid(row=1,column=3,columnspan=3,sticky=tk.W+tk.E)
+        ttk.Scrollbar(self,orient=tk.HORIZONTAL).grid(row=1,column=3,columnspan=3,sticky=tk.W+tk.E)
 
         #Create canvas's for the matplotlib figures
         canvas = FigureCanvasTkAgg(self.fig, self)
         canvas.show()
-        canvas.get_tk_widget().grid(row=0 , column=3,rowspan=11)#.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        canvas.get_tk_widget().grid(row=2 , column=3,rowspan=11,columnspan=3)#.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+
+
         '''
         canvas2 = FigureCanvasTkAgg(self.fig2 , self)
         canvas2.show()
@@ -260,12 +290,17 @@ class PageThree(tk.Frame):
         '''
         create matplotlib figures
         '''
+
+
+
+
         self.fig = Figure(figsize=(8,6), dpi=75)
         self.pow_spec_plot = self.fig.add_subplot(211)
         self.pow_spec_plot.set_xlim(0,100)
         self.pow_spec_plot.set_ylim(0,100)
         self.pow_spec_plot.set_ylabel('Power (dBm)')
         self.pow_spec_plot.set_xlabel('Frequency (MHz)')
+        self.pow_spec_plot.set_title('T+00:00:00.00blah blah blah')
         self.line, = self.pow_spec_plot.plot([],[],linewidth=0.3)
         self.line.set_data(self.freqs,np.zeros(len(self.freqs)))
 
@@ -273,15 +308,49 @@ class PageThree(tk.Frame):
 
         #self.fig2 = Figure(figsize=(12,4), dpi=75)
         self.filter_bank_plot = self.fig.add_subplot(212)
-        self.im = self.filter_bank_plot.imshow(self.filter_bank_data, aspect='auto')#, cmap='spectral')
+        self.im = self.filter_bank_plot.imshow(self.filter_bank_data, aspect='auto',interpolation='none')#, cmap='spectral')
         #self.im.set_data(self.filter_bank_data)
-        self.filter_bank_plot.set_ylim(0,1000)
+        self.filter_bank_plot.set_ylim(0,1024)
+        self.filter_bank_plot.axvline(x=64, color='r')
         self.filter_bank_plot.set_xlabel('Time (bins)')
-        self.filter_bank_plot.set_ylabel('Frequency (MHz)')
+        self.filter_bank_plot.set_ylabel('Frequency (bins)')
         self.fig.colorbar(self.im, orientation='vertical')
         #self.filter_bank_plot.show()
 
-        
+    def step_forward(self):
+        corr=list(results.current_correlation)
+        if corr[0]==corr[1]:
+            power_mid = 10*np.log10(self.crawler_mid.autos[results.current_correlation])
+            power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
+        else:
+            power_mid = 10*np.log10(self.crawler_mid.cross[results.current_correlation])
+            power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
+
+        self.line.set_ydata(power_front)
+        self.crawler_mid.forward()
+        self.crawler_front.forward
+        self.filter_bank_data = np.hstack((self.filter_bank_data,(power_mid).reshape((2048,1))))
+        self.filter_bank_data = np.delete(self.filter_bank_data,0,1)
+        self.im.set_data(self.filter_bank_data)
+        self.pow_spec_plot.set_title('T+'+str(round(self.t/10.24,2)))
+        self.t+=1
+
+    def step_backward(self):
+        corr=list(results.current_correlation)
+        if corr[0]==corr[1]:
+            power_mid = 10*np.log10(self.crawler_mid.autos[results.current_correlation])
+            power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
+        else:
+            power_mid = 10*np.log10(self.crawler_mid.cross[results.current_correlation])
+            power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
+
+        self.crawler.backward()
+        self.filter_bank_data = np.hstack((self.filter_bank_data,(power_mid).reshape((2048,1))))
+        self.filter_bank_data = np.delete(self.filter_bank_data,0,1)
+        self.im.set_data(self.filter_bank_data)
+        self.pow_spec_plot.set_title('T+'+str(round(self.t/10.24,2)))
+        self.t-=1
+
 
 
     def get(self):
@@ -292,15 +361,18 @@ class PageThree(tk.Frame):
             results.current_correlation = self.correlation_variable.get()
             self.current_correlation_label.configure(text=results.current_correlation)
 
-        if self.lfEntry.get() or self.ufEntry.get():                   # If the Entry field is not empty 
+        if self.lfEntry.get():                   # If the Entry field is not empty 
             results.lower_freq = self.lfEntry.get() # Get the new value
             self.l7.configure(text=str(results.lower_freq)+' MHz') # update label
             self.pow_spec_plot.set_xlim(int(results.lower_freq),int(results.upper_freq))
+            #print "```````````````````````````"+str(int(results.lower_freq)*10.24)
+            self.filter_bank_plot.set_ylim(int(int(results.lower_freq)*10.24),int(int(results.upper_freq)*10.24))
 
         if self.ufEntry.get():                   # If the Entry field is not empty 
             results.upper_freq = self.ufEntry.get() # Get the new value
             self.l8.configure(text=str(results.upper_freq)+' MHz') # update label
             self.pow_spec_plot.set_xlim(int(results.lower_freq),int(results.upper_freq))
+            self.filter_bank_plot.set_ylim(int(int(results.lower_freq)*10.24),int(int(results.upper_freq)*10.24))
 
         if self.upEntry.get():                   # If the Entry field is not empty 
             results.upper_power = self.upEntry.get() # Get the new value
@@ -315,26 +387,34 @@ class PageThree(tk.Frame):
     def _open(self): 
         results.file_name = askopenfilename(filetypes=[("allfiles","*"),("binary files","*.dat"),("FITS files","*.fits"),("LoFASM Data Files","*.lofasm")]) #open data file, currently .lofasm
         tk.Label(master=self,text=results.file_name.split('/')[-1][:20]+'...').grid(row=0, column=1)
+
         
     def animate(self,i):
-
+        #a = time.time()
         corr=list(results.current_correlation)
         if corr[0]==corr[1]:
-            power = 10*np.log10(self.crawler.autos[results.current_correlation])
+            power_mid = 10*np.log10(self.crawler_mid.autos[results.current_correlation])
+            power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
         else:
-            power = 10*np.log10(self.crawler.cross[results.current_correlation])
-
-
+            power_mid = 10*np.log10(self.crawler_mid.cross[results.current_correlation])
+            power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
+        #print str(time.time()-a)+'second to read data'
         if self.play == True:
-            self.line.set_ydata(power)
-            self.crawler.forward()
-            #self.im.set_data(power.reshape((2048,1)))
-            #print self.im
-            #self.im = self.im[1:]
+            
+            self.line.set_ydata(power_mid)
+            
+            print "front"
+            a = time.time()
+            self.crawler_front.forward()
 
-            self.filter_bank_data = np.hstack((self.filter_bank_data,(power).reshape((2048,1))))
+            self.crawler_mid.forward()
+            print time.time()-a
+            print '````'
+            self.filter_bank_data = np.hstack((self.filter_bank_data,(power_front).reshape((2048,1))))
             self.filter_bank_data = np.delete(self.filter_bank_data,0,1)
             self.im.set_data(self.filter_bank_data)
+            self.pow_spec_plot.set_title('T+'+str(round(self.t/10.24,2)))
+            self.t+=1
 
             #return self.line, 
             #return self.im,
@@ -342,13 +422,13 @@ class PageThree(tk.Frame):
             pass
 
     def animate2(self,i):
-
+        a = time.time()
         corr=list(results.current_correlation)
         if corr[0]==corr[1]:
             power = 10*np.log10(self.crawler.autos[results.current_correlation])
         else:
             power = 10*np.log10(self.crawler.cross[results.current_correlation])
-
+        print 'it took '+str(time.time()-a)+"to do that"
 
         if self.play == True:
             self.crawler.forward()
@@ -387,7 +467,7 @@ class PageThree(tk.Frame):
 if __name__ == '__main__':
     try:
         app = LoFASMGUIapp()
-        anim = animation.FuncAnimation(app.frames[PageThree].fig , app.frames[PageThree].animate, init_func=None,frames=10000, interval=83.*1.5, blit=False)
+        anim = animation.FuncAnimation(app.frames[GraphPage].fig , app.frames[GraphPage].animate, init_func=None,frames=10000, interval=83.*1.5, blit=False)
         #anim2 = animation.FuncAnimation(app.frames[PageThree].fig2 , app.frames[PageThree].animate2, init_func=None,frames=10000, interval=83, blit=False)
         app.mainloop()
     except KeyboardInterrupt:

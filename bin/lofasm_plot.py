@@ -1,89 +1,40 @@
 #!/usr/bin/env python2.7
 # LoFASM Data Plotter
-import matplotlib.pyplot as plt
-import numpy as np
+#import matplotlib.pyplot as plt
+#import numpy as np
 
-
-def plot_all_baselines(burst_obj):
-    '''
-    plot all baselines at once.
-    '''
-    auto_baselines = ['AA', 'BB', 'CC', 'DD']
-    cross_baselines = ['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
-    fig = plt.figure()
-    auto_plots = [fig.add_subplot(4,4,i) for i in [1, 6, 11, 16]]
-    cross_plots = [fig.add_subplot(4,4,i) for i in 
-        [2, 3, 4, 7, 8, 12]]
-
-    freqs = np.linspace(0, 200, 2048)
-    # set titles & plot
-    for i in range(len(cross_baselines)):
-        if i < 4:
-            auto_plots[i].set_title(auto_baselines[i])
-            auto_plots[i].plot(freqs, 
-                10*np.log10(burst_obj.autos[auto_baselines[i]]))
-            auto_plots[i].set_xlim(0, 200)
-        
-        cross_plots[i].set_title(cross_baselines[i])
-        cross_plots[i].plot(freqs, 
-            10*np.log10(np.abs(burst_obj.cross[cross_baselines[i]])))
-        cross_plots[i].set_xlim(0, 200)
-    #fig.set_size_inches(8,8)
-    #fig.set_dpi(200)
-    fig.show()
-
-##########################################################################
 
 if __name__ == '__main__':
     import sys
     from lofasm import animate_lofasm as ani_lofasm
     from lofasm import parse_data as pdat
     from optparse import OptionParser
-    from lofasm import lofasm_dat_lib as lofasm
+#    from lofasm import lofasm_dat_lib as lofasm
     
     p = OptionParser()
-    p.set_usage('lofasm_plot.py <lofasm_data_filename> [options]')
+    p.set_usage('lofasm_plot.py -f lofasm_data_filename [options]')
     p.set_description(__doc__)
     p.add_option('-f', '--filename', dest='input_filename', type='str',
         help="path to LoFASM Data file to be opened.")
     p.add_option('--packet_size_bytes', dest='packet_size_bytes', type='int',
         default=8192, help="Set the size of each packet in bytes.")
-    p.add_option('--check_headers', dest='check_headers', action='store_true',
-        help='Set flag to print out header information from each packet '
-        + 'in file.')
-    p.add_option('--start_position', dest='start_position', type='int', 
+    p.add_option('-s', '--start_position', dest='start_position', type='int', 
         default=-1, 
         help='Set file start position. This is also the number \
         of bytes to skip at the beginning of the file.')
-    p.add_option('--plot_single_frame', dest='plot_single_frame', 
-        action='store_true', help='set if you only want to plot a single '
-        + 'frame.')
-    p.add_option('--animate_all', dest='animate_all', 
-        action='store_true', help='set to animate all baselines starting from ' 
-        + 'starting position.')
-    p.add_option('--animate_beams', dest='animate_beams', action='store_true', 
-        help='animate LoFASM Beams')
-    p.add_option('--TimeFrequencyPlot', dest='TimeFrequencyPlot', type='str',
-        help='select baseline (NS or EW) to plot TimexFrequency (colormap)')
     p.add_option('--getfilesize',dest='getFileSize',action='store_true')
-    p.add_option('--xmin', dest='xmin', type='float', default=0,
+    p.add_option('--xmin', dest='xmin', type='float', default=18,
         help='set the xmin value to plot')
-    p.add_option('--xmax', dest='xmax', type='float', default=100,
+    p.add_option('--xmax', dest='xmax', type='float', default=80,
         help='set the xmax value to plot')
     p.add_option('--ymin', dest='ymin', type='float', default=0,
         help='set the ymin value to plot')
     p.add_option('--ymax', dest='ymax', type='float', default=100,
         help='set the ymax value to plot')
-    p.add_option('-l','--loop', dest='loop_file', action='store_true',
-        help='set to loop through data file.')
-    p.add_option('-d','--frame_duration', dest='frame_dur', type='int',
-        default=1000, 
-        help='duration of each animated frame in ms. default is 1000.')
-    p.add_option('-w','--TF_PlotWidth', dest='TF_PlotWidth', type='float', 
-        default=84.8, 
-        help='specify width of TimexFrequency plot in ms. Default is 84.8ms.')
-    p.add_option('--norm_cross', dest='norm_cross', action='store_true',
-        help='Set flag to plot normalized cross-correlation function instead of cross-power.')
+    p.add_option('-d','--frame_duration', dest='frame_dur', type='float',
+        default=100, 
+        help='duration of each animated frame in ms. default is 100.')
+
     opts, args = p.parse_args(sys.argv[1:])
     
     if not opts.input_filename:
@@ -117,22 +68,20 @@ if __name__ == '__main__':
         exit(0)
 
     #plot single frame of all baselines
-    if opts.plot_single_frame:
-        lines = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, lofasm_station, crawler, opts.norm_cross)
-        plot_all_baselines(crawler)
-        raw_input()
-    elif opts.animate_all: #Animate all baselines in time
-        lines, fig = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, lofasm_station, crawler, opts.norm_cross)
+    try:
+        lines, fig = ani_lofasm.setup_all_plots(opts.xmin, opts.xmax, opts.ymin, opts.ymax, lofasm_station, crawler)
+        
         anim = ani_lofasm.animation.FuncAnimation(fig, 
-            ani_lofasm.update_all_baseline_plots, fargs=(fig, 
-                crawler, lines, opts.norm_cross), frames=num_frames, interval=opts.frame_dur, 
-                )
+            ani_lofasm.update_all_baseline_plots, 
+            fargs=(fig, crawler, lines), 
+            frames=num_frames, interval=opts.frame_dur,)
+
         #print "saving video."
         #print anim.save('test.avi', codec='avi')
         ani_lofasm.plt.show()
-    elif opts.TimeFrequencyPlot:
-        plot_im = ani_lofasm.setup_color_plot(opts.TimeFrequencyPlot, opts.TF_PlotWidth, opts.xmin, opts.xmax, opts.ymin, opts.ymax)
-    else:
-        print "No instructions given. Exiting."
-        exit(0)
+    except KeyboardInterrupt:
+        exit()
+    except EOFError as err:
+        print err
+        raw_input("press enter to quit.")
 
