@@ -13,7 +13,7 @@ setup(
 
     scripts=['bin/initialize.py','bin/ten_gbe_recorder.py','bin/lofasm_plot.py',
     'bin/rec_snap.sh', 'bin/init_roach.sh', 'bin/simulate_signal_as_AA.py',
-    'bin/simulate_zeros_as_AA.py', 'bin/lofasm-chop.py'],
+    'bin/simulate_zeros_as_AA.py', 'bin/lofasm-chop.py','bin/LoFASM_GUI.py'],
     description='LoFASM Tools',
     long_description=open('README.md').read(),
     install_requires=[
