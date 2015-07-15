@@ -588,7 +588,7 @@ class LoFASMFileCrawler(object):
         '''
         initialize LoFASM File Crawler instance
 
-        Usage: crawler = LoFASMFileCrawler(filename, [scan_file][, start_loc])
+        Usage: crawler = LoFASMFileCrawler(filename[, scan_file][, start_loc])
 
         Where scan_file is a boolean value. If True then scan and print the all 
         integration headers in file. This is an optional argrument. 
@@ -644,7 +644,6 @@ class LoFASMFileCrawler(object):
 
         #get start location of data
         if scan_file:
-            print "Scanning file..."
             self._data_start, errno = check_headers(self._lofasm_file)
         elif start_loc:
             self._data_start, errno = start_loc, 0
@@ -672,6 +671,12 @@ class LoFASMFileCrawler(object):
         #update time
         self._update_time()
         
+    def get_data_start(self):
+        '''
+        return the start location of the LoFASM data
+        '''
+        return self._data_start
+
     def _update(self, N=1):
         '''
         run update sequences
@@ -682,6 +687,14 @@ class LoFASMFileCrawler(object):
         self._update_data(N)
         self._update_time()
 
+    def getNumberOfIntegrationsInFile(self):
+        '''
+        return the total number of integrations in current 
+        LoFASM file.
+        '''
+
+        return int((self._lofasm_file_end - self._data_start) / self._int_size)
+        
     def _update_time(self):
         '''
         update time attribute according to current integration
