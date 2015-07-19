@@ -643,12 +643,23 @@ class LoFASMFileCrawler(object):
         self._int_size = INTEGRATION_SIZE_B
 
         #get start location of data
+        #if scan_file:
+        #    self._data_start, errno = check_headers(self._lofasm_file)
+        #elif start_loc:
+        #    self._data_start, errno = start_loc, 0
+        #else:
+        #    self._data_start, errno = START_DATA, 0
+
         if scan_file:
             self._data_start, errno = check_headers(self._lofasm_file)
-        elif start_loc:
-            self._data_start, errno = start_loc, 0
         else:
-            self._data_start, errno = START_DATA, 0
+            try:
+                self._lofasm_file.seek(96)
+                self._update_ptr()
+                self._update_data()
+                self._data_start = 96
+            except IntegrationError:
+                self._data_start = 204896
          
         #move file pointer to data location
         self._lofasm_file.seek(self._data_start)

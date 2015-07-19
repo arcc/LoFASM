@@ -5,11 +5,12 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 import matplotlib.animation as animation
 from lofasm import parse_data as pdat
+import matplotlib.pyplot as plt
 import sys
 import numpy as np
 import argparse
 from tkFileDialog import askopenfilename
-matplotlib.pyplot.ion()
+plt.ion()
 from lofasm.filter import running_median
 import time
 import Tkinter as tk
@@ -57,7 +58,6 @@ default = '50', help='How many frames to running median?')
 parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 
 results = parser.parse_args()
-results.file_name = '/Users/andrewdanford/Desktop/DataAnalysis/20140912_174502.lofasm'
 
 
 
