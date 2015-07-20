@@ -18,6 +18,10 @@ import ttk
 import matplotlib.pyplot as plt
 import thread
 
+import warnings
+
+warnings.filterwarnings('ignore',r'divide by zero encountered in log10')
+
 #############################################
 #### this uses argparse to create a help menu 
 parser = argparse.ArgumentParser()
@@ -127,9 +131,6 @@ class PageOne(tk.Frame):
         button1 = ttk.Button(self, text="Back to Home",
                             command=lambda: controller.show_frame(StartPage))
         button1.pack()
-
-
-
 class GraphPage(tk.Frame):
 
     def __init__(self, parent, controller):
@@ -137,6 +138,7 @@ class GraphPage(tk.Frame):
         self.freqs = np.linspace(0, 200, 2048)
         self.filter_bank_data = np.zeros((2048,65))
         self.t = 0
+        self.openedfile = False
 
         self.button_home = tk.Button(self,text='Home',command=lambda: controller.show_frame(StartPage)).grid(row=9 , column=0)
 
@@ -149,19 +151,12 @@ class GraphPage(tk.Frame):
         button = tk.Button(self.top, text="Dismiss", command=self.top.destroy)
         button.pack()
 
-        self.crawler_mid = pdat.LoFASMFileCrawler(results.file_name)
-        self.crawler_front = pdat.LoFASMFileCrawler(results.file_name)
-        for i in range(63):
-            data = 10*np.log10(self.crawler_front.autos[results.current_correlation])
-            self.filter_bank_data = np.hstack((self.filter_bank_data, data.reshape((2048,1))))
-            self.crawler_front.forward()
-        print np.shape(self.filter_bank_data)
-        
+        #self.create_figure()
 
-        self.create_figure()
+        self.fig = Figure(figsize=(8,6), dpi=75)
+
         self.populate_page()
         self.play=False
-
 
     def populate_page(self):
         '''
@@ -268,7 +263,7 @@ class GraphPage(tk.Frame):
         #tk.Scale(self, from_=0, to=200, orient=tk.HORIZONTAL).grid(row=1,column=3,columnspan=3,sticky=tk.W+tk.E)
         ttk.Scrollbar(self,orient=tk.HORIZONTAL).grid(row=1,column=3,columnspan=3,sticky=tk.W+tk.E)
 
-        #Create canvas's for the matplotlib figures
+        #Create canvas for the matplotlib figures
         canvas = FigureCanvasTkAgg(self.fig, self)
         canvas.show()
         canvas.get_tk_widget().grid(row=2 , column=3,rowspan=11,columnspan=3)#.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
@@ -283,18 +278,13 @@ class GraphPage(tk.Frame):
         toolbar = NavigationToolbar2TkAgg(canvas, self)
         toolbar.update()
         canvas._tkcanvas.grid(row=1 , column=12)#pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        '''
-        
+        '''   
 
     def create_figure(self):
         '''
         create matplotlib figures
         '''
-
-
-
-
-        self.fig = Figure(figsize=(8,6), dpi=75)
+        #self.fig = Figure(figsize=(8,6), dpi=75)
         self.pow_spec_plot = self.fig.add_subplot(211)
         self.pow_spec_plot.set_xlim(0,100)
         self.pow_spec_plot.set_ylim(0,100)
@@ -308,7 +298,7 @@ class GraphPage(tk.Frame):
 
         #self.fig2 = Figure(figsize=(12,4), dpi=75)
         self.filter_bank_plot = self.fig.add_subplot(212)
-        self.im = self.filter_bank_plot.imshow(self.filter_bank_data, aspect='auto',interpolation='none')#, cmap='spectral')
+        self.im = self.filter_bank_plot.imshow(self.filter_bank_data, aspect='auto',interpolation='none', cmap='spectral')
         #self.im.set_data(self.filter_bank_data)
         self.filter_bank_plot.set_ylim(0,1024)
         self.filter_bank_plot.axvline(x=64, color='r')
@@ -351,8 +341,6 @@ class GraphPage(tk.Frame):
         self.pow_spec_plot.set_title('T+'+str(round(self.t/10.24,2)))
         self.t-=1
 
-
-
     def get(self):
         '''
         retrieve values 
@@ -388,9 +376,28 @@ class GraphPage(tk.Frame):
         results.file_name = askopenfilename(filetypes=[("allfiles","*"),("binary files","*.dat"),("FITS files","*.fits"),("LoFASM Data Files","*.lofasm")]) #open data file, currently .lofasm
         tk.Label(master=self,text=results.file_name.split('/')[-1][:20]+'...').grid(row=0, column=1)
 
-        
+        self.crawler_mid = pdat.LoFASMFileCrawler(results.file_name)
+        self.crawler_front = pdat.LoFASMFileCrawler(results.file_name)
+        self.crawler_mid.open()
+        self.crawler_front.open()
+
+        for i in range(63):
+            data = 10*np.log10(self.crawler_front.autos[results.current_correlation])
+            self.filter_bank_data = np.hstack((self.filter_bank_data, data.reshape((2048,1))))
+            self.crawler_front.forward()
+        print np.shape(self.filter_bank_data)
+
+        self.create_figure()
+
+        self.openedfile = True
+      
     def animate(self,i):
         #a = time.time()
+
+        #wait for a lofasm file to be opened
+        if not self.openedfile:
+            return
+
         corr=list(results.current_correlation)
         if corr[0]==corr[1]:
             power_mid = 10*np.log10(self.crawler_mid.autos[results.current_correlation])
@@ -447,8 +454,6 @@ class GraphPage(tk.Frame):
         else:
             pass
 
-
-
     def plot(self):
         '''
         '''
@@ -462,12 +467,14 @@ class GraphPage(tk.Frame):
             print "paused" 
 
 
-
-
 if __name__ == '__main__':
     try:
         app = LoFASMGUIapp()
-        anim = animation.FuncAnimation(app.frames[GraphPage].fig , app.frames[GraphPage].animate, init_func=None,frames=10000, interval=83.*1.5, blit=False)
+
+        anim = animation.FuncAnimation(app.frames[GraphPage].fig,
+            app.frames[GraphPage].animate,
+            init_func=None,
+            frames=10000, interval=83.*1.5, blit=False)
         #anim2 = animation.FuncAnimation(app.frames[PageThree].fig2 , app.frames[PageThree].animate2, init_func=None,frames=10000, interval=83, blit=False)
         app.mainloop()
     except KeyboardInterrupt:
