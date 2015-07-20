@@ -52,3 +52,24 @@ def write_header_to_file(outfile, host, Nacc=8192, fpga_clk_T=1e-08,
         fstep + mjd_day + mjd_msec + int_time + fmt_ver + notes
     
     outfile.write(header_str)
+
+def complex2str(x):
+    '''
+    convert a list of complex numbers into a binary 
+    string of 4byte _integer_ values in the following format:
+
+    A_real, A_imag, B_real, B_imag, C_real, C_imag, ...
+    '''
+    import struct
+
+    assert(type(x) is list)
+    assert(type(x[0]) is complex)
+
+    binary_str = ''
+
+    for cval in x:
+        binary_str += struct.pack('>l',cval.real)
+        binary_str += struct.pack('>l',cval.imag)
+
+    return binary_str
+
