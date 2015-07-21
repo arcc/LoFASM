@@ -647,14 +647,6 @@ class LoFASMFileCrawler(object):
         #get integration/burst size 
         self._int_size = INTEGRATION_SIZE_B
 
-        #get start location of data
-        #if scan_file:
-        #    self._data_start, errno = check_headers(self._lofasm_file)
-        #elif start_loc:
-        #    self._data_start, errno = start_loc, 0
-        #else:
-        #    self._data_start, errno = START_DATA, 0
-
         if scan_file:
             self._data_start, errno = check_headers(self._lofasm_file)
         elif start_loc:
