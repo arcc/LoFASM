@@ -83,7 +83,7 @@ if __name__ == "__main__":
 				riseTimeLocal = tz[args.station-1].normalize(
 					riseTimeUTC.astimezone(tz[args.station-1]))
 
-				riseTimeLocal_str = riseTimeLocal.strftime('%H:%M %d/%m/%Y')
+				riseTimeLocal_str = riseTimeLocal.strftime('%H:%M %m/%d/%Y')
 				sched_cmd = 'at %s -f %s;' % (riseTimeLocal_str, obs_prog)
 
 				if args.sched_dir:
