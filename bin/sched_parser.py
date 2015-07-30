@@ -7,7 +7,7 @@ if __name__ == "__main__":
 	import pytz
 	from datetime import datetime
 
-	headerLen = 183
+	headerLen = 184
 	obs_prog = '/home/controller/bin/rec_target.sh'
 
 	parser = argparse.ArgumentParser(
@@ -51,13 +51,14 @@ if __name__ == "__main__":
 
 	try:
 		with open(args.filename, 'r') as f:
-			hdr = [x.strip('.') for x in f.read(183).split()]
+			hdr = [x.strip('.') for x in f.read(headerLen).split()]
 			rightAscension = hdr[8]
 			declination = hdr[12]
 
 			rawText = f.read()
 			rawText = rawText.split('\n\n')
 			rawText.pop()
+
 
 
 
