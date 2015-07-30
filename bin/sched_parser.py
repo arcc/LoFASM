@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
 
 	try:
-		with open('rNs2015_0826+2637.txt', 'r') as f:
+		with open(args.filename, 'r') as f:
 			hdr = [x.strip('.') for x in f.read(183).split()]
 			rightAscension = hdr[8]
 			declination = hdr[12]
@@ -104,7 +104,6 @@ if __name__ == "__main__":
 		print "Input/Ouput Error detected: ",
 		print err.strerror
 		print err.filename
-		#print "could not open file: %s" % args.filename
 
 
 
