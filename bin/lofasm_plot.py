@@ -43,6 +43,7 @@ if __name__ == '__main__':
     else:
         input_filename = opts.input_filename
         lofasm_input_file = open(input_filename, 'rb')
+        
     hdr_dict = pdat.parse_file_header(lofasm_input_file)
 
     lofasm_station = hdr_dict[4][1]
