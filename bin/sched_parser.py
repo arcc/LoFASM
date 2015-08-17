@@ -21,8 +21,11 @@ if __name__ == "__main__":
 		choices=[1,2,3,4])
 	parser.add_argument('-w', '--SCHED_DIR', '--write',
 		dest='sched_dir',
-		help="Create/update schedule at SCHED_DIR",
+		help="Create/update schedule at SCHED_DIR. If this argument is not used then print scheduling commands with no writes.",
 		type=str)
+	parser.add_argument('-v', action='store_true',
+			    dest='verbose',
+			    help="run in verbose mode")
 
 
 
@@ -34,7 +37,7 @@ if __name__ == "__main__":
 
 	tz = [pytz.timezone('US/Central'),
 	pytz.timezone('US/Mountain'),
-	pytz.timezone('US/Eastern'),
+	pytz.timezone('UTC'),
 	pytz.timezone('US/Pacific')]
 
 	utc_tz = pytz.timezone('UTC')
@@ -46,7 +49,7 @@ if __name__ == "__main__":
 		try:
 			assert(os.path.isdir(rootDir))
 		except AssertionError:
-			"directory does not exist: ", args.sched_dir
+			print "directory does not exist: ", args.sched_dir
 
 
 	try:
@@ -79,12 +82,18 @@ if __name__ == "__main__":
 					int(riseTimes[args.station-1][:2]),
 					int(riseTimes[args.station-1][3:5])))
 				riseTimeUTC_str = riseTimeUTC.strftime('%Y%m%d')
+				
 
 				riseTimeLocal = tz[args.station-1].normalize(
 					riseTimeUTC.astimezone(tz[args.station-1]))
-
+				
 				riseTimeLocal_str = riseTimeLocal.strftime('%H:%M %m/%d/%Y')
 				sched_cmd = 'at %s -f %s;' % (riseTimeLocal_str, obs_prog)
+				if args.verbose:
+					print "riseTimeUTC: ", riseTimeUTC
+					print "riseTimeLocal: ", riseTimeLocal
+					print "schedule cmd: ", sched_cmd
+					exit()
 
 				if args.sched_dir:
 
@@ -105,7 +114,6 @@ if __name__ == "__main__":
 		print "Input/Ouput Error detected: ",
 		print err.strerror
 		print err.filename
-
 
 
 
