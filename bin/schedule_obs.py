@@ -1,8 +1,9 @@
 #! /usr/bin/python2.7
 
 SCHED_DIR = "/home/controller/sched/"
+SCHED_PROG = "/home/controller/bin/rec_target.sh"
 LOG_DIR = "/home/controller/logs/"
-LOG_FILE = LOG_DIR + "lofasm_sched.log"
+LOG_FILE = LOG_DIR + "lofasm.log"
 LOG_LIMIT = 10000 #line limit
 
 if __name__ == "__main__":
@@ -46,21 +47,36 @@ if __name__ == "__main__":
     try:
         jobFiles = []
         for f in os.listdir(utcDir):
-            if f.startswith('obs'):
+            if f.endswith('.lsf'):
                 jobFiles.append(utcDir + f)
             else:
                 pass
 
         for job in jobFiles:
             with open(job, 'r') as j:
-                commands = j.readlines()
-                for cmd in commands:
-                    cmd = cmd.rstrip(';')
-                    logger.info('executing cmd: ' + cmd)
-                    print "executing command: ", cmd.split()
-                    sys_output = check_output(cmd.split())
-
-                    
+                fields = {}
+                lines = j.readlines()
+                for l in lines:
+                    lsplit = l.split()
+                    print lsplit
+                    if len(lsplit) > 2:
+                        pass
+                    else:
+                        fields[lsplit[0]] = lsplit[1].rstrip('\n')
+                
+                sched_cmd = "at %s:%s %s/%s/%s -f %s" % (
+                    fields['ObsStart'][:2],
+                    fields['ObsStart'][2:4],
+                    fields['ObsDate'][4:6],
+                    fields['ObsDate'][-2:],
+                    fields['ObsDate'][:4],
+                    SCHED_PROG)
+                
+                logger.info('Adding job to Queue:')
+                logger.info("ra: %s\tdec: %s" % (fields['RA'], fields['DEC']))
+                logger.debug("cmd: %s" % sched_cmd)
+                sys_output = check_output(sched_cmd.split())
+                
                 
     except OSError as err:
         print err.strerror, ': ', err.filename
