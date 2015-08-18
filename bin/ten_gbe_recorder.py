@@ -57,7 +57,8 @@ if __name__ == "__main__":
     p.set_usage('ten_gbe_recorder.py')
     p.add_option('-t', dest='rec_dur', help='Set the duration of the observation in seconds.', default=5)
     p.add_option('--root_dir', dest='root_dir', type='str',  help='path pointing to root data dir. default is /data1', default='/data1')
-    p.add_option('--note', dest='note', type='str', help='comments notes. anything longer than 8bytes will be truncated.', default=None)
+    p.add_option('--ra', dest='rightAscension', type='str', default='NULL')
+    p.add_option('--dec', dest='declination', type='str', default='NULL')
 
     opts, args = p.parse_args(sys.argv[1:])
     sock = create_socket()
@@ -75,10 +76,7 @@ if __name__ == "__main__":
 
     output_file = open(root_dir+'/'+current_date+'/'+filename,'wb')
      
-    if opts.note:
-        write_header_to_file(output_file, host, fileNotes=opts.note, Nacc=8192)
-    else:
-        write_header_to_file(output_file, host, Nacc=8192)
+    write_header_to_file(output_file, host, Nacc=8192, ra=opts.ra, dec=opts.dec)
 
     numPacketsToWrite = getNumberOfPackets(opts.rec_dur)
     write_packets_from_memory(output_file, record_packets_into_memory(

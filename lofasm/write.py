@@ -20,7 +20,7 @@ def fmt_header_entry(entry_str, fmt_len=8):
         return entry_str
 
 def write_header_to_file(outfile, host, Nacc=8192, fpga_clk_T=1e-08, 
-	Nchan=2048, fileNotes=' '):
+	Nchan=2048, ra='NULL', dec='NULL'):
     '''
     prepends data file with LoFASM spectrometer header.
     fpga_clk_T  is the period of the FPGA clock in seconds
@@ -36,9 +36,9 @@ def write_header_to_file(outfile, host, Nacc=8192, fpga_clk_T=1e-08,
     msec_day = 86400 * 1000
 
     hdr_len = fmt_header_entry('96')
-    hdr_ver = fmt_header_entry('2')
+    hdr_ver = fmt_header_entry('3')
     hdr_sig = fmt_header_entry('LoCo')
-    fmt_ver = fmt_header_entry('1')
+    fmt_ver = fmt_header_entry('1') # data format version
     station = fmt_header_entry(host)
     fstart = fmt_header_entry('0')
     fstep = fmt_header_entry(str(BW/Nbins).split('.')[1]) #mhz
@@ -46,10 +46,11 @@ def write_header_to_file(outfile, host, Nacc=8192, fpga_clk_T=1e-08,
     mjd_day = fmt_header_entry(stamp_mjd[0])
     mjd_msec = fmt_header_entry(float('.'+stamp_mjd[1])*msec_day)
     int_time = fmt_header_entry(str(integration_time))
-    notes = fmt_header_entry(fileNotes)
+    ra_coord = fmt_header_entry(ra, 10)
+    dec_coord = fmt_header_entry(dec, 10)
 
     header_str = hdr_sig + hdr_ver + hdr_len + station + num_bins + fstart +\
-        fstep + mjd_day + mjd_msec + int_time + fmt_ver + notes
+        fstep + mjd_day + mjd_msec + int_time + fmt_ver + ra_coord + dec_coord
     
     outfile.write(header_str)
 
