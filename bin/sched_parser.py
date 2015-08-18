@@ -1,5 +1,20 @@
 #! /usr/bin/python
 
+#Parse Emma Handzo's LoFASM Schedule files and create LoFASM Session Files 
+#and place them in the appropriate directories in the LoFASM Scheduler.
+#
+#LoFASM Session Files have the following format:
+#
+#ProjectName    ProjName
+#Target         NameOfSource
+#RA             DDMMSS.ss #minutes and seconds are of arc
+#DEC            HHMMSS.ss
+#ObsDate        YYYYMMDD #UTC
+#ObsStart       SessionStartTimeInUTC
+#ObsDur         SessionDurationTimeInSeconds
+#StationID      stationID
+#
+
 
 if __name__ == "__main__":
 
@@ -26,6 +41,12 @@ if __name__ == "__main__":
 	parser.add_argument('-v', action='store_true',
 			    dest='verbose',
 			    help="run in verbose mode")
+	parser.add_argument('--proj', dest='projectName', type=str,
+		default='UntitledProject',
+		help="Name of the project being scheduled.")
+	parser.add_argument('--target', dest='targetName', type=str,
+		default='UnknownTarget',
+		help="Name of target being observed.")
 
 
 
@@ -89,26 +110,43 @@ if __name__ == "__main__":
 				
 				riseTimeLocal_str = riseTimeLocal.strftime('%H:%M %m/%d/%Y')
 				sched_cmd = 'at %s -f %s;' % (riseTimeLocal_str, obs_prog)
+				
+
+
 				if args.verbose:
-					print "riseTimeUTC: ", riseTimeUTC
-					print "riseTimeLocal: ", riseTimeLocal
+					sched_filename = '_'.join([args.projectName, riseTimeLocal.strftime("%Y%m%d"),
+						riseTimeLocal.strftime("%H%M%S")]) + '.lsf'
+					print "#############################"
+					print "Project Name:\t", args.projectName
+					print "Target:\t\t", args.targetName
+					print "RA:\t\t", rightAscension
+					print "Dec:\t\t", declination
+					print "ObsDate:\t", riseTimeLocal.strftime("%Y%m%d")
+					print "ObsStart:\t", riseTimeLocal.strftime("%H%M%S")
+					print "ObsDur:\t\t", obsDur[args.station-1] 
 					print "schedule cmd: ", sched_cmd
-					exit()
+					print "LoFASM Session Filename: \t", sched_filename 
 
 				if args.sched_dir:
-
 					dateDir = rootDir + riseTimeUTC_str + '/'
+					sched_file = dateDir + '_'.join([args.projectName, riseTimeLocal.strftime("%Y%m%d"),
+						riseTimeLocal.strftime("%H%M%S")]) + '.lsf'
 
 					if not os.path.exists(dateDir):
 						os.mkdir(dateDir)
 
-					sched_file =  dateDir + 'obs_' +rightAscension[:6] + \
-						declination[:7] + '.sh'
 
-					with open(sched_file, 'a') as f:
-						f.write(sched_cmd)
-				else:
-					print sched_cmd
+					with open(sched_file, 'w') as f:
+						f.write("ProjectName\t%s\n" % args.projectName)
+						f.write("Target\t\t%s\n" % args.targetName)
+						f.write("RA\t\t%s\n" % rightAscension)
+						f.write("DEC\t\t%s\n" % declination)
+						f.write("ObsDate\t\t%s\n" % riseTimeLocal.strftime("%Y%m%d"))
+						f.write("ObsStart\t%s\n" % riseTimeLocal.strftime("%H%M%S"))
+						f.write("ObsDur\t\t%s\n" % obsDur[args.station-1].rstrip('s'))
+						f.write("StationID\t%i\n" % args.station)
+						
+
 
 	except IOError as err:
 		print "Input/Ouput Error detected: ",

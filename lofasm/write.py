@@ -35,7 +35,7 @@ def write_header_to_file(outfile, host, Nacc=8192, fpga_clk_T=1e-08,
     Nbins = 2048
     msec_day = 86400 * 1000
 
-    hdr_len = fmt_header_entry('96')
+    hdr_len = fmt_header_entry('108')
     hdr_ver = fmt_header_entry('3')
     hdr_sig = fmt_header_entry('LoCo')
     fmt_ver = fmt_header_entry('1') # data format version
