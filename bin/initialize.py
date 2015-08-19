@@ -1,4 +1,4 @@
-#!/opt/python2.7/bin/python2.7
+#!/usr/bin/python
  
 
 import corr,time,numpy,struct,sys,logging,pylab
@@ -148,7 +148,9 @@ try:
     print 'FPGA Registers: ', fpga.listdev()
     time.sleep(.5)
     print "Configuring 10GbE Packet Transmitter..."
-    fpga.write_int('tx_dest_ip',DEST_IP)
+    print "Destination IP: ", opts.ten_gbe_dest_ip
+    print "Destination Port: ", DEST_PORT
+    fpga.write_int('tx_dest_ip', DEST_IP)
     fpga.write_int('tx_dest_port',DEST_PORT)
     time.sleep(0.1)
     print "Starting 10GbE core..."
@@ -168,27 +170,8 @@ try:
     fpga.write_int('gbe_reset',1)
     fpga.write_int('gbe_reset',0)
 
-    print "ok, all set up. Try plotting using poco_plot_autos.py or poco_plot_cross.py"
+    print "ok, all set up."
 
-#    time.sleep(2)
-#
-#   prev_integration = fpga.read_uint('acc_num')
-#   while(1):
-#       current_integration = fpga.read_uint('acc_num')
-#       diff=current_integration - prev_integration
-#       if diff==0:
-#           time.sleep(0.01)
-#       else:
-#           if diff > 1:
-#               print 'WARN: We lost %i integrations!'%(current_integration - prev_integration)
-#           prev_integration = fpga.read_uint('acc_num')
-#           print 'Grabbing integration number %i'%prev_integration
-#           
-#           if opts.auto:
-#               plot_autos()
-#           else:
-#               plot_cross(opts.cross)
-#
 except KeyboardInterrupt:
     exit_clean()
 except:

@@ -81,6 +81,7 @@ if __name__ == "__main__":
     write_header_to_file(output_file, host, Nacc=8192, ra=opts.ra, dec=opts.dec)
 
     numPacketsToWrite = getNumberOfPackets(opts.rec_dur)
+    print numPacketsToWrite
     write_packets_from_memory(output_file, record_packets_into_memory(
 		sock, numPacketsToWrite))
     
