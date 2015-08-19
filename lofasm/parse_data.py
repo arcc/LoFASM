@@ -98,57 +98,69 @@ def gen_spectrum_hdr_string(hdr_dict):
 def parse_file_header(file_obj, fileType='lofasm'):
 
 	#move pointer to beginning of file
-	freeze_pointer = file_obj.tell()
-	if freeze_pointer != 0:
-		file_obj.seek(0)
-	
-	#get file signature
-	file_sig = file_obj.read(pdat_H.HDR_ENTRY_LENGTH).strip(' ')
+    freeze_pointer = file_obj.tell()
+    
+    if freeze_pointer != 0:
+        file_obj.seek(0)
+    #get file signature
+    file_sig = file_obj.read(pdat_H.HDR_ENTRY_LENGTH).strip(' ')
 
 	#check file signature
-	if file_sig != pdat_H.LoFASM_FHDR_SIG:
-		#put file pointer back 
-		file_obj.seek(freeze_pointer)
-		raise pdat_H.Header_Error(file_obj.name + 'may not be a proper LoFASM File.',
-			'File Signature ' + file_sig + ' not recognized.')
+    if file_sig != pdat_H.LoFASM_FHDR_SIG:
+        file_obj.seek(freeze_pointer)
+        raise pdat_H.Header_Error(file_obj.name + 'may not be a proper LoFASM File.',
+            'File Signature ' + file_sig + ' not recognized.')
 
 	#get file header version from file
-	file_hdr_version = int(file_obj.read(pdat_H.HDR_ENTRY_LENGTH))
+    file_hdr_version = int(file_obj.read(pdat_H.HDR_ENTRY_LENGTH))
 
 	#get corresponding header template
-	try:
-		if fileType == 'lofasm':
-			fhdr_field_dict = pdat_H.LoFASM_FHEADER_TEMPLATE[file_hdr_version]
-		elif fileType == 'spectra':
+    try:
+        if fileType == 'lofasm':
+            fhdr_field_dict = pdat_H.LoFASM_FHEADER_TEMPLATE[file_hdr_version]
+        elif fileType == 'spectra':
 			fhdr_field_dict = pdat_H.LoFASM_SPECTRUM_HEADER_TEMPLATE[file_hdr_version]
 
-	except KeyError as err:
-		print "Error: LoFASM raw file header version not recognized."
-		print "Unrecognized version: ", err.message
-		sys.exit()
+    except KeyError as err:
+        print "Error: LoFASM raw file header version not recognized."
+        print "Unrecognized version: ", err.message
+        sys.exit()
 
 	#populate header dict
-	fhdr_field_dict[1][1] = file_sig
-	fhdr_field_dict[2][1] = file_hdr_version
-	fhdr_field_dict[3][1] = int(file_obj.read(pdat_H.HDR_ENTRY_LENGTH))
+    fhdr_field_dict[1][1] = file_sig
+    fhdr_field_dict[2][1] = file_hdr_version
+    fhdr_field_dict[3][1] = int(file_obj.read(pdat_H.HDR_ENTRY_LENGTH))
+    
 
-	fields_left_to_populate = len(fhdr_field_dict.keys()) - 3
-	remaining_hdr_string = file_obj.read(fhdr_field_dict[3][1]-
+    fields_left_to_populate = len(fhdr_field_dict.keys()) - 3
+    remaining_hdr_string = file_obj.read(fhdr_field_dict[3][1]-
 		3*pdat_H.HDR_ENTRY_LENGTH)
 	
-
-	for i in range(fields_left_to_populate):
-		j = i + 4 #start with 3rd field
-		if i == (fields_left_to_populate - 1):
-			fhdr_field_dict[j][1] = remaining_hdr_string[i*pdat_H.HDR_ENTRY_LENGTH:].strip(' ')
-		else:		
-			fhdr_field_dict[j][1] = remaining_hdr_string[i*pdat_H.HDR_ENTRY_LENGTH:
-				(i+1)*pdat_H.HDR_ENTRY_LENGTH].strip(' ')
+    if file_hdr_version == 1 or file_hdr_version == 2:
+        for i in range(fields_left_to_populate):
+            j = i + 4 #start with 3rd field
+            if i == (fields_left_to_populate - 1):
+                fhdr_field_dict[j][1] = remaining_hdr_string[
+                    i*pdat_H.HDR_ENTRY_LENGTH:].strip(' ')
+            else:		
+                fhdr_field_dict[j][1] = remaining_hdr_string[
+                    i*pdat_H.HDR_ENTRY_LENGTH:
+                    (i+1)*pdat_H.HDR_ENTRY_LENGTH].strip(' ')
+    elif file_hdr_version == 3:
+        fhdr_field_dict[4][1] = remaining_hdr_string[:8].strip()
+        fhdr_field_dict[5][1] = remaining_hdr_string[8:16].strip()
+        fhdr_field_dict[6][1] = remaining_hdr_string[16:24].strip()
+        fhdr_field_dict[7][1] = remaining_hdr_string[24:32].strip()
+        fhdr_field_dict[8][1] = remaining_hdr_string[32:40].strip()
+        fhdr_field_dict[9][1] = remaining_hdr_string[40:48].strip()
+        fhdr_field_dict[10][1] = remaining_hdr_string[48:56].strip()
+        fhdr_field_dict[11][1] = remaining_hdr_string[56:64].strip()
+        fhdr_field_dict[12][1] = remaining_hdr_string[64:74].strip()
+        fhdr_field_dict[13][1] = remaining_hdr_string[74:84].strip()
 
 	#move file cursor back to original position
-	file_obj.seek(freeze_pointer)
-
-	return fhdr_field_dict
+    file_obj.seek(freeze_pointer)
+    return fhdr_field_dict
 
 def parse_hdr(hdr, hdr_size_bytes=8, version=1):
 	'''
@@ -359,9 +371,6 @@ def is_next_packet_header(file_obj, packet_size_bytes=PACKET_SIZE_B, hdr_size_by
 	else:
 		return False
 
-
-    
-    
 ####Class Definitions
 class LoFASM_burst:
     '''
@@ -653,12 +662,15 @@ class LoFASMFileCrawler(object):
             self._data_start, errno = start_loc, 0
         else:
             try:
-                self._lofasm_file.seek(96)
+                self._lofasm_file.seek(self._file_hdr[3][1])
                 self._update_ptr()
                 self._update_data()
-                self._data_start = 96
+                self._data_start = self._file_hdr[3][1]
             except IntegrationError:
-                self._data_start = 204896
+                if self._file_hdr[2][1] == 1 or self._file_hdr[2][1] == 2:
+                    self._data_start = 204896
+                else:
+                    self._data_start = 204908
          
         #move file pointer to data location
         self._lofasm_file.seek(self._data_start)
@@ -857,5 +869,8 @@ class LoFASMFileCrawler(object):
             self._print_int_headers = s        
 
     def __repr__(self):
+        return "LoFASMFileCrawler %s" % (self.getFilename())
+
+    def __str__(self):
         return "LoFASMFileCrawler %s" % (self.getFilename())
     
