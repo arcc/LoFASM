@@ -51,7 +51,7 @@ def write_header_to_file(outfile, host, Nacc=8192, fpga_clk_T=1e-08,
 
     header_str = hdr_sig + hdr_ver + hdr_len + station + num_bins + fstart +\
         fstep + mjd_day + mjd_msec + int_time + fmt_ver + ra_coord + dec_coord
-    
+
     outfile.write(header_str)
 
 def complex2str(x):

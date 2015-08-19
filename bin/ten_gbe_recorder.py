@@ -35,7 +35,9 @@ def write_packets_from_memory(outfile, packet_array):
         print "done writing packets to:\n%s!!" % outfile.name
 
 def getNumberOfPackets(dur_sec):
-    return pdat.getNumPackets(dur_sec)
+    nPackets = (int(float(dur_sec)/0.0838) + 1)*17
+
+    return nPackets
 
 def fmt_header_entry(entry_str, fmt_len=8):
     '''ensure that every header entry is 8 characters long. if longer, then
@@ -57,8 +59,8 @@ if __name__ == "__main__":
     p.set_usage('ten_gbe_recorder.py')
     p.add_option('-t', dest='rec_dur', help='Set the duration of the observation in seconds.', default=5)
     p.add_option('--root_dir', dest='root_dir', type='str',  help='path pointing to root data dir. default is /data1', default='/data1')
-    p.add_option('--ra', dest='rightAscension', type='str', default='NULL')
-    p.add_option('--dec', dest='declination', type='str', default='NULL')
+    p.add_option('--ra', dest='ra', type='str', default='NULL')
+    p.add_option('--dec', dest='dec', type='str', default='NULL')
 
     opts, args = p.parse_args(sys.argv[1:])
     sock = create_socket()
