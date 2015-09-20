@@ -23,7 +23,7 @@ BASELINE_ID = {
         'B' : 'IEW',
         'C' : 'ONS',
         'D' : 'OEW'},
-    'LoFASM3' : {
+    '3' : {
         'A' : 'ONS',
         'B' : 'OEW',
         'C' : 'INS',
@@ -35,23 +35,23 @@ BASELINE_ID = {
         'D' : 'INS'},
     'simdata' : {
         'A' : 'AAA',
-        'B' : 'BBB', 
-        'C' : 'CCC', 
+        'B' : 'BBB',
+        'C' : 'CCC',
         'D' : 'DDD'}
     }
 BASELINES = ['AA', 'BB', 'CC', 'DD', 'AB', 'AC', 'AD', 'BC', 'BD', 'CD']
-    
+
 def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
     '''
     setup all auto and cross-power plots
     '''
     fig = plt.figure(figsize=(10,10))
-    
-    auto_baselines = autos 
-    cross_baselines = cross 
-    
+
+    auto_baselines = autos
+    cross_baselines = cross
+
     auto_subplots = [plt.subplot2grid((4,4),(i,i)) for i in range(4)]
-    cross_subplots = [plt.subplot2grid((4,4),(0,1)), 
+    cross_subplots = [plt.subplot2grid((4,4),(0,1)),
                       plt.subplot2grid((4,4),(0,2)),
                       plt.subplot2grid((4,4),(0,3)),
                       plt.subplot2grid((4,4),(1,2)),
@@ -64,7 +64,7 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
     overlay_lines = []
 
     fig.subplots_adjust(hspace=0.5)
-    
+
 	# set titles & plot
     for i in range(len(cross_baselines)):
 
@@ -105,7 +105,7 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
     return [auto_lines+cross_lines+overlay_lines, fig]
 
 def update_all_baseline_plots(i, fig, crawler, lines, norm_cross=False, forward=True):
-    
+
     if forward:
         try:
             crawler.forward()
@@ -115,24 +115,22 @@ def update_all_baseline_plots(i, fig, crawler, lines, norm_cross=False, forward=
             sys.exit()
 
     burst = crawler
-    
+
     for k in range(len(BASELINES)):
         if k < 4:
             #autos
             lines[k].set_data(FREQS, 10*np.log10(burst.autos[BASELINES[k]]))
             #overlays
             lines[-(k+1)].set_data(FREQS,10*np.log10(burst.autos[BASELINES[k]]))
-			
+
         elif norm_cross:
-			
+
 			norm_val = np.array(burst.cross[BASELINES[k]])/np.sqrt(np.array(burst.autos[BASELINES[k][0]*2])*np.array(burst.autos[BASELINES[k][1]*2]))
 			lines[k]['real'].set_data(FREQS, np.real(norm_val))
 			lines[k]['imag'].set_data(FREQS, np.imag(norm_val))
         else:
 			lines[k].set_data(FREQS, 10*np.log10(np.abs(np.real(burst.cross[BASELINES[k]]))))
-			
-	
-	
+
+
+
     return lines
-
-

@@ -11,9 +11,10 @@ FFT_cycles = Nchan >> 1
 #number of network packets in each integration
 PacketsPerSample = 17
 
+Baselines = ['AA', 'BB', 'CC', 'DD', 'AB', 'AC', 'AD', 'BC', 'BD', 'CD']
 
 LoFASM_SPECTRA_KEY_TO_DESC = {
-	'AA': 'OEW_POW', 
+	'AA': 'OEW_POW',
 	'BB': 'ONS_POW',
 	'CC': 'IEW_POW',
 	'DD': 'INS_POW',
