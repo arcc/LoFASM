@@ -11,9 +11,10 @@ FFT_cycles = Nchan >> 1
 #number of network packets in each integration
 PacketsPerSample = 17
 
+Baselines = ['AA', 'BB', 'CC', 'DD', 'AB', 'AC', 'AD', 'BC', 'BD', 'CD']
 
 LoFASM_SPECTRA_KEY_TO_DESC = {
-	'AA': 'OEW_POW', 
+	'AA': 'OEW_POW',
 	'BB': 'ONS_POW',
 	'CC': 'IEW_POW',
 	'DD': 'INS_POW',
@@ -51,7 +52,20 @@ LoFASM_FHEADER_TEMPLATE = {
 		9: ['mjd_msec', None],
 		10: ['int_time', None],
 		11: ['Dfmt_ver', None],
-		12: ['notes', None]}
+		12: ['notes', None]},
+	3: {1: ['hdr_sig', None],
+		2: ['hdr_ver', None],
+		3: ['hdr_len', None],
+		4: ['station', None],
+		5: ['Nbins', None],
+		6: ['fstart', None],
+		7: ['fstep', None],
+		8: ['mjd_day', None],
+		9: ['mjd_msec', None],
+		10: ['int_time', None],
+		11: ['Dfmt_ver', None],
+		12: ['ra', None],
+		13: ['dec', None]}
 	}
 LoFASM_SPECTRUM_HEADER_TEMPLATE = {
 	1: {1: ['hdr_sig', None],

@@ -21,12 +21,16 @@ if __name__ == "__main__":
 		help="LoFASM file to extract")
 	parser.add_argument('-v','--verbose', dest='v', action='store_true',
 		help='print header and progress information')
+	parser.add_argument('-s', '--scanfirst', dest='scanfirst', 
+		action='store_true',
+		help='scan .lofasm file prior to extraction. (not recommended)')
 
 	args = parser.parse_args()
 
 	basename = os.path.basename(args.lofasm_file).split('.',1)[0]
 
-	crawler = pdat.LoFASMFileCrawler(args.lofasm_file, scan_file=True)
+	crawler = pdat.LoFASMFileCrawler(args.lofasm_file, scan_file=args.scanfirst)
+	crawler.open()
 
 	hdr = crawler.getFileHeader()
 
