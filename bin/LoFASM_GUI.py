@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/Users/andrewdanford/Documents/VirtualEnv/LoFASM_test/bin/python
 import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
@@ -139,20 +139,13 @@ class GraphPage(tk.Frame):
 
         self.button_home = tk.Button(self,text='Home',command=lambda: controller.show_frame(StartPage)).grid(row=9 , column=0)
 
-        self.top = tk.Toplevel()
-        self.top.title("About this application...")
-
-        msg = tk.Message(self.top, text='about_message')
-        msg.pack()
-
-        button = tk.Button(self.top, text="Dismiss", command=self.top.destroy)
-        button.pack()
 
         #self.create_figure()
 
         self.fig = Figure(figsize=(13,11), dpi=75)
 
         self.populate_page()
+        self.wasforward = True
         self.forward = True
         self.play=False
 
@@ -244,7 +237,7 @@ class GraphPage(tk.Frame):
 
         #Gui Row 9
         
-        self.button_plot = tk.Button(self,text='plot',command=lambda: self.plot()).grid(row=9, column=1, columnspan=2, rowspan=1)#,sticky=tk.W+tk.E+tk.N+tk.S)
+        self.button_plot = tk.Button(self,text='plot',command=lambda: self.play()).grid(row=9, column=1, columnspan=2, rowspan=1)#,sticky=tk.W+tk.E+tk.N+tk.S)
 
         #Gui Row 10
         tk.Button(self,text='newfunc').grid(row=10,column=0,sticky=tk.W+tk.E+tk.N+tk.S)
@@ -255,15 +248,16 @@ class GraphPage(tk.Frame):
         #pause play step button
 
         tk.Button(self,text='step back',command=lambda: self.step_backward()).grid(row=0,column=3,sticky=tk.W+tk.E)
-        tk.Button(self,text='reverse').grid(row=0,column=4,sticky=tk.W+tk.E)
-        tk.Button(self,text='play/pause',command=lambda: self.plot()).grid(row=0,column=5,sticky=tk.W+tk.E)
-        tk.Button(self,text='step forward',command=lambda: self.step_forward()).grid(row=0,column=6,sticky=tk.W+tk.E)
+        tk.Button(self,text='reverse',command=lambda: self.reverse()).grid(row=0,column=4,sticky=tk.W+tk.E)
+        tk.Button(self,text='pause',command=lambda: self.pause()).grid(row=0,column=5,sticky=tk.W+tk.E)
+        tk.Button(self,text='play',command=lambda: self.plot()).grid(row=0,column=6,sticky=tk.W+tk.E)
+        tk.Button(self,text='step forward',command=lambda: self.step_forward()).grid(row=0,column=7,sticky=tk.W+tk.E)
 
 
         #Create canvas for the matplotlib figures
         canvas = FigureCanvasTkAgg(self.fig, self)
         canvas.show()
-        canvas.get_tk_widget().grid(row=1 , column=3,rowspan=20,columnspan=4)#.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        canvas.get_tk_widget().grid(row=1 , column=3,rowspan=20,columnspan=5)#.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
 
 
         '''
@@ -327,8 +321,9 @@ class GraphPage(tk.Frame):
         self.filter_bank_data = np.hstack((self.filter_bank_data,(self.lofasm_data).reshape((2048,1))))
         self.filter_bank_data = np.delete(self.filter_bank_data,0,1)
         self.im.set_data(self.filter_bank_data)
-        self.update_time()
-        self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string)
+        #self.update_time()
+        self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str((self.crawler_front.getAccNum()-63)-self.first_acc_num)+'integrations' )
+        print self.crawler_front.getAccNum()
 
 
     def step_backward(self):
@@ -357,8 +352,8 @@ class GraphPage(tk.Frame):
         self.filter_bank_data = np.hstack(((self.lofasm_data).reshape((2048,1)),self.filter_bank_data))
         self.filter_bank_data = np.delete(self.filter_bank_data,127,1)
         self.im.set_data(self.filter_bank_data)
-        self.pow_spec_plot.set_title('T+'+str(round(self.t/(1/0.086),2)))
-        self.t-=1
+        self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str((self.crawler_front.getAccNum()+64)-self.first_acc_num)+'integrations' )
+        print self.crawler_front.getAccNum()
 
     def get(self):
         '''
@@ -454,6 +449,8 @@ class GraphPage(tk.Frame):
         if self.file_type == "lofasm":
             self.crawler_front = pdat.LoFASMFileCrawler(results.file_name)
             self.crawler_front.open()
+            self.first_acc_num = self.crawler_front.getAccNum()
+            print self.first_acc_num
 
             #change start time
             for i in range(int(float(results.start_frame)*(1/0.086))):
@@ -465,6 +462,7 @@ class GraphPage(tk.Frame):
                 if results.accumulation_stride == 1:
                     self.lofasm_data = 10*np.log10(self.crawler_front.autos[results.current_correlation])
                     self.crawler_front.forward()
+                    print self.crawler_front.getAccNum()
                 elif results.accumulation_stride > 1:
                     self.average_data()
                 self.filter_bank_data = np.hstack((self.filter_bank_data, self.lofasm_data.reshape((2048,1))))
@@ -527,23 +525,58 @@ class GraphPage(tk.Frame):
 
         if self.file_type == "lofasm":
 
-            #check if auto or cross correlation
-            corr=list(results.current_correlation)
-            if corr[0]==corr[1]:
-                self.average_data()
-            else:
-                power_front = 10*np.log10(self.crawler_front.cross[results.current_correlation])
-
             #Animate if play button has been presses
             if self.play == True:
-                self.line.set_ydata(self.filter_bank_data[:,63])
-                self.crawler_front.forward()
-                self.filter_bank_data = np.hstack((self.filter_bank_data,(self.lofasm_data).reshape((2048,1))))
-                self.filter_bank_data = np.delete(self.filter_bank_data,0,1)
-                self.im.set_data(self.filter_bank_data)
-                self.update_time()
-                self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string)
-                #self.t+=int(results.accumulation_stride)
+
+                if self.forward == True:
+                    if self.wasforward == False:
+                        for i in range(127):
+                            self.crawler_front.forward()
+                            self.wasforward = True
+
+                    #check if auto or cross correlation
+                    corr=list(results.current_correlation)
+                    if corr[0]==corr[1]:
+                        self.average_data()
+                    else:
+                        power_front = 10*np.log10(self.crawler_front.cross[results.current_correlation])
+                    
+
+                    
+                    self.line.set_ydata(self.filter_bank_data[:,63]) 
+                    #self.crawler_front.forward()
+                    self.filter_bank_data = np.hstack((self.filter_bank_data,(self.lofasm_data).reshape((2048,1)))) 
+                    self.filter_bank_data = np.delete(self.filter_bank_data,0,1) 
+                    self.im.set_data(self.filter_bank_data) 
+                    #self.update_time() 
+                    self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str((self.crawler_front.getAccNum()-63)-self.first_acc_num)+'integrations' )
+                    print self.crawler_front.getAccNum()
+                    #self.t+=int(results.accumulation_stride)
+
+                if self.forward == False:
+                    if self.wasforward == True:
+                        for i in range(127):
+                            self.crawler_front.backward()
+                        self.wasforward = False
+
+                    corr=list(results.current_correlation)
+                    if corr[0]==corr[1]:
+                        data_to_average = []
+                        for i in range(int(results.accumulation_stride)):
+                            data_to_average.append(10*np.log10(self.crawler_front.autos[results.current_correlation]))
+                            self.crawler_front.backward()
+                        self.lofasm_data = np.average(data_to_average, axis=0)
+                    else:
+                        power_mid = 10*np.log10(self.crawler_mid.cross[results.current_correlation])
+                        power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
+
+                    self.line.set_ydata(self.filter_bank_data[:,63])
+                    self.filter_bank_data = np.hstack(((self.lofasm_data).reshape((2048,1)),self.filter_bank_data))
+                    self.filter_bank_data = np.delete(self.filter_bank_data,127,1)
+                    self.im.set_data(self.filter_bank_data)
+                    self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str((self.crawler_front.getAccNum()+64)-self.first_acc_num)+'integrations' )
+                    print self.crawler_front.getAccNum()
+
 
             else:
                 pass
@@ -573,14 +606,24 @@ class GraphPage(tk.Frame):
     def plot(self):
         '''
         '''
-        if self.play == False:
-            self.play = True
-            self.pow_spec_plot.set_xlim(results.lower_freq,results.upper_freq)
-            self.pow_spec_plot.set_ylim(results.lower_power,results.upper_power)
-            print 'playing'
-        else:
-            self.play = False
-            print "paused" 
+        self.forward = True
+        self.play = True
+        self.pow_spec_plot.set_xlim(results.lower_freq,results.upper_freq)
+        self.pow_spec_plot.set_ylim(results.lower_power,results.upper_power)
+        print 'playing'
+
+    def pause(self):
+        '''
+        '''
+        self.play = False
+
+    def reverse(self):
+        self.forward = False
+        self.play = True
+        self.pow_spec_plot.set_xlim(results.lower_freq,results.upper_freq)
+        self.pow_spec_plot.set_ylim(results.lower_power,results.upper_power)
+        print 'playing'
+
 
     def save_movie(self):
         FFwriter = animation.FFMpegWriter()
@@ -593,7 +636,7 @@ if __name__ == '__main__':
         anim = animation.FuncAnimation(app.frames[GraphPage].fig,
             app.frames[GraphPage].animate,
             init_func=None,
-            frames=10000, interval=125, blit=False)
+            frames=10000, interval=166, blit=False)
 
         app.mainloop()
 
