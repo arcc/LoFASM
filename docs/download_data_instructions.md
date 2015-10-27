@@ -34,13 +34,12 @@ LoFASM III
     * Using `scp`
         * Now you will use the `scp` command to copy the data over to your current working directory. Let's say (as an example) that the data file you want to copy over is located at `/data1/20151013/20151013_100501.lofasm`. Then the `scp` command that you'll be using would be
 
-        `scp -P 8324 \ controller@localhost:/data1/20151013/20151013_100501.lofasm .`
+        `scp -P 8324 controller@localhost:/data1/20151013/20151013_100501.lofasm .`
     * Using `rsync`
         * If you want to use the `rsync` command to copy the data over to your local machine then the command analogous to the example above is
 
         `rsync -av --progress -e 'ssh -p8324' \ controller@localhost:/data1/20151013/20151013_100501.lofasm .`
 
-    Where the `\` character indicates the continuation of a single line.
 
     Notice that the port number _8324_ is the same number that was used in step 2 immediately after the _-L_ flag. This is important. Those numbers (be what they may) must be identical. The port number at the end of that parameter (_22_) __must not be changed__ under any circumstances. The flag _-P_ must contain a capital P.
 
