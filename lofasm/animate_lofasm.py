@@ -28,6 +28,11 @@ BASELINE_ID = {
         'B' : 'OEW',
         'C' : 'INS',
         'D' : 'IEW'},
+    'LoFASM3' : {
+        'A' : 'ONS',
+        'B' : 'OEW',
+        'C' : 'INS',
+        'D' : 'IEW'},
     'LoFASMIV' : {
         'A' : 'OEW',
         'B' : 'ONS',

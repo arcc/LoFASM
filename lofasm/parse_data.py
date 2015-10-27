@@ -688,7 +688,7 @@ class LoFASMFileCrawler(object):
         #get times
         self.int_time = TimeDelta(float(self._file_hdr[10][1]), format='sec')
         mjd_start = float(self._file_hdr[8][1]) + float(self._file_hdr[9][1])/1000/86400
-        self.time_start = Time(mjd_start, format='mjd')
+        self.time_start = Time(mjd_start, format='mjd', scale='utc')
         self.time = self.time_start
 
 
