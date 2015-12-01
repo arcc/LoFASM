@@ -315,13 +315,16 @@ class GraphPage(tk.Frame):
                 self.crawler_front.forward()
             self.lofasm_data = np.average(data_to_average, axis=0)
         else:
-            power_mid = 10*np.log10(self.crawler_mid.cross[results.current_correlation])
-            power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
+            data_to_average = []
+            for i in range(int(results.accumulation_stride)):
+                data_to_average.append(10*np.log10(np.abs(self.crawler_front.cross[results.current_correlation])))
+                self.crawler_front.forward()
+            self.lofasm_data = np.average(data_to_average, axis=0)
 
         self.line.set_ydata(self.filter_bank_data[:,(self.color_plot_size/2)])
         self.filter_bank_data = np.hstack((self.filter_bank_data,(self.lofasm_data).reshape((2048,1))))
         self.filter_bank_data = np.delete(self.filter_bank_data,0,1)
-        self.im.set_data(self.filter_bank_data)
+        self.im.set_data(np.array(self.filter_bank_data))
         #self.update_time()
         self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str(self.crawler_front.getAccNum()-(((self.color_plot_size/2)-1)*int(results.accumulation_stride))-self.first_acc_num)+'integrations' )
 
@@ -463,11 +466,32 @@ class GraphPage(tk.Frame):
             #read in first 64 integrations to populate the colorplot
             for i in range((self.color_plot_size/2)-1):
                 if results.accumulation_stride == 1:
-                    self.lofasm_data = 10*np.log10(self.crawler_front.autos[results.current_correlation])
+                    corr=list(results.current_correlation)
+                    if corr[0]==corr[1]:
+                        self.lofasm_data = 10*np.log10(self.crawler_front.autos[results.current_correlation])
+                    else:
+                        self.lofasm_data = 10*np.log10(np.abs(self.crawler_front.cross[results.current_correlation]))
                     self.crawler_front.forward()
                     print self.crawler_front.getAccNum()
                 elif results.accumulation_stride > 1:
-                    self.average_data()
+                    corr=list(results.current_correlation)
+                    if corr[0]==corr[1]:
+                        data_to_average = []
+                        for i in range(int(results.accumulation_stride)):
+                            data_to_average.append(10*np.log10(self.crawler_front.autos[results.current_correlation]))
+                            self.crawler_front.forward()
+                        self.lofasm_data = np.average(data_to_average, axis=0)
+                    else:
+                        data_to_average = []
+                        for i in range(int(results.accumulation_stride)):
+                            data_to_average.append(10*np.log10(np.abs(self.crawler_front.cross[results.current_correlation])))
+                            self.crawler_front.forward()
+                        self.lofasm_data = np.average(data_to_average, axis=0)
+
+
+
+
+                    
                 self.filter_bank_data = np.hstack((self.filter_bank_data, self.lofasm_data.reshape((2048,1))))
             print np.shape(self.filter_bank_data)
 
@@ -540,12 +564,17 @@ class GraphPage(tk.Frame):
                     #check if auto or cross correlation
                     corr=list(results.current_correlation)
                     if corr[0]==corr[1]:
-                        self.average_data()
+                        data_to_average = []
+                        for i in range(int(results.accumulation_stride)):
+                            data_to_average.append(10*np.log10(self.crawler_front.autos[results.current_correlation]))
+                            self.crawler_front.forward()
+                        self.lofasm_data = np.average(data_to_average, axis=0)
                     else:
-                        print np.log10(self.crawler_front.cross[results.current_correlation])[400:420]
-                        self.lofasm_data = 10*np.absolute(np.log10(self.crawler_front.cross[results.current_correlation]))
-                        self.crawler_front.forward()
-                    
+                        data_to_average = []
+                        for i in range(int(results.accumulation_stride)):
+                            data_to_average.append(10*np.log10(np.abs(self.crawler_front.cross[results.current_correlation])))
+                            self.crawler_front.forward()
+                        self.lofasm_data = np.average(data_to_average, axis=0)
 
                     
                     self.line.set_ydata(self.filter_bank_data[:,((self.color_plot_size/2)-1)]) 
