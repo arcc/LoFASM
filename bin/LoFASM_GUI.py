@@ -434,12 +434,6 @@ class GraphPage(tk.Frame):
         self.file_type = results.file_name.split('.')[1]
         print "this is the file type "+self.file_type
 
-    def average_data(self):
-        data_to_average = []
-        for i in range(int(results.accumulation_stride)):
-            data_to_average.append(10*np.log10(self.crawler_front.autos[results.current_correlation]))
-            self.crawler_front.forward()
-        self.lofasm_data = np.average(data_to_average, axis=0)
 
 
     def _open(self): 
@@ -491,7 +485,7 @@ class GraphPage(tk.Frame):
 
 
 
-                    
+
                 self.filter_bank_data = np.hstack((self.filter_bank_data, self.lofasm_data.reshape((2048,1))))
             print np.shape(self.filter_bank_data)
 
