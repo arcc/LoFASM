@@ -133,7 +133,8 @@ class GraphPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.freqs = np.linspace(0, 200, 2048)
-        self.filter_bank_data = np.zeros((2048,64))
+        self.color_plot_size = 256
+        self.filter_bank_data = np.zeros((2048,(self.color_plot_size/2)))
         self.t = 0
         self.openedfile = False
 
@@ -289,7 +290,7 @@ class GraphPage(tk.Frame):
 
         #Create 'colorplot'
         self.filter_bank_plot = self.fig.add_subplot(3,1,(2,3))
-        self.im = self.filter_bank_plot.imshow(self.filter_bank_data, aspect='auto',interpolation='none', cmap='spectral', extent=[(-63*0.083),(64*0.083),200,0])
+        self.im = self.filter_bank_plot.imshow(self.filter_bank_data, aspect='auto',interpolation='none', cmap='spectral', extent=[(-((self.color_plot_size/2)-1)*0.083*int(results.accumulation_stride)),((self.color_plot_size/2)*0.083*int(results.accumulation_stride)),200,0])
         self.filter_bank_plot.set_ylim(0,100)
         self.filter_bank_plot.axvline(x=0, color='r',ymin=0, ymax=.5)
         self.filter_bank_plot.axvline(x=0, color='r',ymin=.5, ymax=1)
@@ -303,7 +304,7 @@ class GraphPage(tk.Frame):
         only use while paused
         '''
         if self.forward == False:
-            for i in range(127):
+            for i in range(((self.color_plot_size/2)-1)*int(results.accumulation_stride)):
                 self.crawler_front.forward()
             self.forward = True
         corr=list(results.current_correlation)
@@ -317,13 +318,14 @@ class GraphPage(tk.Frame):
             power_mid = 10*np.log10(self.crawler_mid.cross[results.current_correlation])
             power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
 
-        self.line.set_ydata(self.filter_bank_data[:,64])
+        self.line.set_ydata(self.filter_bank_data[:,(self.color_plot_size/2)])
         self.filter_bank_data = np.hstack((self.filter_bank_data,(self.lofasm_data).reshape((2048,1))))
         self.filter_bank_data = np.delete(self.filter_bank_data,0,1)
         self.im.set_data(self.filter_bank_data)
         #self.update_time()
-        self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str((self.crawler_front.getAccNum()-63)-self.first_acc_num)+'integrations' )
-        print self.crawler_front.getAccNum()
+        self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str(self.crawler_front.getAccNum()-(((self.color_plot_size/2)-1)*int(results.accumulation_stride))-self.first_acc_num)+'integrations' )
+
+        print ((self.color_plot_size/2)-1)-self.first_acc_num
 
 
     def step_backward(self):
@@ -332,7 +334,7 @@ class GraphPage(tk.Frame):
         only use while paused
         '''
         if self.forward == True:
-            for i in range(127):
+            for i in range((self.color_plot_size/2)*int(results.accumulation_stride)):
                 print "going back" + str(i)
                 self.crawler_front.backward()
             self.forward = False
@@ -348,11 +350,11 @@ class GraphPage(tk.Frame):
             power_mid = 10*np.log10(self.crawler_mid.cross[results.current_correlation])
             power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
 
-        self.line.set_ydata(self.filter_bank_data[:,63])
+        self.line.set_ydata(self.filter_bank_data[:,(self.color_plot_size/2)-1])
         self.filter_bank_data = np.hstack(((self.lofasm_data).reshape((2048,1)),self.filter_bank_data))
-        self.filter_bank_data = np.delete(self.filter_bank_data,127,1)
+        self.filter_bank_data = np.delete(self.filter_bank_data,(self.color_plot_size-1),1)
         self.im.set_data(self.filter_bank_data)
-        self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str((self.crawler_front.getAccNum()+64)-self.first_acc_num)+'integrations' )
+        self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str(self.crawler_front.getAccNum()+((self.color_plot_size/2)*int(results.accumulation_stride))-self.first_acc_num)+'integrations' )
         print self.crawler_front.getAccNum()
 
     def get(self):
@@ -389,6 +391,7 @@ class GraphPage(tk.Frame):
         if self.accumulation_stride_entry.get():                   # If the Entry field is not empty 
             results.accumulation_stride = self.accumulation_stride_entry.get() # Get the new value
             self.l12.configure(text=str(results.accumulation_stride)+' Integrations') # update label
+            #self.populate_page()
 
         if self.start_time_entry.get():                   # If the Entry field is not empty 
             results.start_frame = self.start_time_entry.get() # Get the new value
@@ -458,7 +461,7 @@ class GraphPage(tk.Frame):
                 self.update_start_time()
 
             #read in first 64 integrations to populate the colorplot
-            for i in range(63):
+            for i in range((self.color_plot_size/2)-1):
                 if results.accumulation_stride == 1:
                     self.lofasm_data = 10*np.log10(self.crawler_front.autos[results.current_correlation])
                     self.crawler_front.forward()
@@ -469,7 +472,7 @@ class GraphPage(tk.Frame):
             print np.shape(self.filter_bank_data)
 
             self.create_figure()
-            self.line.set_ydata(self.filter_bank_data[:,63])
+            self.line.set_ydata(self.filter_bank_data[:,((self.color_plot_size/2)-1)])
             self.openedfile = True
 
         elif self.file_type == "lofil":
@@ -481,7 +484,7 @@ class GraphPage(tk.Frame):
             self.load_file()
             self.lofil_file.seek(110)
 
-            for self.current_spectrum in range(63):
+            for self.current_spectrum in range(((self.color_plot_size/2)-1)):
                 self.lofil_spectrum = self.lofil_data_array[(self.current_spectrum*2048):((self.current_spectrum+1)*2048)]
                 self.lofil_spectrum = 10*np.log10(self.lofil_spectrum)
                 self.filter_bank_data = np.hstack((self.filter_bank_data, self.lofil_spectrum.reshape((2048,1))))
@@ -493,7 +496,7 @@ class GraphPage(tk.Frame):
         self.file_hour = int(self.file_hour)
         self.file_minute =int(self.file_minute)
         self.file_second = float(self.file_second)
-        self.file_second += 0.086
+        self.file_second += 0.083
 
         if self.file_second >= 60:
             self.file_minute += 1
@@ -525,12 +528,12 @@ class GraphPage(tk.Frame):
 
         if self.file_type == "lofasm":
 
-            #Animate if play button has been presses
+            #Animate if play button has been pressed
             if self.play == True:
 
                 if self.forward == True:
                     if self.wasforward == False:
-                        for i in range(127):
+                        for i in range((self.color_plot_size-1)*int(results.accumulation_stride)):
                             self.crawler_front.forward()
                             self.wasforward = True
 
@@ -539,23 +542,24 @@ class GraphPage(tk.Frame):
                     if corr[0]==corr[1]:
                         self.average_data()
                     else:
-                        power_front = 10*np.log10(self.crawler_front.cross[results.current_correlation])
+                        print np.log10(self.crawler_front.cross[results.current_correlation])[400:420]
+                        self.lofasm_data = 10*np.absolute(np.log10(self.crawler_front.cross[results.current_correlation]))
+                        self.crawler_front.forward()
                     
 
                     
-                    self.line.set_ydata(self.filter_bank_data[:,63]) 
-                    #self.crawler_front.forward()
+                    self.line.set_ydata(self.filter_bank_data[:,((self.color_plot_size/2)-1)]) 
                     self.filter_bank_data = np.hstack((self.filter_bank_data,(self.lofasm_data).reshape((2048,1)))) 
                     self.filter_bank_data = np.delete(self.filter_bank_data,0,1) 
                     self.im.set_data(self.filter_bank_data) 
                     #self.update_time() 
-                    self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str((self.crawler_front.getAccNum()-63)-self.first_acc_num)+'integrations' )
+                    self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str(self.crawler_front.getAccNum()-(((self.color_plot_size/2)-1)*int(results.accumulation_stride))-self.first_acc_num)+'integrations' )
                     print self.crawler_front.getAccNum()
                     #self.t+=int(results.accumulation_stride)
 
                 if self.forward == False:
                     if self.wasforward == True:
-                        for i in range(127):
+                        for i in range((self.color_plot_size-1)*int(results.accumulation_stride)):
                             self.crawler_front.backward()
                         self.wasforward = False
 
@@ -570,11 +574,11 @@ class GraphPage(tk.Frame):
                         power_mid = 10*np.log10(self.crawler_mid.cross[results.current_correlation])
                         power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
 
-                    self.line.set_ydata(self.filter_bank_data[:,63])
+                    self.line.set_ydata(self.filter_bank_data[:,((self.color_plot_size/2)-1)])
                     self.filter_bank_data = np.hstack(((self.lofasm_data).reshape((2048,1)),self.filter_bank_data))
-                    self.filter_bank_data = np.delete(self.filter_bank_data,127,1)
+                    self.filter_bank_data = np.delete(self.filter_bank_data,(self.color_plot_size-1),1)
                     self.im.set_data(self.filter_bank_data)
-                    self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str((self.crawler_front.getAccNum()+64)-self.first_acc_num)+'integrations' )
+                    self.pow_spec_plot.set_title(self.file_date_string+'\n ' +self.file_time_string+'+'+str(self.crawler_front.getAccNum()+((self.color_plot_size/2)*int(results.accumulation_stride))-self.first_acc_num)+'integrations' )
                     print self.crawler_front.getAccNum()
 
 
@@ -636,7 +640,7 @@ if __name__ == '__main__':
         anim = animation.FuncAnimation(app.frames[GraphPage].fig,
             app.frames[GraphPage].animate,
             init_func=None,
-            frames=10000, interval=166, blit=False)
+            frames=10000, interval=249, blit=False)
 
         app.mainloop()
 
