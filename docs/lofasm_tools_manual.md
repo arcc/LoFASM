@@ -38,13 +38,11 @@ In order to install the _lofasm_ Python package, the following conditions must b
 *  astropy is installed (version to be confirmed)
 
 ### Cloning into the LoFASM repo
-The LoFASM Tools are hosted at _lofasm.phys.utb.edu_ in a Git repository. The repository can be downloaded by using the Git clone command in the directory you would like the repository to copied in.
+The LoFASM Tools are hosted at [ARCC's Github Account](https://github.com/arcc). The repository can be downloaded by using the Git clone command in the directory you would like the repository to copied in.
 
-	git clone git@lofasm.phys.utb.edu:~/lofasm.git
+	git clone https://github.com/arcc/lofasm.git
 	
 >If you want to save the lofasm repo in the directory _~/repos_ then navigate there with `cd ~/repos` before running the command above.
-
-The Git command will ask you for a password. This password is `goLoFASM!2015`.
 
 If all goes well, a new directory called `lofasm` should appear in your local directory. Use `ls` to check if the repository was created.
 
@@ -56,7 +54,7 @@ First, you will need to navigate to the new _lofasm_ directory.
 
 The contents of the _lofasm_ directory should like this:
 
-![Alt text](/Users/louis/Documents/programming_sandbox/docs/lofasm_tools_manual/images/ls_lofasm_repo.png "lofasm directory listing")
+![Alt text](/Users/louis/Documents/programming_sandbox/python/lofasm/docs/images/ls_lofasm_repo.png "lofasm directory listing")
 
 The LoFASM tools can be installed by using the _setup.py_ script:
 
@@ -65,7 +63,7 @@ The LoFASM tools can be installed by using the _setup.py_ script:
 
 Here is an example of the output:
 	
-![Alt text](/Users/louis/Documents/programming_sandbox/docs/lofasm_tools_manual/images/install_output.png "setup.py output")
+![Alt text](/Users/louis/Documents/programming_sandbox/python/lofasm/docs/images/install_output.png "setup.py output")
 
 If all went according to plan, then the LoFASM Tools should now be completely installed. To confirm that the installation succeeded try pulling up the help menu for the LoFASM Plotter.
 
@@ -74,7 +72,7 @@ If all went according to plan, then the LoFASM Tools should now be completely in
 >If the file was not found, then try looking at the output from the _setup.py_
 >step to identify where the LoFASM executables have been stored. In the image above, the lines beginning with 'changing mode of' state the location of the executable LoFASM scripts. 
 >
->![Alt text](/Users/louis/Documents/programming_sandbox/docs/lofasm_tools_manual/images/install_output_execs.png "lofasm executables")
+>![Alt text](/Users/louis/Documents/programming_sandbox/python/lofasm/docs/images/install_output_execs.png "lofasm executables")
 >
 >Once you've identified where the executables have been stored then make sure 
 >the directory is in your path. 
@@ -95,7 +93,7 @@ identify corrupt integrations.
 > 
 > Access the help menu using `lofasm_plot.py -h`:
 > 
-> ![Alt text](/Users/louis/Documents/programming_sandbox/docs/lofasm_tools_manual/images/lofasm_plot_help.png "lofasm_plot.py help menu")
+> ![Alt text](/Users/louis/Documents/programming_sandbox/python/lofasm/docs/images/lofasm_plot_help.png "lofasm_plot.py help menu")
 > 
 > The only flag that _lofasm\_plot.py_ requires is `-f`, which points to 
 > the LoFASM data file to be plotted. _The only exception to this is when the `-h` flag is used; this flag causes the program to print the help menu and exit. All other options are ignored._ 
@@ -105,7 +103,7 @@ identify corrupt integrations.
 > 
 > `lofasm_plot.py -f 20150328_210002.lofasm`
 > 
-> ![Alt text](/Users/louis/Documents/programming_sandbox/docs/lofasm_tools_manual/images/data_plot.png "lofasm_plot.py data plot")
+> ![Alt text](/Users/louis/Documents/programming_sandbox/python/lofasm/docs/images/data_plot.png "lofasm_plot.py data plot")
 > 
 > When the end of the file is reached the plotter will simply stop and wait 
 > until the plot window is manually closed.
@@ -149,7 +147,7 @@ All you have to do is tell lofasm-chop.py how many bytes of data (not including 
 > 
 > The help menu can be accessed with `lofasm-chop.py -h`.
 > 
-> ![Alt text](/Users/louis/Documents/programming_sandbox/docs/lofasm_tools_manual/images/lofasm_chop_help.png "lofasm-chop.py help menu")
+> ![Alt text](/Users/louis/Documents/programming_sandbox/python/lofasm/docs/images/lofasm_chop_help.png "lofasm-chop.py help menu")
 > 
 > To copy the first 10 integrations from file _20150328\_210002.lofasm_ and 
 > save them in a new file called _20150328\_210002\_chop.lofasm_ use 
@@ -171,7 +169,7 @@ the AA channel of an other wise 'zeroed out' LoFASM data file.
 
 > Usage: simulate\_signal\_as\_AA.py [-h] [-p PERIOD] [-t DURATION] -f FILENAME
 > 
-> ![Alt text](/Users/louis/Documents/programming_sandbox/docs/lofasm_tools_manual/images/simulate_help_menu.png "simulate_signal_as_AA.py help menu")
+> ![Alt text](/Users/louis/Documents/programming_sandbox/python/lofasm/docs/images/simulate_help_menu.png "simulate_signal_as_AA.py help menu")
 > 
 > There are only three pieces of input needed for this script. 
 > 

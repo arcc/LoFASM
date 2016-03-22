@@ -43,6 +43,7 @@ if __name__ == '__main__':
     else:
         input_filename = opts.input_filename
         lofasm_input_file = open(input_filename, 'rb')
+        
     hdr_dict = pdat.parse_file_header(lofasm_input_file)
 
     lofasm_station = hdr_dict[4][1]
@@ -51,11 +52,13 @@ if __name__ == '__main__':
     #get starting location (beginning of data)
     if opts.start_position < 0:
         print "Starting from location 0."
-        crawler = pdat.LoFASMFileCrawler(opts.input_filename, scan_file=True)
+        crawler = pdat.LoFASMFileCrawler(opts.input_filename)
+        crawler.open()
     else:
         print "Skipping to specified location: %i" %( opts.start_position)
         lofasm_input_file.seek(opts.start_position) #is this still necessary?
         crawler = pdat.LoFASMFileCrawler(opts.input_filename, start_loc=opts.start_position)
+        crawler.open()
         print crawler.getFileHeader()
         
     burst_size_bytes = opts.packet_size_bytes * 17

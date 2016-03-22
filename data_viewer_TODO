@@ -1,0 +1,13 @@
+#TODO list for branch data_viewer
+
+
+fully integrate LoFASM crawler
+
+update plotting parameters (x & y limits) in real time.
+
+pause/ play button
+
+ability to go in reverse.
+
+integrate GUI into single window
+
