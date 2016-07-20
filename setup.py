@@ -15,7 +15,8 @@ setup(
     'bin/rec_snap.sh', 'bin/init_roach.sh', 'bin/simulate_signal_as_AA.py',
     'bin/simulate_zeros_as_AA.py', 'bin/lofasm-chop.py','bin/LoFASM_GUI.py',
     'bin/sched_parser.py','bin/schedule_obs.py', 'bin/lofasm2fil.py',
-     'bin/fbplot.py'],
+     'bin/fbplot.py', 'bin/sampfile.py', 'bin/readfile.py', 'bin/sampdir.sh',
+             'bin/waterfall.py', 'bin/stethoscope.py'],
     description='LoFASM Tools',
     long_description=open('README.md').read(),
     install_requires=[
@@ -24,5 +25,3 @@ setup(
         "scipy",
         "astropy"],
 )
-
-
