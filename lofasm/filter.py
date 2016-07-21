@@ -1,5 +1,7 @@
 #library for LoFASM filters
 
+import numpy as np
+
 def running_median(y, N=50):
     '''
     Given a list, y, perform a running median filter.
@@ -29,3 +31,21 @@ def running_median(y, N=50):
         a.sort(cmp=None, key=None, reverse=False)
         ymed.append(a[(len(a)-1)/2+1])
     return ymed
+
+
+def medfilt (x, k):
+    """Apply a length-k median filter to a 1D array x.
+    Boundaries are extended by repeating endpoints.
+    """
+    assert k % 2 == 1, "Median filter length must be odd."
+    assert x.ndim == 1, "Input must be one-dimensional."
+    k2 = (k - 1) // 2
+    y = np.zeros ((len (x), k), dtype=x.dtype)
+    y[:,k2] = x
+    for i in range (k2):
+        j = k2 - i
+        y[j:,i] = x[:-j]
+        y[:j,i] = x[0]
+        y[:-j,-(i+1)] = x[j:]
+        y[-j:,-(i+1)] = x[-1]
+    return np.median (y, axis=1)
