@@ -16,7 +16,7 @@ plt.ion()
 
 centertime_bin = s.cable_offset_bins
 
-def getLightCurve(data, timestamps, RA, DEC, winsize=0):
+def getLightCurve(data, timestamps, RA, DEC, winsize=0, orientation='left'):
     '''
     apply tdelay shift to data for each timestamp in timestamps
     '''
@@ -27,13 +27,20 @@ def getLightCurve(data, timestamps, RA, DEC, winsize=0):
     N = len(timestamps)
 
     start_dcalc = time()
-#    print "Calculating Delays...",
+
     sys.stdout.flush()
     delays = s.calcDelays(RA, DEC, s.rot_ang, timestamps)
     end_dcalc = time()
-#    print "\t done in {} s".format(end_dcalc - start_dcalc)
+
+    if orientation == 'left':
+        o = -1
+    elif orientation == 'right':
+        o = 1
+    else:
+        raise ValueError()
     
-    dbins = -1 * delays / s.calcBinWidth(100000000.0)
+    factor = o / s.calcBinWidth(100000000.0)
+    dbins = factor * delays
 
     start_curve = time()
 
