@@ -27,26 +27,26 @@ if __name__ == "__main__":
                         help='path to output file to store 2d map')
     parser.add_argument('--ra',nargs=2,
                         help='min and max values for Right Ascension, in radians. format: --ra 0.0 6.2831',
-                        default=['0.0', '6.2831'])
+                        default=['0.0', '6.2831'], type=float)
     parser.add_argument('--dec', nargs=2,
                         help='min and max values for Declination, in radians. format: --dec -3.1415 3.1415',
-                        default=['-3.1415', '3.1515'])
+                        default=['-3.1415', '3.1515'],type=float)
     parser.add_argument('--Nra', help='integer number of RA values, default is 10', default=10, type=int)
     parser.add_argument('--Ndec', help='integer number of DEC values, default is 10', default=10, type=int)
     args = parser.parse_args()
     
     assert os.path.exists(args.inputfile)
-    assert (args.w >= 0), 'windows size must be a positive integer'
+    assert (args.windowsize >= 0), 'windows size must be a positive integer'
 
     minRA, maxRA = args.ra
     minDEC, maxDEC = args.dec
     Nra = args.Nra
     Ndec = args.Ndec
     infile = args.inputfile
-    winSize = args.w
+    winSize = args.windowsize
 
-    assert(minRA >= 0.0 and minRA <= 2*np.pi), 'minimum RA value but be a positive value between 0 and 2*pi'
-    assert(maxRA >= 0.0 and maxRA <= 2*np.pi), 'maximum RA value but be a positive value between 0 and 2*pi'
+    assert(minRA >= 0.0 and minRA <= 2*np.pi), 'minimum RA value must be a positive value between 0 and 2*pi'
+    assert(maxRA >= 0.0 and maxRA <= 2*np.pi), 'maximum RA value must be a positive value between 0 and 2*pi'
     assert(minDEC >= -1*np.pi and minDEC <= np.pi), 'Declination value must be within the range -pi..pi'
     assert(maxDEC >= -1*np.pi and maxDEC <= np.pi), 'Declination value must be within the range -pi..pi'
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     print "Reading file: {}".format(infile),
     sys.stdout.flush()
     with open(infile, 'rb') as f:
-        data, _, timestamps = pickle.load(f)
+        data, timestamps = pickle.load(f)
     end_load = time()
     print "\t done in {} s".format(end_load - start_load)
 
