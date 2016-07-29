@@ -70,6 +70,8 @@ if __name__ == "__main__":
     parser.add_argument('output', help='name of output', type=str)
     parser.add_argument('windowsize', help='number of nearby bins to consider, default is 0', default=0, type=int)
     parser.add_argument('--target', help='name of the target', default='None')
+    parser.add_argument('--orientation', default='left', choices=['left', 'right'],
+                        type=str, help='shift direction. usually left for BC and right for AB')
     
     args = parser.parse_args()
 
@@ -93,7 +95,7 @@ if __name__ == "__main__":
     end_load = time()
     print "\t done in {} s".format(end_load - start_load)
 
-    lightcurve = getLightCurve(data, timestamps, RA, DEC, winsize)
+    lightcurve = getLightCurve(data, timestamps, RA, DEC, winsize, args.orientation)
 
     #save intermediate data to disk
     fout = args.output if args.output.endswith('.lightcurve') else args.output + '.lightcurve'
