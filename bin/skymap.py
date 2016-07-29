@@ -5,6 +5,10 @@ import sys, os
 import numpy as np
 import applyDelay as s
 import pickle
+import platform
+if platform.system() == "Linux":
+    import matplotlib
+    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from time import time
 import multiprocessing as mp

@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 
-import matplotlib
-matplotlib.use("TkAgg")
+import platform
+if platform.system() == "Linux":
+    import matplotlib
+    matplotlib.use("Agg")
 from lofasm import parse_data as pdat
 from lofasm import parse_data_H as pdat_H
 import matplotlib.pyplot as plt
