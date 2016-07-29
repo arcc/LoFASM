@@ -81,6 +81,10 @@ if __name__ == "__main__":
     import argparse
     import os, sys
     import pickle
+    import platform
+    if platform.system() == "Linux":
+        import matplotlib
+        matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     parser = argparse.ArgumentParser()
     parser.add_argument('input', help='path to input file')
