@@ -917,4 +917,4 @@ class LoFASMFileCrawler(object):
         del self.beams
         del self._burst
         del self._lofasm_file
-        print "released memory"
+#        print "released memory"
