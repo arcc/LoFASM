@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument('windowsize', help='number of nearby bins to consider, default is 0', default=0, type=int)
     parser.add_argument('--target', help='name of the target', default='None')
     parser.add_argument('--orientation', default='left', choices=['left', 'right'],
-                        type=str, help='shift direction. usually left for BC and right for AB')
+                        type=str, help='shift direction. usually left for AB and right for BC')
     
     args = parser.parse_args()
 

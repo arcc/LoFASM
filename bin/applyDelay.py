@@ -121,6 +121,7 @@ if __name__ == "__main__":
 
 
     with open("{}.lofasm2d".format(output) if not output.endswith('.lofasm2d') else output, 'wb') as f:
+        print "writing {}".format(f.name)
         pickle.dump((shiftedData, timestamps), f)
 
     if args.lbin is not -1:
