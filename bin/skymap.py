@@ -49,10 +49,10 @@ if __name__ == "__main__":
     infile = args.inputfile
     winSize = args.windowsize
 
-    assert(minRA >= 0.0 and minRA <= 2*np.pi), 'minimum RA value must be a positive value between 0 and 2*pi'
-    assert(maxRA >= 0.0 and maxRA <= 2*np.pi), 'maximum RA value must be a positive value between 0 and 2*pi'
-    assert(minDEC >= -1*np.pi and minDEC <= np.pi), 'Declination value must be within the range -pi..pi'
-    assert(maxDEC >= -1*np.pi and maxDEC <= np.pi), 'Declination value must be within the range -pi..pi'
+#    assert(minRA >= 0.0 and minRA <= 2*np.pi), 'minimum RA value must be a positive value between 0 and 2*pi'
+#    assert(maxRA >= 0.0 and maxRA <= 2*np.pi), 'maximum RA value must be a positive value between 0 and 2*pi'
+    assert(minDEC >= -1*np.pi/2 and minDEC <= np.pi/2), 'Declination value must be within the range -pi..pi'
+    assert(maxDEC >= -1*np.pi/2 and maxDEC <= np.pi/2), 'Declination value must be within the range -pi..pi'
 
     RA_range = np.linspace(minRA, maxRA, Nra)
     DEC_range = np.linspace(minDEC, maxDEC, Ndec)
@@ -87,7 +87,8 @@ if __name__ == "__main__":
             pool_args.append( (i, k) )
 
     print "parent: {}".format(os.getpid())
-    pool = mp.Pool(mp.cpu_count())
+    cpus = 1 if mp.cpu_count()==1 else mp.cpu_count()-1
+    pool = mp.Pool(cpus)
     pool.map(skymap, pool_args)
 
     #save intermediate data to disk
@@ -98,6 +99,8 @@ if __name__ == "__main__":
     
     plt.figure()
     plt.imshow(10*np.log10(shared_array), aspect='auto', extent=[minRA, maxRA, minDEC, maxDEC])
+    plt.plot(5.23366,0.71094094, 'r*')
+    plt.plot(6.122178,1.0262536, 'b*')
     plt.grid()
     plt.title(dt)
     plt.savefig(args.outfile+'.png')
