@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-
+#file: lofasm2d.py
+#author: Louis Dartez
 
 import platform
 if platform.system() == "Linux":
@@ -17,15 +18,19 @@ from time import time
 east_long_radians = 4.243069944523414
 lat_radians = 0.6183119763398577
 lofasm4_outrigger_distance = 549.913767 #nanoseconds
-td_bin = 10 #ns
-rot_ang = -10.42 * np.pi/180
+td_bin = 10 #ns, TODO: this is only the case for BW=100MHz!!!
+rot_ang = -10.42 * np.pi/180 #adjusts for the alignment of outrigger/fullstation system
 
 
 if __name__ == "__main__":
     import argparse
     import os, sys
     import pickle
-    parser = argparse.ArgumentParser()
+
+    description = '''lofasm2d.py: Read LoFASM Data and create 2d timelapse plot.
+    This script will output the 2d data array as a pickle serial file as well as 
+    plot the data and save it in PNG format.'''
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument("filelist",
                         help="file containing paths to lofasm files to process. one on each line.")
     parser.add_argument("polarization",
