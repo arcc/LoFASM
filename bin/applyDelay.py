@@ -23,7 +23,7 @@ def calcBinWidth(BW):
     
 def shiftWaterfall(data, timestamps, RA, DEC, td_bin, orientation='left'):
     assert(type(orientation) == str), 'orientation must be a string: left or right'
-    assert(orientation.lower()=='left' or orientation.lower()=='right'), 'choices for orientation are left or right'
+    assert(orientation.lower()=='left' or orientation.lower()=='right'), 'choices for orientation are left and right'
     
     shiftedData = np.zeros(np.shape(data))
 
@@ -50,7 +50,7 @@ def calcDelays(RA, DEC, rot_ang, timestamps):
     return delays_ns
 
     
-def delay(RA,DEC,utc, rot_ang):
+def delay(RA,DEC,utc, rot_ang=rot_ang):
     return lofasm4_outrigger_distance * (np.cos(DEC)*np.sin(lst(utc)-RA)*np.cos(rot_ang) + np.sin(rot_ang)*(np.sin(DEC)*np.cos(lat_radians)-np.cos(DEC)*np.sin(lat_radians)*np.cos(lst(utc)-RA)))
 
 def lst(utc):
