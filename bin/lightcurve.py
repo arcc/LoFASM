@@ -54,7 +54,8 @@ def getLightCurve(data, timestamps, RA, DEC, winsize=0, orientation='left'):
         lightcurve[i] = data[k-w:k+w+1, i].sum()
     end_curve = time()
 
-    return filter.medfilt(lightcurve, 101)
+#    return filter.medfilt(lightcurve, 101)
+    return lightcurve
    
 
 if __name__ == "__main__":
