@@ -12,9 +12,28 @@ if platform.system() == "Linux":
 import matplotlib.pyplot as plt
 from time import time
 from lofasm import filter
+from datetime import datetime
+import sidereal
 plt.ion()
 
 centertime_bin = s.cable_offset_bins
+east_long_radians = 4.243069944523414
+
+
+def calcBinWidth(BW):
+    '''
+    calculate time delay bin width given bandwidth in Hz.
+
+    returns time in nanoseconds
+    '''
+    BW = float(BW)
+    return (1/BW)/1e-9
+def lst(utc):
+    gst = sidereal.SiderealTime.fromDatetime(utc)
+    return gst.lst(east_long_radians).radians
+
+def lha(utc, RA):
+    return lst(utc) - RA
 
 def getLightCurve(data, timestamps, RA, DEC, winsize=0, orientation='left'):
     '''
@@ -39,7 +58,7 @@ def getLightCurve(data, timestamps, RA, DEC, winsize=0, orientation='left'):
     else:
         raise ValueError()
     
-    factor = o / s.calcBinWidth(100000000.0)
+    factor = o / calcBinWidth(100000000.0)
     dbins = factor * delays
 
     start_curve = time()
@@ -51,7 +70,7 @@ def getLightCurve(data, timestamps, RA, DEC, winsize=0, orientation='left'):
     
     for i in range(N):
         k = centertime_bin+int(dbins[i])
-        lightcurve[i] = data[k-w:k+w+1, i].sum()
+        lightcurve[i] = (np.abs(data[k-w:k+w+1, i])**2).sum()
     end_curve = time()
 
 #    return filter.medfilt(lightcurve, 101)
@@ -63,6 +82,7 @@ if __name__ == "__main__":
     import os, sys
     from time import time
     from lofasm import filter
+    from matplotlib.ticker import FuncFormatter, FixedLocator
 
     parser = argparse.ArgumentParser()
     parser.add_argument('ra', help='ra in radians', type=float)
@@ -70,7 +90,6 @@ if __name__ == "__main__":
     parser.add_argument('input', help="path to input lofasm2d file")
     parser.add_argument('output', help='name of output', type=str)
     parser.add_argument('windowsize', help='number of nearby bins to consider, default is 0', default=0, type=int)
-    parser.add_argument('--target', help='name of the target', default='None')
     parser.add_argument('--orientation', default='left', choices=['left', 'right'],
                         type=str, help='shift direction. usually left for AB and right for BC')
     
@@ -92,21 +111,43 @@ if __name__ == "__main__":
     print "Reading file: {}".format(infile),
     sys.stdout.flush()
     with open(infile, 'rb') as f:
-        data, timestamps = pickle.load(f)
+        fdict = pickle.load(f)
+        data = fdict['data']
+        timestamps = fdict['timestamps']
+        BW = fdict['BW']
     end_load = time()
+
     print "\t done in {} s".format(end_load - start_load)
 
     lightcurve = getLightCurve(data, timestamps, RA, DEC, winsize, args.orientation)
 
+    output_dict = {
+        'data': lightcurve,
+        'timestamps': timestamps,
+        'BW': BW
+    }
+
     #save intermediate data to disk
     fout = args.output if args.output.endswith('.lightcurve') else args.output + '.lightcurve'
     with open(fout, 'wb') as f:
-        pickle.dump((lightcurve, timestamps), f)
+        pickle.dump(output_dict, f)
+
+
 
     #plot data
-    plt.figure()
-    plt.plot(10*np.log10(lightcurve))
-    plt.title(args.target)
+    def lst_tick(x, pos):
+        hour = (lst(timestamps[int(x)]) * 180 / np.pi ) / 15
+        minute = (hour - int(hour)) * 60.0
+        second = (minute - int(minute)) * 60.0
+        lha_val = lha(timestamps[int(x)], RA)
+        return "{:2d}h{:2d}m{:2.3f}s\n{:2.2f}rad".format(int(hour), int(minute), second, lha_val)
+
+    fig, ax = plt.subplots()
+    ax.xaxis.set_major_formatter(FuncFormatter(lst_tick))
+    ax.xaxis.set_major_locator(FixedLocator(np.linspace(0,len(timestamps)-1,5)))
+    plt.xlabel('LST')
+    ax.set_title(args.output)
+    plt.plot(lightcurve)
     plt.grid()
     plt.savefig(fout + '.png', format='png')
 

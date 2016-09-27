@@ -11,16 +11,9 @@ lofasm4_outrigger_distance = 549.913767 #nanoseconds
 rot_ang = -10.42 * np.pi/180
 cable_offset_bins = 580
 
-# function definitions
-def calcBinWidth(BW):
-    '''
-    calculate time delay bin width given bandwidth in Hz.
 
-    returns time in nanoseconds
-    '''
-    BW = float(BW)
-    return (1/BW)/1e-9
-    
+# function definitions
+
 def shiftWaterfall(data, timestamps, RA, DEC, td_bin, orientation='left'):
     assert(type(orientation) == str), 'orientation must be a string: left or right'
     assert(orientation.lower()=='left' or orientation.lower()=='right'), 'choices for orientation are left and right'
@@ -49,7 +42,6 @@ def calcDelays(RA, DEC, rot_ang, timestamps):
         delays_ns[i] = delay(RA, DEC, timestamps[i], rot_ang)
     return delays_ns
 
-    
 def delay(RA,DEC,utc, rot_ang=rot_ang):
     return lofasm4_outrigger_distance * (np.cos(DEC)*np.sin(lst(utc)-RA)*np.cos(rot_ang) + np.sin(rot_ang)*(np.sin(DEC)*np.cos(lat_radians)-np.cos(DEC)*np.sin(lat_radians)*np.cos(lst(utc)-RA)))
 
@@ -86,15 +78,12 @@ if __name__ == "__main__":
         import matplotlib
         matplotlib.use('Agg')
     import matplotlib.pyplot as plt
+    from matplotlib.ticker import FuncFormatter, FixedLocator
     parser = argparse.ArgumentParser()
     parser.add_argument('input', help='path to input file')
-    parser.add_argument('BW', help="bandwidth of data in MHz", type=float)    
     parser.add_argument('ra', help='Right Ascension of the source in radians', type=float)
     parser.add_argument('dec', help='Declination of the source in radians', type=float)
-    parser.add_argument('-o', '--output', help='name of output image', default='out.png')
-    parser.add_argument('--source', help="name of the source", type=str, default='unknownsource')
-    parser.add_argument('--lbin', help='low bin', type=int, default=-1)
-    parser.add_argument('--hbin', help="high bin", type=int, default=-1)
+    parser.add_argument('-o', '--output', help='name of output file', default='out.corrected2d')
     parser.add_argument('--orientation',
                         help='direction in which to apply the delay. right or left. default is left',
                         type=str, choices=['left','right'], default='left')
@@ -106,45 +95,45 @@ if __name__ == "__main__":
     infile = args.input
     RA = args.ra
     DEC = args.dec
-    source = args.source
     output = args.output
-    BW = args.BW * 1e6 #Hz
 
-    #load data
+    #load .delay2d data
     with open(infile, 'rb') as f:
-        (data, timestamps) = pickle.load(f)
+        fdict = pickle.load(f)
+        binwidth = fdict['binwidth']
+        data = fdict['data']
+        timestamps = fdict['timestamps']
+    
 
 
-    print "RA: {} rad. Dec: {} rad. time resolution: {} ns".format(RA, DEC, calcBinWidth(BW))
-    shiftedData = shiftWaterfall(data, timestamps, RA, DEC, calcBinWidth(BW), args.orientation)
+    print "RA: {} rad. Dec: {} rad. time resolution: {} ns".format(RA, DEC, binwidth)
+    shiftedData = shiftWaterfall(data, timestamps, RA, DEC, binwidth, args.orientation)
     avg = shiftedData.sum(1)
 
+    output_dict = {
+        'data': shiftedData,
+        'timestamps': timestamps,
+        'binwidth': binwidth,
+    }
 
-    with open("{}.lofasm2d".format(output) if not output.endswith('.lofasm2d') else output, 'wb') as f:
+
+    with open("{}.corrected2d".format(output) if not output.endswith('.corrected2d') else output, 'wb') as f:
         print "writing {}".format(f.name)
-        pickle.dump((shiftedData, timestamps), f)
+        pickle.dump(output_dict, f)
 
-    if args.lbin is not -1:
-        assert args.lbin >= 0
-        lowbin = args.lbin
-    else:
-        lowbin = 0
+    print binwidth
 
-    if args.hbin is not -1:
-        assert args.hbin >= 0
-        highbin = args.hbin
-    else:
-        highbin = np.shape(data)[0]
+    def lst_tick(x, pos):
+        hour = (lst(timestamps[int(x)]) * 180 / np.pi ) / 15
+        minute = (hour - int(hour)) * 60.0
+        second = (minute - int(minute)) * 60.0
+        return "{:2d}h{:2d}m{:2.3f}s".format(int(hour), int(minute), second)
 
-            
-    fig = plt.figure(1)
-    plt.subplot(211)
-    plt.title(source)    
-    plt.plot(avg[lowbin:highbin])
-    plt.grid()
-
-    plt.subplot(212)
-    plt.imshow(10*np.log10(shiftedData[lowbin:highbin,:]), aspect='auto')
+    fig, ax = plt.subplots()
+    ax.xaxis.set_major_formatter(FuncFormatter(lst_tick))
+    ax.xaxis.set_major_locator(FixedLocator(np.linspace(0,len(timestamps)-1,5)))
+    ax.set_title(output)
+    ax.imshow(10*np.log10(shiftedData), aspect='auto')
     plt.grid()
 
     fig.savefig(output.rstrip('.png') + '.png')
