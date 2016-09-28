@@ -8,9 +8,8 @@ from lofasm.write import write_header_to_file
 from lofasm import config
 import signal
 import logging
-from subprocess import call
+from subprocess import call, check_call, CalledProcessError
 from astropy.time import Time
-import gzip
 
 #IP address & port to listen on
 IP_ADDRESS = '192.168.4.5'
@@ -118,14 +117,14 @@ def write(q, dirname, logger):
             tstamp, data = q.get()
 
             try:
-                fname = dirname + tstamp.strftime("%Y%m%d_%H%M%S")+".lofasm.gz"
+                fpath = dirname + tstamp.strftime("%Y%m%d_%H%M%S")+".lofasm"
 
                 #open file & write header
-                ofile = gzip.open(fname, 'wb')
+                ofile = open(fpath, 'wb')
                 write_header_to_file(ofile, STATION, Time(tstamp))
 
             except IOError as err:
-                print err.strerror, err.fname
+                print err.strerror, err.fpath
 
             blocksize = len(data)
 
@@ -140,9 +139,32 @@ def write(q, dirname, logger):
 
             logger.info("{}: wrote {:.2f} MB to {} at {} MB/s in {}s".format(
                 mp.current_process(),
-                float(blocksize)*2**-20, fname,
+                float(blocksize)*2**-20, fpath,
                 (float(blocksize)*2**-20)/(time_elapsed).total_seconds(),
                 time_elapsed.total_seconds()))
+
+            #gzip data file
+            logger.info("{}: initiating archiving and compression process for {}".format(
+                mp.current_process(),
+                fpath))
+            try:
+                args = ["loco2bx.py", "{}".format(fpath)]
+                callstart = Time.now()
+                check_call(args)
+                callend = Time.now()
+                callduration = (callend - callstart).sec
+                logger.info("archived and compressed {} in {:.2f} seconds".format(
+                    fpath, callduration))
+            except CalledProcessError as err:
+                logger.error("command failed (errno {}): {}".format(err.returncode, args))
+                logger.error(err.message)
+
+            #remove .lofasm file
+            try:
+                logger.debug("removing {}".format(fpath))
+                os.remove(fpath)
+            except:
+                logger.error("unable to remove {}".format(fpath))
 
 class CleanKiller(object):
     def __init__(self):
@@ -173,7 +195,7 @@ def main():
     logger.info("Active Data Disk {}".format(dirname))
 
     q = mp.JoinableQueue()
-    Nwriters = 1
+    Nwriters = 2
     writers = []
     lp = mp.Process(target=listen, args=(q, logger,), name='LoFASM Sniffer')
 

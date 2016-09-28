@@ -11,6 +11,8 @@ polarizations = "AA,BB,CC,DD,AB,AC,AD,BC,BD,CD"
 # Imports
 from lofasm import parse_data as pdat
 import struct, os, sys, argparse, time, array, shutil
+import gzip
+
 start = time.time()
 
 # Functions
@@ -197,8 +199,8 @@ for inname in args.files:
             try:
                 crawler.forward( 1 )
             except:
-                print ( "Truncating " + inname + " after " + ( k + 1 )
-                        + " of " + nint + " integrations (advance error)" )
+                print ( "Truncating " + inname + " after " + str( k + 1 )
+                        + " of " + str(nint) + " integrations (advance error)" )
                 break
 
     # End loop over integrations.
@@ -210,9 +212,9 @@ for inname in args.files:
     # Write header files and concatenate.
     for pol in filepols:
         if args.ascii:
-            outname = splitname[0] + "_" + pol + ".abx"
+            outname = splitname[0] + "_" + pol + ".abx.gz"
         else:
-            outname = splitname[0] + "_" + pol + ".bbx"
+            outname = splitname[0] + "_" + pol + ".bbx.gz"
         try:
             hdrfile = open( splitname[0] + "_" + pol + ".hdr", "wb" )
         except:
@@ -264,7 +266,7 @@ for inname in args.files:
         try:
             hdrfile = open( splitname[0] + "_" + pol + ".hdr", "rb" )
             datfile = open( splitname[0] + "_" + pol + ".dat", "rb" )
-            outfile = open( outname, "wb" )
+            outfile = gzip.open( outname, "wb" ) #gzip'd output file
         except:
             print "Skipping " + outname + " (could not open file)"
             continue
