@@ -16,7 +16,8 @@ setup(
     'bin/simulate_zeros_as_AA.py', 'bin/lofasm-chop.py','bin/LoFASM_GUI.py',
     'bin/sched_parser.py','bin/schedule_obs.py', 'bin/lofasm2fil.py',
      'bin/fbplot.py', 'bin/applyDelay.py', 'bin/lofasm2d.py', 'bin/lightcurve.py',
-     'bin/skymap.py', 'bin/readfile.py', 'bin/waterfall.py', 'bin/stethoscope.py'],
+     'bin/skymap.py', 'bin/readfile.py', 'bin/waterfall.py', 'bin/stethoscope.py',
+     'bin/record.py'],
     description='LoFASM Tools',
     long_description=open('README.md').read(),
     install_requires=[
