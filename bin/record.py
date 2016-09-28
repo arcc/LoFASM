@@ -9,44 +9,80 @@ from lofasm import config
 import signal
 import logging
 from subprocess import call
+from astropy.time import Time
+import gzip
 
-
+#IP address & port to listen on
 IP_ADDRESS = '192.168.4.5'
 PORT = 60001
+
+#packet info to listen for
+#These config settings are superfluous and should be hardcoded
 PACKETSIZE = config.PACKETSIZE
 PACKETGROUPSIZE = config.PACKETGROUPSIZE
+
+#lofasm station
 STATION = config.STATION
+
+#file to record log information
 LOGFILE = config.LOGFILE
+
+#Process ID file
 PIDFILE = config.PIDFILE
+
+#file containing current data disk ID
 DISKFILE = config.DISKFILE
+
+#file specifying duration of each data file
 BLOCKFILE = config.BLOCKFILE
 
 
 def listen(q, logger):
+    '''
+    LoFASM Listener
+    
+    Listening process. This function runs until manually killed.
+    Listen and bind to the to ip address,port in the LoFASM config.
+
+    raw UDP packets are collected as bitstrings in chunks. The size of
+    each chunk will be 139264 bytes, or 136 kB.
+
+    upon collection, each data chunk is added to a shared memory queue
+    for the LoFASM Writer to obtain and write to disk.
+    '''
+    
+    # save PID to file
     with open(PIDFILE, 'a') as f:
         f.write(str(os.getpid())+'\n')
 
+    #log start message
     logger.debug('{} starting with pid {}'.format(
         mp.current_process(), os.getpid()))
+
+    #network SOCKet setup. We are using raw datagram (UDP) packets.
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((IP_ADDRESS, PORT))
 
-    #get data block time
+    #get data block time from the blockfile
     with open(BLOCKFILE, 'r') as f:
         block_time = f.read().strip()
 
+    #log the current block time setting
     logger.info("{} BLOCKTIME: {} seconds".format(
         mp.current_process(), block_time))
 
     while True:
-        gc.collect()
+        gc.collect() #garbage collection...just to be sure
+
+        #get data block start & end times
         blockstart = datetime.now()
         blockend = blockstart + timedelta(seconds=int(block_time))
+        
         logger.info("{}: new block: {} - {}".format(
             mp.current_process(),
             blockstart.strftime("%Y/%m/%d %H:%M:%S"),
             blockend.strftime("%H:%M:%S")))
-        #block = []
+
         block = ''
         while datetime.now() < blockend:
             for i in range(PACKETGROUPSIZE):
@@ -54,12 +90,15 @@ def listen(q, logger):
                     d = sock.recv(PACKETSIZE)
                 except socket.error:
                     pass
-
-                #block.extend(d)
+                
                 block += d
-                del d
-        q.put((blockstart, block))
-        logger.info("{}: added {} MB to queue".format(mp.current_process(), str(float(len(block))*2**-20)))
+                del d #this could be slowing us down
+                
+        #place new data in shared memory queue
+        q.put((blockstart, block)) 
+        
+        logger.info("{}: added {} MB to queue".format(mp.current_process(),
+                    str(float(len(block))*2**-20)))
         del block #free memory
     return
 
@@ -71,24 +110,34 @@ def write(q, dirname, logger):
 
     logger.debug('{} starting with pid {}'.format(
         mp.current_process(), os.getpid()))
+
     while True:
         if not q.empty():
             gc.collect()
-            #if queue not empty start taking data
+            #if queue not empty start grabbing data from the queue
             tstamp, data = q.get()
+
             try:
-                fname = dirname + tstamp.strftime("%Y%m%d_%H%M%S")+".lofasm"
-                ofile = open(fname, 'wb')
-                write_header_to_file(ofile, STATION)
+                fname = dirname + tstamp.strftime("%Y%m%d_%H%M%S")+".lofasm.gz"
+
+                #open file & write header
+                ofile = gzip.open(fname, 'wb')
+                write_header_to_file(ofile, STATION, Time(tstamp))
+
             except IOError as err:
                 print err.strerror, err.fname
+
             blocksize = len(data)
+
             startWrite = datetime.now()
             ofile.write(data)
             del data #free memory
             time_elapsed = datetime.now() - startWrite
+
             ofile.close()
+
             q.task_done()
+
             logger.info("{}: wrote {:.2f} MB to {} at {} MB/s in {}s".format(
                 mp.current_process(),
                 float(blocksize)*2**-20, fname,
@@ -127,39 +176,18 @@ def main():
     Nwriters = 1
     writers = []
     lp = mp.Process(target=listen, args=(q, logger,), name='LoFASM Sniffer')
-    #lp.daemon = True
+
     for i in range(Nwriters):
         w = mp.Process(target=write, args=(q, dirname, logger,),
             name='LoFASM Writer %i' %i)
-    #    w.daemon = True
+
         writers.append(w)
 
     lp.start()
     for w in writers:
         w.start()
 
-    #killer = CleanKiller()
-    #while not killer.KILLNOW:
-    #    if os.path.isfile(KILLFILE):
-    #        print 'KILLNOW'
-    #        lp.terminate()
-    #        for i in writers:
-    #            w.terminate()
-    #        break
-
 def stop():
-    #touch killfile
-    #print "sending kill signal...",
-    #sys.stdout.flush()
-    #touch_cmd = "touch {}".format(KILLFILE)
-    #call(touch_cmd.split())
-    #time.sleep(1)
-    #if not os.path.isfile(PIDFILE):
-    #    print "success"
-    #else:
-    #    print "failed"
-    #clean up
-    #os.remove(KILLFILE)
 
     for line in open(PIDFILE, 'r'):
         os.kill(int(line.strip()), signal.SIGTERM)
