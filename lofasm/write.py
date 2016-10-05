@@ -2,6 +2,23 @@
 
 from astropy.time import Time
 
+#LoFASM file class by Andrew Danford
+class LofasmFileClass:
+    def __init__(self, LoFASMFile):
+        self.file_name = LoFASMFile
+        self.raw_file = gzip.open(self.file_name,'rb')
+        self.header = []
+        self.header_size = 19 #Fix This
+        for header_line in range(self.header_size): #Fix this
+            self.header.append(self.raw_file.readline()) #Fix This #what is it with this header
+        self.timebins = self.header[-1][0:4]
+        self.freqbins = self.header[-1][5:9]
+        self.data = np.zeros((int(self.freqbins),int(self.timebins)))
+
+        for col in range(int(self.timebins)):
+            spec = struct.unpack('2048d',self.raw_file.read(16384))
+            self.data[:,col] = 10*np.log10(spec)
+
 def fmt_header_entry(entry_str, fmt_len=8):
     '''
     ensure that every header entry is 8 characters long. if longer, then
