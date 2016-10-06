@@ -27,13 +27,13 @@ class LofasmFileClass:
         self.timebins = self.header['timebins']
         self.freqbins = self.header['freqbins']
 
-    def read_data(self, num_time_bin=None):  # Read data still has problem
+    def read_data(self, num_time_bin=None):  # Read data still not perfect. 
         if num_time_bin is None:
             num_time_bin = self.timebins
         self.data = np.zeros((int(self.freqbins),int(num_time_bin)))
         for col in range(num_time_bin):
             spec = struct.unpack('2048d',self.raw_file.read(16384))
-            self.data[:,col] = 10*np.log10(spec)
+            self.data[:,col] = spec
 
 def fmt_header_entry(entry_str, fmt_len=8):
     '''
