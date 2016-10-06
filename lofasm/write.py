@@ -1,7 +1,9 @@
 #methods for writing LoFASM data to disk
 
 from astropy.time import Time
-
+import gzip
+import numpy as np
+import struct 
 #LoFASM file class by Andrew Danford
 class LofasmFileClass:
     def __init__(self, LoFASMFile):
@@ -36,7 +38,7 @@ def fmt_header_entry(entry_str, fmt_len=8):
     else:
         return entry_str
 
-def write_header_to_file(outfile, host, tstart, Nacc=8192, fpga_clk_T=1e-08, 
+def write_header_to_file(outfile, host, tstart, Nacc=8192, fpga_clk_T=1e-08,
 	Nchan=2048, ra='NULL', dec='NULL'):
     '''
     prepends data file with LoFASM spectrometer header.
@@ -45,8 +47,8 @@ def write_header_to_file(outfile, host, tstart, Nacc=8192, fpga_clk_T=1e-08,
     Nacc is the number of accumulations averaged before dumping
     '''
 
-    
-    stamp_mjd = str(tstart.mjd).split('.')  
+
+    stamp_mjd = str(tstart.mjd).split('.')
     FFT_clk_cycles = Nchan >> 1
     integration_time = fpga_clk_T * FFT_clk_cycles * Nacc
     BW = 200.0
@@ -74,7 +76,7 @@ def write_header_to_file(outfile, host, tstart, Nacc=8192, fpga_clk_T=1e-08,
 
 def complex2str(x):
     '''
-    convert a list of complex numbers into a binary 
+    convert a list of complex numbers into a binary
     string of 4byte _integer_ values in the following format:
 
     A_real, A_imag, B_real, B_imag, C_real, C_imag, ...
@@ -91,4 +93,3 @@ def complex2str(x):
         binary_str += struct.pack('>l',cval.imag)
 
     return binary_str
-
