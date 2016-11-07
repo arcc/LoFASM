@@ -44,7 +44,6 @@ def get_ra_range(minra,maxra, N):
     return ras
 
 
-
 if __name__ == "__main__":
     import argparse
     import os, sys
@@ -86,11 +85,9 @@ if __name__ == "__main__":
     DEC_range = np.linspace(minDEC, maxDEC, Ndec)
 
     #initialize shared memory array
-    begin = time()
     shared_array_base = mp.Array(np.ctypeslib.ctypes.c_double, Nra*Ndec) 
     shared_array = np.ctypeslib.as_array(shared_array_base.get_obj())
     shared_array = shared_array.reshape(Ndec, Nra)
-    end = time()
 
     #shared dictionary to gather cpu core execution times
     proc_time = mp.Manager().dict()
@@ -119,20 +116,6 @@ if __name__ == "__main__":
 
     #defined here so that skymap inherits the current scope 
     def skymap( (i, k, proc_time) ):
-        begin=time()
-        pid = os.getpid()
-        lcurve, delays = lc.getLightCurve3(data, timestamps, RA_range[k], DEC_range[i], winSize)
-        pval = lcurve.sum()
-        shared_array[-1*i, k] = pval
-        end=time()
-
-        if pid in proc_time.keys():
-            proc_time[pid] += end-begin
-        else:
-            proc_time[pid] = end-begin
-        return
-
-    def skymap2( (i, k, proc_time) ):
 
         sys.stdout.flush()
         begin=time()
@@ -171,7 +154,7 @@ if __name__ == "__main__":
     print "using {} cpu's".format(cpus)
     pool = mp.Pool(cpus)
     begin=time()
-    pool.map(skymap2, pool_args)
+    pool.map(skymap, pool_args)
     end=time()
     print "pool execution: {}".format(end-begin)
 
@@ -180,9 +163,9 @@ if __name__ == "__main__":
         print "{}: {}".format(key, proc_time[key])
 
     #save intermediate data to disk
-    fname = os.path.basename(args.outfile) + "{}x{}_ra_{}_{}_dec_{}_{}".format(Nra, Ndec, minRA, maxRA, minDEC, maxDEC)
+    fname = os.path.basename(args.outfile) + "_{}x{}_ra_{}_{}_dec_{}_{}".format(Nra, Ndec, minRA, maxRA, minDEC, maxDEC)
     outfile = os.path.join(os.path.dirname(infile), fname+'.skymap')
-    imgname = fname+'_skymap.png'
+    imgname = os.path.join(os.path.dirname(infile), fname+'_skymap.png')
 
     begin=time()
     with open(outfile, 'wb') as f:

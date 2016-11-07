@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/local/opt/python/bin/python2.7
 
 import numpy as np
 import sidereal
