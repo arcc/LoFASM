@@ -15,6 +15,8 @@ import multiprocessing as mp
 import lightcurve as lc
 from lofasm.timeit import timeit
 from lofasm import station
+from lofasm import skysource
+from astropy.coordinates import Latitude, Longitude
 plt.ion()
 
 def get_ra_range(minra,maxra, N):
@@ -81,8 +83,18 @@ if __name__ == "__main__":
     assert(minDEC >= -1*np.pi/2 and minDEC <= np.pi/2), 'Declination value must be within the range -pi/2..pi/2: {}'.format(minDEC)
     assert(maxDEC >= -1*np.pi/2 and maxDEC <= np.pi/2), 'Declination value must be within the range -pi/2..pi/2'
 
+    #set LoFASM station
+    lofasm_station = station.station[4]
+
+
+    #set right ascension and declination range
     RA_range = get_ra_range(minRA, maxRA, Nra)
+    #if minDEC < lofasm_station.minDec:
+    #    minDEC = lofasm_station.minDec.rad
+    #if maxDEC > lofasm_station.maxDec:
+    #    maxDEC = lofasm_station.maxDec.rad
     DEC_range = np.linspace(minDEC, maxDEC, Ndec)
+
 
     #initialize shared memory array
     shared_array_base = mp.Array(np.ctypeslib.ctypes.c_double, Nra*Ndec) 
@@ -91,6 +103,7 @@ if __name__ == "__main__":
 
     #shared dictionary to gather cpu core execution times
     proc_time = mp.Manager().dict()
+    skyPoints = mp.Manager().dict()
 
     #########################
     #       LOAD DATA       #
@@ -109,24 +122,55 @@ if __name__ == "__main__":
     dt = timestamps[-1] - timestamps[0]
 
     #convert timestamp values to lst radians
-    begin=time()
-    timestamps = [s.lst(x) for x in timestamps]
-    end=time()
-    print "timestamp to LST conversion: {}".format(end-begin)
+    #begin=time()
+    #timestamps = [s.lst(x) for x in timestamps]
+    #end=time()
+    #print "timestamp to LST conversion: {}".format(end-begin)
+
+
 
     #defined here so that skymap inherits the current scope 
-    def skymap( (i, k, proc_time) ):
+    def skymap( (i, k, proc_time, skyPoints) ):
 
         sys.stdout.flush()
         begin=time()
 
         pid = os.getpid()
 
-        skyPoint = s.SkySource(RA_range[k], DEC_range[i], lofasm_station=station.station[4])
+        #set skyPoint object
+        if pid in skyPoints.keys():
+            skyPoint = skyPoints[pid]
+            skyPoint.setRA(Longitude(RA_range[k], 'rad'))
+            skyPoint.setDec(Latitude(DEC_range[i], 'rad'))
+        else:
+            skyPoint = skysource.SkySource(RA_range[k], DEC_range[i], lofasm_station=lofasm_station)
 
-        sys.stdout.flush()
-        lcurve = skyPoint.getLightcurve(data, timestamps, offset=580)
-        pval = lcurve.sum()
+        #calculate point alts for all timestamps in radians
+        alts = np.array([x[0] for x in [skyPoint.AltAz(t,lofasm_station) for t in timestamps]])
+
+        up_indices = np.where(alts > lofasm_station.alt_min.rad)[0]
+
+        if up_indices:
+
+            uptimes = np.array([timestamps[x] for x in up_indices])
+            upalts = np.array([alts[x] for x in up_indices])
+
+            #rise and set times
+            settime = uptimes[-1] #potentially dangerous if timestamps spans multiple transits
+            risetime = uptimes[0]
+
+            #check declination range
+            #if skyPoint.coord.dec.rad > lofasm_station.maxDec.rad or skyPoint.coord.dec.rad < lofasm_station.minDec.rad:
+            #    pval = 0.0
+            #else:
+            #    lcurve = skyPoint.getLightcurve(data, timestamps, offset=580)
+            #    pval = lcurve.sum()
+
+            #only compute light curve for points that are visible
+            lcurve = skyPoint.getLightcurve(data, uptimes, offset=580)
+            pval = lcurve.sum()
+        else:
+            pval = 0.0
 
         shared_array[-1*i, k] = pval
 
@@ -137,7 +181,6 @@ if __name__ == "__main__":
         else:
             proc_time[pid] = end-begin
 
-        del skyPoint
         return
 
     # populate argument list
@@ -145,7 +188,7 @@ if __name__ == "__main__":
     pool_args = []
     for i in range(Ndec):
         for k in range(Nra):
-            pool_args.append( (i, k, proc_time))
+            pool_args.append( (i, k, proc_time, skyPoints))
     end = time()
     print "arg list population: {} sec".format(end-begin)
 

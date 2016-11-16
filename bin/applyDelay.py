@@ -1,12 +1,13 @@
-#!/usr/local/opt/python/bin/python2.7
+#! /usr/bin/env python
 
 import numpy as np
 import sidereal
 from time import time
 import sys
 from astropy.coordinates import SkyCoord
-from lofasm.station import lofasmStation
+from lofasm.station import lofasmStation, nullStation
 import datetime
+
 
 
 east_long_radians = 4.243069944523414
@@ -135,7 +136,7 @@ class SkySource(object):
     Currently only useful for LoFASM 4 data.
     """
 
-    def __init__(self, ra, dec, lofasm_station, unit='rad'):
+    def __init__(self, ra, dec, lofasm_station=nullStation(), unit='rad'):
         '''
         initialize the source sky coordinates.
 
@@ -229,6 +230,7 @@ class SkySource(object):
             lightcurve[i] = data[bins[i], i]
 
         return lightcurve
+    
     def __repr__(self):
         return "SkySource object: RA={} rad, DEC={} rad".format(self.coord.ra.rad, self.coord.dec.rad)
 
