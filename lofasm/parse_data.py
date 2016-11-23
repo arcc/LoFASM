@@ -904,9 +904,17 @@ class LoFASMFileCrawler(object):
         elif self._pol in cross_pols:
             return np.array(self.cross[self._pol])
 
-
     def __repr__(self):
         return "LoFASMFileCrawler %s" % (self.getFilename())
 
     def __str__(self):
         return "LoFASMFileCrawler %s" % (self.getFilename())
+
+
+    def __del__(self):
+        del self.autos
+        del self.cross
+        del self.beams
+        del self._burst
+        del self._lofasm_file
+#        print "released memory"

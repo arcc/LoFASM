@@ -1,6 +1,59 @@
 #methods for writing LoFASM data to disk
 
 from astropy.time import Time
+import gzip
+import numpy as np
+import struct
+#LoFASM file class by Andrew Danford
+class LofasmFileClass:
+    def __init__(self, LoFASMFile):
+        self.file_name = LoFASMFile
+        self.raw_file = gzip.open(self.file_name,'rb')
+        self.header = {}
+        line1 = self.raw_file.readline().strip().replace('%', '')
+        if line1 not in ['\x02BX',]:
+            raise TypeError("File '%s' is not a lofasm file" % LoFASMFile)
+        line = self.raw_file.readline()
+        while line.startswith('%'): #Fix this
+            line = line.strip()
+            line = line.replace('%', '')
+            line = line.replace(':', '')
+            line = line.split()
+            self.header[line[0]] = line[1] #Fix This #what is it with this header
+            line = self.raw_file.readline()
+        line_last = line.split()
+        self.header['timebins'] = int(line_last[0])
+        self.header['freqbins'] = int(line_last[1])
+        self.timebins = self.header['timebins']
+        self.freqbins = self.header['freqbins']
+        if int(line_last[2]) == 1:
+            self.iscplx = False
+        else:
+            self.iscplx = True
+
+    def read_data(self, num_time_bin=None):  # Read data still not perfect.
+        if num_time_bin is None:
+            num_time_bin = self.timebins
+        self.data = np.zeros((int(self.freqbins),int(num_time_bin)))
+        for col in range(num_time_bin):
+            spec = struct.unpack('2048d',self.raw_file.read(16384))
+            self.data[:,col] = spec
+
+    def close(self):
+        self.raw_file.close()
+
+def is_lofasm_file(filename):
+    """ Check the file is lofasm file or not.
+    """
+    if filename.endswith('.gz'):
+        f = gzip.open(filename,'rb')
+    else:
+        f = open(filename,'rb')
+    line1 = f.readline().strip()
+    if line1 in ['%\x02BX','%BX']:
+        return True
+    else:
+        return False
 
 def fmt_header_entry(entry_str, fmt_len=8):
     '''
@@ -19,7 +72,7 @@ def fmt_header_entry(entry_str, fmt_len=8):
     else:
         return entry_str
 
-def write_header_to_file(outfile, host, Nacc=8192, fpga_clk_T=1e-08, 
+def write_header_to_file(outfile, host, tstart, Nacc=8192, fpga_clk_T=1e-08,
 	Nchan=2048, ra='NULL', dec='NULL'):
     '''
     prepends data file with LoFASM spectrometer header.
@@ -27,8 +80,9 @@ def write_header_to_file(outfile, host, Nacc=8192, fpga_clk_T=1e-08,
     Nchan is the number of FFT bins in the spectrometer
     Nacc is the number of accumulations averaged before dumping
     '''
-    
-    stamp_mjd = str(Time.now().mjd).split('.')
+
+
+    stamp_mjd = str(tstart.mjd).split('.')
     FFT_clk_cycles = Nchan >> 1
     integration_time = fpga_clk_T * FFT_clk_cycles * Nacc
     BW = 200.0
@@ -56,7 +110,7 @@ def write_header_to_file(outfile, host, Nacc=8192, fpga_clk_T=1e-08,
 
 def complex2str(x):
     '''
-    convert a list of complex numbers into a binary 
+    convert a list of complex numbers into a binary
     string of 4byte _integer_ values in the following format:
 
     A_real, A_imag, B_real, B_imag, C_real, C_imag, ...
@@ -73,4 +127,3 @@ def complex2str(x):
         binary_str += struct.pack('>l',cval.imag)
 
     return binary_str
-

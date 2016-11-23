@@ -1,6 +1,9 @@
 #!/usr/bin/python
  
-
+import platform
+if platform.system() == "Linux":
+    import matplotlib
+    matplotlib.use("Agg")
 import corr,time,numpy,struct,sys,logging,pylab
 
 katcp_port=7147
