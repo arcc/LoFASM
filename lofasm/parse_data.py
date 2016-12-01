@@ -56,28 +56,28 @@ def freq2bin(freq):
     return int(freq / rbw)
 
 def bin2freq(bin):
-	rbw = 200.0/2048
-	return bin * rbw
+    rbw = 200.0/2048
+    return bin * rbw
 
 def parse_filename(filename):
-	'''return the file's UTC time stamp as a list
-	[YYmmdd, HHMMSS, pol]
-	'''
+    '''return the file's UTC time stamp as a list
+    [YYmmdd, HHMMSS, pol]
+    '''
 
-	if filename[-7:]== '.lofasm':
-		filename = filename.rstrip('.lofasm')
-		parse_list = filename.split('_')
-	else:
-		filename = filename.rstrip('.lsf')
-		parse_list = filename.split('_')
-	date = parse_list[0]
-	timestamp = parse_list[1]
-	pol = filename[(len(date)+len(timestamp)+2):]
+    if filename[-7:]== '.lofasm':
+        filename = filename.rstrip('.lofasm')
+        parse_list = filename.split('_')
+    else:
+        filename = filename.rstrip('.lsf')
+        parse_list = filename.split('_')
+    date = parse_list[0]
+    timestamp = parse_list[1]
+    pol = filename[(len(date)+len(timestamp)+2):]
 
-	return [date, timestamp, pol]
+    return [date, timestamp, pol]
 
 def spectrum_conv_code(code_str):
-	return LoFASM_SPECTRA_KEY_TO_DESC[code_str]
+    return LoFASM_SPECTRA_KEY_TO_DESC[code_str]
 
 def fmt_header_entry(entry_str, fmt_len=8):
     '''ensure that every header entry is fmt_len characters long. if longer, then
@@ -94,16 +94,16 @@ def fmt_header_entry(entry_str, fmt_len=8):
         return entry_str
 
 def gen_spectrum_hdr_string(hdr_dict):
-	num_fields = len(hdr_dict.keys())
-	hdr_str = ''
-	for field in range(num_fields):
-		field += 1
-		hdr_str += fmt_header_entry(hdr_dict[field][1])
-	return hdr_str
+    num_fields = len(hdr_dict.keys())
+    hdr_str = ''
+    for field in range(num_fields):
+        field += 1
+        hdr_str += fmt_header_entry(hdr_dict[field][1])
+    return hdr_str
 
 def parse_file_header(file_obj, fileType='lofasm'):
 
-	#move pointer to beginning of file
+    #move pointer to beginning of file
     freeze_pointer = file_obj.tell()
 
     if freeze_pointer != 0:
@@ -111,28 +111,28 @@ def parse_file_header(file_obj, fileType='lofasm'):
     #get file signature
     file_sig = file_obj.read(pdat_H.HDR_ENTRY_LENGTH).strip(' ')
 
-	#check file signature
+    #check file signature
     if file_sig != pdat_H.LoFASM_FHDR_SIG:
         file_obj.seek(freeze_pointer)
         raise pdat_H.Header_Error(file_obj.name + 'may not be a proper LoFASM File.',
             'File Signature ' + file_sig + ' not recognized.')
 
-	#get file header version from file
+    #get file header version from file
     file_hdr_version = int(file_obj.read(pdat_H.HDR_ENTRY_LENGTH))
 
-	#get corresponding header template
+    #get corresponding header template
     try:
         if fileType == 'lofasm':
             fhdr_field_dict = pdat_H.LoFASM_FHEADER_TEMPLATE[file_hdr_version]
         elif fileType == 'spectra':
-			fhdr_field_dict = pdat_H.LoFASM_SPECTRUM_HEADER_TEMPLATE[file_hdr_version]
+            fhdr_field_dict = pdat_H.LoFASM_SPECTRUM_HEADER_TEMPLATE[file_hdr_version]
 
     except KeyError as err:
         print "Error: LoFASM raw file header version not recognized."
         print "Unrecognized version: ", err.message
         sys.exit()
 
-	#populate header dict
+    #populate header dict
     fhdr_field_dict[1][1] = file_sig
     fhdr_field_dict[2][1] = file_hdr_version
     fhdr_field_dict[3][1] = int(file_obj.read(pdat_H.HDR_ENTRY_LENGTH))
@@ -140,7 +140,7 @@ def parse_file_header(file_obj, fileType='lofasm'):
 
     fields_left_to_populate = len(fhdr_field_dict.keys()) - 3
     remaining_hdr_string = file_obj.read(fhdr_field_dict[3][1]-
-		3*pdat_H.HDR_ENTRY_LENGTH)
+        3*pdat_H.HDR_ENTRY_LENGTH)
 
     if file_hdr_version == 1 or file_hdr_version == 2:
         for i in range(fields_left_to_populate):
@@ -164,53 +164,53 @@ def parse_file_header(file_obj, fileType='lofasm'):
         fhdr_field_dict[12][1] = remaining_hdr_string[64:74].strip()
         fhdr_field_dict[13][1] = remaining_hdr_string[74:84].strip()
 
-	#move file cursor back to original position
+    #move file cursor back to original position
     file_obj.seek(freeze_pointer)
     return fhdr_field_dict
 
 def parse_hdr(hdr, hdr_size_bytes=8, version=1):
-	'''
+    '''
     Usage: parse_hdr(<64bit_string>,[version])
     Parse the first 64 bits of
-	LoFASM data packet and return a dictionary containing each header value.
+    LoFASM data packet and return a dictionary containing each header value.
 
-		If hdr has a length greater than 8bytes then it will be truncated
-		and only the first 8 bytes will be parsed.
-	'''
+        If hdr has a length greater than 8bytes then it will be truncated
+        and only the first 8 bytes will be parsed.
+    '''
 
-	padding_1B = "\x00"
-	hdr_dict = {}
-	hdr_dict['signature'] = [x for x in struct.unpack('>L', padding_1B+hdr[:3])][0]
-	hdr_dict['acc_num'] = [x for x in struct.unpack('>L', padding_1B+hdr[3:6])][0]
-	hdr_dict['hdr_cnt'] = [x for x in struct.unpack('>L', 2*padding_1B+hdr[6:8])][0]
+    padding_1B = "\x00"
+    hdr_dict = {}
+    hdr_dict['signature'] = [x for x in struct.unpack('>L', padding_1B+hdr[:3])][0]
+    hdr_dict['acc_num'] = [x for x in struct.unpack('>L', padding_1B+hdr[3:6])][0]
+    hdr_dict['hdr_cnt'] = [x for x in struct.unpack('>L', 2*padding_1B+hdr[6:8])][0]
 
-	return hdr_dict
+    return hdr_dict
 
 def print_hdr(hdr_dict):
-	for key in hdr_dict:
-		val = str(hdr_dict[key])
-		if val != '0':
-			print str(key) + ": " + val
-		else:
-			print "No header information"
-			break
+    for key in hdr_dict:
+        val = str(hdr_dict[key])
+        if val != '0':
+            print str(key) + ": " + val
+        else:
+            print "No header information"
+            break
 
 def is_header(hdr_raw, print_header=False):
-	'''
-	Determine if first 8 bytes contain the header packet's
-	signature. hdr length must be 8bytes.
+    '''
+    Determine if first 8 bytes contain the header packet's
+    signature. hdr length must be 8bytes.
 
-	returns boolean
-	'''
-	hdr_dict = parse_hdr(hdr_raw)
+    returns boolean
+    '''
+    hdr_dict = parse_hdr(hdr_raw)
 
     #confirm LoFASM network packet
-	if hdr_dict['signature'] == HDR_V1_SIGNATURE:
-		if print_header:
-			print_hdr(hdr_dict)
-		return True
-	else:
-		return False
+    if hdr_dict['signature'] == HDR_V1_SIGNATURE:
+        if print_header:
+            print_hdr(hdr_dict)
+        return True
+    else:
+        return False
 
 def check_headers(file_obj, packet_size_bytes=PACKET_SIZE_B, verbose=False, print_headers=False):
     '''
@@ -278,24 +278,24 @@ def check_headers(file_obj, packet_size_bytes=PACKET_SIZE_B, verbose=False, prin
     return (best_loc, err_counter)
 
 def get_filesize(file_obj):
-	'''
+    '''
     Usage: get_filesize(file_obj)
-	returns file size (in bytes) of file pointed to by file_obj.
+    returns file size (in bytes) of file pointed to by file_obj.
     '''
 
-	freeze_pointer = file_obj.tell()
-	file_obj.seek(0,2) #move to end of file
-	end_pointer = file_obj.tell()
-	file_obj.seek(freeze_pointer)
+    freeze_pointer = file_obj.tell()
+    file_obj.seek(0,2) #move to end of file
+    end_pointer = file_obj.tell()
+    file_obj.seek(freeze_pointer)
 
-	return end_pointer
+    return end_pointer
 
 def get_number_of_integrations(file_obj):
-	'''returns number of integrations in data file'''
+    '''returns number of integrations in data file'''
 
-	fileSize = get_filesize(file_obj)
-	num_integrations = fileSize / INTEGRATION_SIZE_B
-	return num_integrations
+    fileSize = get_filesize(file_obj)
+    num_integrations = fileSize / INTEGRATION_SIZE_B
+    return num_integrations
 
 def get_next_raw_burst(file_obj, packet_size_bytes=None, packets_per_burst=None, loop_file=False):
     '''
@@ -329,53 +329,53 @@ def get_next_raw_burst(file_obj, packet_size_bytes=None, packets_per_burst=None,
                 raw_dat = file_obj.read(burst_size)
                 yield LoFASM_burst(raw_dat)
             else:
-				print "No more data to read in %s" % file_obj.name
-				print "Exiting..."
-				exit()
+                print "No more data to read in %s" % file_obj.name
+                print "Exiting..."
+                exit()
         else:
-			#yield raw_dat
+            #yield raw_dat
             yield LoFASM_burst(raw_dat)
 
 def find_first_hdr_packet(file_obj, packet_size_bytes=PACKET_SIZE_B, hdr_size=8):
-	'''
+    '''
     Return start location of first valid header packet in file.
-	'''
-	#total number of packets in file
-	num_packets = get_filesize(file_obj) / packet_size_bytes
+    '''
+    #total number of packets in file
+    num_packets = get_filesize(file_obj) / packet_size_bytes
 
-	for i in range(num_packets):
-		#read packet header
-		pkt_hdr = file_obj.read(hdr_size)
+    for i in range(num_packets):
+        #read packet header
+        pkt_hdr = file_obj.read(hdr_size)
 
-		#if header is valid and the next packet is not a header packet
+        #if header is valid and the next packet is not a header packet
         # then fix pointer and return location
-		#else continue to next packet
-		if is_header(pkt_hdr, print_header=False):
+        #else continue to next packet
+        if is_header(pkt_hdr, print_header=False):
 
-			if not is_next_packet_header(file_obj, packet_size_bytes=packet_size_bytes, hdr_size_bytes=8):
+            if not is_next_packet_header(file_obj, packet_size_bytes=packet_size_bytes, hdr_size_bytes=8):
 
-				#fix pointer
-				file_obj.seek(file_obj.tell() - hdr_size)
+                #fix pointer
+                file_obj.seek(file_obj.tell() - hdr_size)
 
-				#return new pointer location
-				return file_obj.tell()
+                #return new pointer location
+                return file_obj.tell()
 
-		file_obj.seek(file_obj.tell() + packet_size_bytes - hdr_size)
-	print "Finished searching: did not find valid header in %s" % file_obj.name
+        file_obj.seek(file_obj.tell() + packet_size_bytes - hdr_size)
+    print "Finished searching: did not find valid header in %s" % file_obj.name
 
 def is_next_packet_header(file_obj, packet_size_bytes=PACKET_SIZE_B, hdr_size_bytes=8):
-	'''
-	Check if the next packet is a header packet
-	'''
-	freeze_location = file_obj.tell()
-	next_pkt_location = file_obj.tell() + packet_size_bytes - hdr_size_bytes
-	file_obj.seek(next_pkt_location)
-	next_pkt_hdr = file_obj.read(hdr_size_bytes)
-	file_obj.seek(freeze_location)
-	if is_header(next_pkt_hdr):
-		return True
-	else:
-		return False
+    '''
+    Check if the next packet is a header packet
+    '''
+    freeze_location = file_obj.tell()
+    next_pkt_location = file_obj.tell() + packet_size_bytes - hdr_size_bytes
+    file_obj.seek(next_pkt_location)
+    next_pkt_hdr = file_obj.read(hdr_size_bytes)
+    file_obj.seek(freeze_location)
+    if is_header(next_pkt_hdr):
+        return True
+    else:
+        return False
 
 ####Class Definitions
 class LoFASM_burst:
@@ -613,6 +613,7 @@ class LoFASMFileCrawler(object):
         self.scan_file = scan_file
         self.start_loc = start_loc
         self._status_open = False
+        self.corrupt = False
 
         self._int_hdr = {} #integration header
         self._file_hdr = {} #file header
@@ -692,8 +693,12 @@ class LoFASMFileCrawler(object):
         self.time = self.time_start
 
 
-        #increment to next integration
-        self._update_data()
+        #increment to first integration
+        try:
+            self._update_data()
+        except IntegrationError:
+            self.corrupt = True
+
 
         #set reference accumulation number
         self._acc_num_ref = self._acc_num
@@ -702,6 +707,14 @@ class LoFASMFileCrawler(object):
         self._update_time()
 
         self._status_open = True
+
+        #quick sanity check
+        try:
+            self.forward(self.getNumberOfIntegrationsInFile()-1)
+            self.reset()
+        except IntegrationError:
+            self.corrupt = True
+
 
     def isopen(self):
         return self._status_open
@@ -904,12 +917,12 @@ class LoFASMFileCrawler(object):
         elif self._pol in cross_pols:
             return np.array(self.cross[self._pol])
 
+
     def __repr__(self):
         return "LoFASMFileCrawler %s" % (self.getFilename())
 
     def __str__(self):
         return "LoFASMFileCrawler %s" % (self.getFilename())
-
 
     def __del__(self):
         del self.autos
@@ -917,4 +930,3 @@ class LoFASMFileCrawler(object):
         del self.beams
         del self._burst
         del self._lofasm_file
-#        print "released memory"
