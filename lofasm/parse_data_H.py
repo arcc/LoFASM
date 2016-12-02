@@ -29,8 +29,8 @@ LoFASM_SPECTRA_KEY_TO_DESC = {
 	}
 
 LoFASM_FHEADER_TEMPLATE = {
-	1: {1: ['hdr_sig', None], #bug in integration field exists in first header version
-		2: ['hdr_ver', None], #be sure to multiply 'int_time' by 2 to get accurate value
+	1: {1: ['hdr_sig', None], # bug in integration field exists in first header version
+		2: ['hdr_ver', None], # be sure to multiply 'int_time' by 2 to get accurate value
 		3: ['hdr_len', None],
 		4: ['station', None],
 		5: ['Nbins', None],
@@ -69,6 +69,45 @@ LoFASM_FHEADER_TEMPLATE = {
 	}
 LoFASM_SPECTRUM_HEADER_TEMPLATE = {
 	1: {1: ['hdr_sig', None],
+		2: ['hdr_ver', None],
+		3: ['hdr_len', None],
+		4: ['station', None],
+		5: ['Nbins', None],
+		6: ['fstart', None],
+		7: ['fstep', None],
+		8: ['mjd_day', None],
+		9: ['mjd_msec', None],
+		10: ['int_time', None],
+		12: ['num_int', None],
+		13: ['spect_type', None],
+		14: ['notes', None]},
+	2: {1: ['hdr_sig', None],
+		2: ['hdr_ver', None],
+		3: ['hdr_len', None],
+		4: ['station', None],
+		5: ['Nbins', None],
+		6: ['fstart', None],
+		7: ['fstep', None],
+		8: ['mjd_day', None],
+		9: ['mjd_msec', None],
+		10: ['int_time', None],
+		12: ['num_int', None],
+		13: ['spect_type', None],
+		14: ['notes', None]},
+	3: {1: ['hdr_sig', None],
+		2: ['hdr_ver', None],
+		3: ['hdr_len', None],
+		4: ['station', None],
+		5: ['Nbins', None],
+		6: ['fstart', None],
+		7: ['fstep', None],
+		8: ['mjd_day', None],
+		9: ['mjd_msec', None],
+		10: ['int_time', None],
+		12: ['num_int', None],
+		13: ['spect_type', None],
+		14: ['notes', None]},
+	4: {1: ['hdr_sig', None],
 		2: ['hdr_ver', None],
 		3: ['hdr_len', None],
 		4: ['station', None],
