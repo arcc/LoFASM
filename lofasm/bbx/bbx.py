@@ -71,9 +71,9 @@ class LofasmFile(object):
         # private copy of certain methods
         self._set = self.set
 
-    # #############################
+    ###############################
     # Top level interface methods #
-    # #############################
+    ###############################
     def add_data(self, data):
         """
         add BBX data to memory to be written to file.
@@ -87,8 +87,7 @@ class LofasmFile(object):
         data : numpy.ndarray
             Data array to be added to memory
             `data.ndim` must be either 1 or 2.
-            The data type of the elements in the stored array will be
-            inferred from `data`
+            The data type of the elements in the stored array will be inferred from `data`.
             Supported data types are np.complex128 and np.float64.
 
         Raises
@@ -106,22 +105,23 @@ class LofasmFile(object):
         assert(self.mode == 'write'), "File not open for writing."
 
         if data.ndim == 2:
-            tbins, fbins = np.shape(data)
+            dim2_bins, dim1_bins = np.shape(data)
             data = data.flatten()
         elif data.ndim == 1:
             data = data.flatten()
-            fbins = len(data)
-            tbins = 1
+            dim2_bins = len(data)
+            dim1_bins = 1
         else:
             raise NotImplementedError, "Currently only up to 2d data is supported."
 
         if self._new_file:
-            self._set('dim1_len', str(tbins))
-            self._set('dim2_len', str(fbins))
+            self._set('dim1_len', str(dim1_bins))
+            self._set('dim2_len', str(dim2_bins))
             self._set('complex', '2' if np.iscomplexobj(data) else '1')
-            N = tbins * fbins
+            N = int(dim1_bins * dim2_bins)
             self.data = np.zeros(N, dtype=np.complex128 if np.iscomplexobj(data) else np.float64)
             self.data[:N] = data
+            self._new_file = False
 
         else:
             old_iscplx = True if self.header['metadata'][2] == '2' else False
@@ -130,11 +130,11 @@ class LofasmFile(object):
             if old_iscplx != new_iscplx:
                 raise ValueError, "new data must match existing data realness"
 
-            if str(fbins) != self.freqbins:
-                raise ValueError, "new data must have same number of frequency bins as existing data"
+            if str(dim2_bins) != self.dim2_len:
+                raise ValueError, "new data length for dim2 must match the existing data!"
 
 
-            new_bins = fbins * tbins
+            new_bins = dim1_bins * dim2_bins
             N = len(self.data) + int(new_bins)
             newdata = np.zeros(N, dtype=self.data.dtype)
             newdata[:-N] = self.data
@@ -147,7 +147,7 @@ class LofasmFile(object):
         """
         self._fp.close()
 
-    def read_data(self, num_time_bin=None):
+    def read_data(self, N=None):
         """Parse data block in LoFASM filterbank file and load into memory as `self.data`.
 
         The resulting data array in self.data is stored as a 2d array with dim1 as the horizontal axis and
@@ -158,8 +158,8 @@ class LofasmFile(object):
 
         Parameters
         ----------
-        num_time_bin : int
-            The number of time bins to read. If not provided, then attempt to read the entire file.
+        N : int
+            The number of rows to read. If not provided, then attempt to read the entire file (read all rows).
             If `num_time_bin` is larger than the number of time bins in the file then read the entire file.
             A value of 0 will result in nothing being read.
         Raises
@@ -171,28 +171,28 @@ class LofasmFile(object):
 
         assert(self.mode == 'read'), "File not open for reading."
 
-        if num_time_bin:
-            if num_time_bin > self.timebins:
-                num_time_bin = self.timebins
-            elif num_time_bin < 0:
+        if N:
+            if N > self.dim1_len:
+                dim1_len = self.dim1_len
+            elif N < 0:
                 return
         else:
-            num_time_bin = self.timebins
+            dim1_len = self.dim1_len
 
         if not self.iscplx:
             nbytes = self.freqbins * self.nbits / 8
-            self.data = np.zeros((int(self.freqbins), int(num_time_bin)), dtype=np.float64)
+            self.data = np.zeros((int(self.dim2_len), int(dim1_len)), dtype=np.float64)
             self.dtype = self.data.dtype
-            for col in range(num_time_bin):
-                spec = struct.unpack('{}d'.format(self.freqbins),
+            for col in range(dim1_len):
+                spec = struct.unpack('{}d'.format(self.dim2_len),
                                      self._fp.read(nbytes))
                 self.data[:,col] = spec
         else:
             nbytes = 2 * self.freqbins * self.nbits / 8
-            self.data = np.zeros((int(self.freqbins), int(num_time_bin)), dtype=np.complex64)
+            self.data = np.zeros((int(self.dim2_len), int(dim1_len)), dtype=np.complex64)
             self.dtype = self.data.dtype
-            for col in range(num_time_bin):
-                spec_cmplx = struct.unpack('{}d'.format(2*self.freqbins),
+            for col in range(dim1_len):
+                spec_cmplx = struct.unpack('{}d'.format(2*self.dim2_len),
                                            self._fp.read(nbytes))
                 i=0
                 for row in range(len(spec_cmplx)/2):
@@ -317,9 +317,9 @@ class LofasmFile(object):
         #  complex (cross correlation) data: 2
         #  other: unknown
         if int(contents[2]) == 1:
-            metadata['complex'] = False
+            metadata['complex'] = '1'
         elif int(contents[2]) == 2:
-            metadata['complex'] = True
+            metadata['complex'] = '2'
         else:
             raise ValueError("Cannot determine whether data is complex or real.")
 
@@ -412,9 +412,9 @@ class LofasmFile(object):
         meta = [str(x) for x in [self.dim1_len, self.dim2_len, self.complex, self.nbits, self.encoding]]
         self._fp.write("{}\n".format(' '.join(meta)))
 
-    ###################
+    #################
     # Magic methods #
-    ###################
+    #################
     def __getattr__(self, key):
         """
         Check self.header and internal scope (self.__dict__) dictionaries when
