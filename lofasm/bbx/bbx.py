@@ -246,7 +246,8 @@ class LofasmFile(object):
         cplxfmt = '{}d'.format(2*N)
 
         if np.iscomplexobj(self.data):
-            cplxdata = np.zeros(2*N, dtype=self.data.dtype)
+            self._debug("Writing complex data")
+            cplxdata = np.zeros(2*N, dtype=np.float64)
             i = 0
             for k in range(N):
                 cplxdata[i] = self.data[k].real
@@ -340,7 +341,7 @@ class LofasmFile(object):
                     x = self.header[k]
                 self._debug("Loaded {}: {}".format(k, x))
 
-        self.iscplx = self.complex
+        self.iscplx = True if self.complex == '2' else False
 
     def _prep_new(self):
         """
