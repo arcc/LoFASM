@@ -2,7 +2,7 @@ import parse_data as pdat
 import datetime
 import os
 import subprocess
-##to be implemented ASAP
+##to be implemented in the future
 
 
 ##future##

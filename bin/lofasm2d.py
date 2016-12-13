@@ -13,7 +13,6 @@ from matplotlib.ticker import FixedLocator, FuncFormatter
 import numpy as np
 from lofasm import filter
 import sidereal
-from datetime import datetime
 from time import time
 
 east_long_radians = 4.243069944523414

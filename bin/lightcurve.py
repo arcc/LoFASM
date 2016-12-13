@@ -14,6 +14,7 @@ from time import time
 from lofasm import filter
 from datetime import datetime
 import sidereal
+from lofasm.timeit import timeit
 plt.ion()
 
 centertime_bin = s.cable_offset_bins
@@ -28,6 +29,7 @@ def calcBinWidth(BW):
     '''
     BW = float(BW)
     return (1/BW)/1e-9
+
 def lst(utc):
     gst = sidereal.SiderealTime.fromDatetime(utc)
     return gst.lst(east_long_radians).radians
@@ -40,7 +42,7 @@ def getLightCurve(data, timestamps, RA, DEC, winsize=0, orientation='left'):
     apply tdelay shift to data for each timestamp in timestamps
     '''
 
-    assert( winsize % 2 == 0), 'winsize must be an even number'
+    assert( winsize % 2 == 0), 'winsize must be an even number or zero'
     assert( winsize >= 0), 'winsize must be positive'
 
     N = len(timestamps)
@@ -50,6 +52,8 @@ def getLightCurve(data, timestamps, RA, DEC, winsize=0, orientation='left'):
     sys.stdout.flush()
     delays = s.calcDelays(RA, DEC, s.rot_ang, timestamps)
     end_dcalc = time()
+
+
 
     if orientation == 'left':
         o = -1
@@ -63,19 +67,107 @@ def getLightCurve(data, timestamps, RA, DEC, winsize=0, orientation='left'):
 
     start_curve = time()
 
-    #initialize data array
+    #initialize lightcurve array
     lightcurve = np.zeros(N)
 
     w = winsize/2
     
     for i in range(N):
-        k = centertime_bin+int(dbins[i])
-        lightcurve[i] = (np.abs(data[k-w:k+w+1, i])**2).sum()
+        k = int(centertime_bin + dbins[i])
+        lightcurve[i] = data[k, i]
     end_curve = time()
 
-#    return filter.medfilt(lightcurve, 101)
+    print "delay calc time: {:.2f}, curve calc time: {:.2f}".format(end_dcalc - start_dcalc, end_curve-start_curve)
     return lightcurve
-   
+def getLightCurve2(data, timestamps, RA, DEC, winsize=0, orientation='left'):
+    '''
+    apply tdelay shift to data for each timestamp in timestamps
+    '''
+
+    assert( winsize % 2 == 0), 'winsize must be an even number or zero'
+    assert( winsize >= 0), 'winsize must be positive'
+
+    N = len(timestamps)
+
+    start_dcalc = time()
+
+    delays = s.calcDelays2(RA, DEC, s.rot_ang, timestamps)
+    end_dcalc = time()
+
+
+
+    if orientation == 'left':
+        o = -1
+    elif orientation == 'right':
+        o = 1
+    else:
+        raise ValueError()
+    
+    binfactor = o / calcBinWidth(100000000.0)
+
+
+    #initialize lightcurve array
+    start_curve = time()    
+    lightcurve = np.zeros(N)
+
+    w = winsize/2
+    
+    i = 0
+    for delay in delays:
+        k = int(centertime_bin + binfactor * delays.next())
+        lightcurve[i] = data[k, i]
+        i += 1
+    end_curve = time()
+
+    print "delay calc time: {:.2f}, curve calc time: {:.2f}".format(end_dcalc - start_dcalc, end_curve-start_curve)
+    return lightcurve
+def getLightCurve3(data, timestamps, RA, DEC, winsize=0, orientation='left'):
+    '''
+    apply tdelay shift to data for each timestamp in timestamps
+    '''
+
+    assert( winsize % 2 == 0), 'winsize must be an even number or zero'
+    assert( winsize >= 0), 'winsize must be positive'
+
+    N = len(timestamps)
+
+    start_dcalc = time()
+
+    params = s.getDelayParams(DEC)    
+
+
+    delays = s.calcDelays3(params, RA, DEC, s.rot_ang, timestamps)
+    end_dcalc = time()
+
+
+
+    if orientation == 'left':
+        o = -1
+    elif orientation == 'right':
+        o = 1
+    else:
+        raise ValueError()
+    
+    binfactor = o / calcBinWidth(100000000.0)
+
+
+    #initialize lightcurve array
+    lightcurve = np.zeros(N)
+
+    w = winsize/2
+    
+    i = 0
+    start_curve = time()    
+    for delay in delays:
+        k = int(np.ceil(centertime_bin + (binfactor * delay)))
+        lightcurve[i] = data[k, i]
+        i += 1
+#        print 'ra,dec,iter, elapsed time in loop: {},{},{},{}'.format(RA,DEC,i,time()-start_curve)
+    end_curve = time()
+
+#    print "i: {} delay calc time: {}, curve calc time: {}".format(i,end_dcalc - start_dcalc, end_curve-start_curve)
+    return (lightcurve, delays)
+  
 
 if __name__ == "__main__":
     import argparse

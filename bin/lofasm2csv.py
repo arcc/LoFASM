@@ -4,8 +4,9 @@ import numpy as np
 import sys
 import os
 
-pols = ['AA','BB','CC','DD','AB','AC','AD','BC','BD','CD']
+# LOFASM_FILE = '20160223_163528.lofasm'
 
+pols = ['AA','BB','CC','DD','AB','AC','AD','BC','BD','CD']
 
 
 def writeRow(dfile, data):
@@ -29,6 +30,7 @@ def writePol(pol, dfile, crawler):
         except EOFError:
             print 'end of file'
 
+
 def get_csv_filename(lofasm_file):
     dir = os.path.dirname(lofasm_file)
     basename = os.path.basename(lofasm_file).split('.')[0] + '.csv'
@@ -37,12 +39,15 @@ def get_csv_filename(lofasm_file):
 
     return csvname
 
-def convert_lofasm_file(lofasm_file):
+
+def convert_lofasm_file(lofasm_file, pols=pols):
     """
     convert old .lofasm file to csv format.
 
     :param lofasm_file: str
         path to .lofasm file
+    :param pols: list, optional
+        list of polarizations from lofasm_file to process. default is all pols.
     """
     import lofasm.parse_data as pdat
 
@@ -72,6 +77,7 @@ def convert_lofasm_file(lofasm_file):
             sys.stdout.flush()
     else:
         print "ignoring corrupt file: {}".format(lofasm_file)
+
 
 def convert_bbx_file(lofasm_file):
     from lofasm.bbx import bbx
@@ -106,12 +112,22 @@ if __name__ == "__main__":
                    help="path to lofasm file to convert")
     p.add_argument('-l', action='store_true', dest='lofasm',
                    help="if set then process as old .lofasm file")
+    p.add_argument('--pols', default="AA,BB,CC,DD,AB,AC,AD,BC,BD,CD",
+                   help="comma separated list of pols to process. Can only be used if \
+                   -l option is set. otherwise --pols is ignored. default is \
+                   AA,BB,CC,DD,AB,AC,AD,BC,BD,CD")
     args = p.parse_args()
+
+    if args.pols:
+        input_pols = [x.upper() for x in args.pols.split(',')]
+        for p in input_pols:
+            if p not in pols:
+                raise ValueError ("{} is an unrecognized polarization".format(p))
 
     LOFASM_FILE = args.lofasm_file
 
     if args.lofasm:
-        convert_lofasm_file(LOFASM_FILE)
+        convert_lofasm_file(LOFASM_FILE, input_pols)
     else:
         convert_bbx_file(LOFASM_FILE)
 

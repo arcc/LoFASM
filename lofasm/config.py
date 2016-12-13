@@ -11,3 +11,9 @@ DISKFILE = '/var/lofasm/ActiveDisk'
 BLOCKFILE = '/var/lofasm/BlockTime'
 STETHDIR = '/home/controller/var/lofasm/stethoscope/'
 COLORPLOTDIR = '/home/controller/var/lofasm/colorplots/'
+
+#db settings
+dbhost = "localhost"
+dbname = "lofasm"
+dbuser = "lofasm"
+dbpass = "l0fasm"
