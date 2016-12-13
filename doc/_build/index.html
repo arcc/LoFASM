@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to LoFASM’s documentation! &#8212; LoFASM 1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-lofasm-s-documentation">
+<h1>Welcome to LoFASM&#8217;s documentation!<a class="headerlink" href="#welcome-to-lofasm-s-documentation" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="lofasm.bbx.bbx.LofasmFile">
+<em class="property">class </em><code class="descclassname">lofasm.bbx.bbx.</code><code class="descname">LofasmFile</code><span class="sig-paren">(</span><em>lofasm_file</em>, <em>verbose=False</em>, <em>mode='read'</em>, <em>gz=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lofasm.bbx.bbx.LofasmFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class to represent .bbx-type data files for LoFASM.</p>
+<p>Currently, the only data format supported is &#8216;LoFASM-filterbank&#8217;.</p>
+<dl class="method">
+<dt id="lofasm.bbx.bbx.LofasmFile.add_data">
+<code class="descname">add_data</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#lofasm.bbx.bbx.LofasmFile.add_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>add BBX data to memory to be written to file.</p>
+<p>Write 1d or 2d data to memory to be written to disk.
+If invoked with a new file then the dimension fields in the
+metadata will be set.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>data</strong> (<em>numpy.ndarray</em>) &#8211; Data array to be added to memory
+<cite>data.ndim</cite> must be either 1 or 2.
+The data type of the elements in the stored array will be
+inferred from <cite>data</cite>
+Supported data types are np.complex128 and np.float64.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">AssertionError</span></code> &#8211; If file is not opened in write mode.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">NotImplementedError</span></code> &#8211; If the dimensions of <cite>data</cite> are not supported.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> &#8211; If either the number of channels in <cite>data</cite> or the data type doesn&#8217;t match the pre-existing data, if there is
+any.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="lofasm.bbx.bbx.LofasmFile.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lofasm.bbx.bbx.LofasmFile.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>close file object</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="lofasm.bbx.bbx.LofasmFile.read_data">
+<code class="descname">read_data</code><span class="sig-paren">(</span><em>num_time_bin=None</em><span class="sig-paren">)</span><a class="headerlink" href="#lofasm.bbx.bbx.LofasmFile.read_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse data block in LoFASM filterbank file and load into memory as <cite>self.data</cite>.</p>
+<p>The resulting data array in self.data is stored as a 2d array with dim1 as the horizontal axis and
+dim2 as the vertical axis.</p>
+<p>If reading a typical LoFASM-filterbank file then the x-axis will represent the time bins and the y-axis will
+represent the frequency bins.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>num_time_bin</strong> (<em>int</em>) &#8211; The number of time bins to read. If not provided, then attempt to read the entire file.
+If <cite>num_time_bin</cite> is larger than the number of time bins in the file then read the entire file.
+A value of 0 will result in nothing being read.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">AssertionError</span></code> &#8211; If file is not open for reading</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="lofasm.bbx.bbx.LofasmFile.set">
+<code class="descname">set</code><span class="sig-paren">(</span><em>key</em>, <em>val</em><span class="sig-paren">)</span><a class="headerlink" href="#lofasm.bbx.bbx.LofasmFile.set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set header or metadata fields</p>
+<p>Set or create header comment fields. If the field <cite>key</cite> exists then its value will be overwritten.
+If the field does not exist, then it will be created as a new comment field.</p>
+<p>If <cite>key</cite> exists as part of the metadata field, then the value will be overwritten.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>key</strong> (<em>str</em>) &#8211; Header field name as a string.</li>
+<li><strong>val</strong> (<em>str</em><em>, </em><em>int</em><em>, </em><em>float</em>) &#8211; </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="lofasm.bbx.bbx.LofasmFile.write">
+<code class="descname">write</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#lofasm.bbx.bbx.LofasmFile.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write current data contents to disk.</p>
+<p>If at the beginning of the file write the BBX header first, then the data.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to LoFASM&#8217;s documentation!</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Louis Dartez.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
