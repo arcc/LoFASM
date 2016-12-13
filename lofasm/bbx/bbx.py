@@ -124,7 +124,7 @@ class LofasmFile(object):
             self._new_file = False
 
         else:
-            old_iscplx = True if self.header['metadata'][2] == '2' else False
+            old_iscplx = True if self.header['metadata']['complex'] == '2' else False
             new_iscplx = np.iscomplexobj(data)
 
             if old_iscplx != new_iscplx:
