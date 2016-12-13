@@ -12,5 +12,4 @@ Welcome to LoFASM's documentation!
 
 Indices and tables
 ==================
-
 * :ref:`genindex`

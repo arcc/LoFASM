@@ -212,6 +212,7 @@ class LofasmFile(object):
         key : str
             Header field name as a string.
         val : str, int, float
+            Value that header field will be set to
         """
         if key in self.metadata.keys():
             self.metadata[key] = val
