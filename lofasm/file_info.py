@@ -133,7 +133,7 @@ class LofasmFileInfo(object):
         grp = self.info_table.group_by(key)
         mask = grp.groups.keys[key] == condition
         select_file = grp.groups[mask]['filename']
-        return select_file
+        return list(select_file)
 
     def get_files_by_range(self, key, lower_limit, higher_limit):
         """
