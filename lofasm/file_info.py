@@ -2,7 +2,7 @@
 and outputing the information to a simple info file.
 Copyright (c) 2016 Jing Luo.
 """
-from lofasm import write # This line maybe changed in the future.
+from .bbx.bbx import  LofasmFile, is_lofasm_file
 import os
 import astropy.table as table
 from astropy.io import ascii
@@ -43,9 +43,9 @@ class LofasmFileInfo(object):
                 self.filenames = files
             for f in self.filenames:
                 # skip the non-lofasm files.
-                if not write.is_lofasm_file(f):
+                if not is_lofasm_file(f):
                     self.filenames.remove(f)
-                    
+
             if self.filenames is not []:
                 if self.info_table is None:
                     self.info_table = self.get_files_info(self.filenames)
@@ -62,16 +62,16 @@ class LofasmFileInfo(object):
         info_rows = []
         for f in filenames:
             # skip the non-lofasm files.
-            if not write.is_lofasm_file(f):
+            if not is_lofasm_file(f):
                 continue
-            lf = write.LofasmFileClass(f)
-            start_time = (float(lf.header['time_offset_J2000']) + \
+            lf = LofasmFile(f)
+            start_time = (float(lf.header['time_offset_J2000'].split()[0]) + \
                          float(lf.header['dim1_start']))
             end_time = (float(lf.header['dim1_span'])) + start_time
             str_start_time = lf.header['start_time']
             lofasm_station = lf.header['station']
             start_freq = (float(lf.header['dim2_start']) + \
-                         float(lf.header['frequency_offset_DC']))
+                         float(lf.header['frequency_offset_DC'].split()[0]))
             end_freq = (float(lf.header['dim2_span']))+ start_freq
             is_cplx = lf.iscplx
             num_time_bin = lf.timebins
