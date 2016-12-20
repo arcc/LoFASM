@@ -94,6 +94,8 @@ class LofasmFileInfo(object):
         t['end_time_pass_J2000'].unit = u.second
         t['start_freq'].unit = u.Hz
         t['end_freq'].unit = u.Hz
+        self.match_keys = ['filename', 'lofasm_station', 'channel','is_complex']
+        self.range_keys = ['time', 'freq']
         return t
 
     def info_write(self, outfile):
