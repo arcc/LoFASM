@@ -5,19 +5,6 @@ import gzip
 import numpy as np
 import struct
 
-def is_lofasm_file(filename):
-    """ Check the file is lofasm file or not.
-    """
-    if filename.endswith('.gz'):
-        f = gzip.open(filename,'rb')
-    else:
-        f = open(filename,'rb')
-    line1 = f.readline().strip()
-    if line1 in ['%\x02BX','%BX']:
-        return True
-    else:
-        return False
-
 def fmt_header_entry(entry_str, fmt_len=8):
     '''
     ensure that every header entry is 8 characters long. if longer, then

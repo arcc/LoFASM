@@ -13,7 +13,7 @@ SUPPORTED_HDR_TYPES = ['LoFASM-filterbank', 'LoFASM-dedispersion-dm-time']
 REQUIRED_HDR_COMMENT_FIELDS = {
     'LoFASM-filterbank': ['hdr_type', 'hdr_version', 'station', 'channel',
                        'dim1_start', 'dim1_span', 'dim2_start', 'dim2_span',
-                       'data_type'], 
+                       'data_type'],
     'LoFASM-dedispersion-dm-time': ['hdr_type', 'hdr_version', 'station', 'channel',
                        'dim1_start', 'dim1_span', 'dim2_start', 'dim2_span',
                        'data_type']
@@ -446,3 +446,17 @@ class LofasmFile(object):
             raise AttributeError("LoFASM File class has no attribute {}".format(key))
 
         return val
+
+# a light function for check if a file in lofasm bbx formate.
+def is_lofasm_file(filename):
+    """ Check the file is lofasm file or not.
+    """
+    if filename.endswith('.gz'):
+        f = gzip.open(filename,'rb')
+    else:
+        f = open(filename,'rb')
+    line1 = f.readline().strip()
+    if line1 in ['%\x02BX','%BX']:
+        return True
+    else:
+        return False
