@@ -171,10 +171,8 @@ class LofasmFileInfo(object):
             select_range = np.array([lower_limit, higher_limit])
             if (lower_limit >= file_range[0] and lower_limit <= file_range[1]) or \
                (higher_limit >= file_range[0] and higher_limit <= file_range[1]):
-                print "Overlap"
                 select_file.append(self.info_table['filename'][i])
             elif lower_limit <= file_range[0] and higher_limit >= file_range[1]:
-                print "Cover"
                 select_file.append(self.info_table['filename'][i])
             else:
                 continue
