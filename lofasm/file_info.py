@@ -96,6 +96,8 @@ class LofasmFileInfo(object):
         t['end_freq'].unit = u.Hz
         self.match_keys = ['filename', 'lofasm_station', 'channel','is_complex']
         self.range_keys = ['time', 'freq']
+        self.key_map = {'time' : '_time_pass_J2000',
+                        'freq' : '_freq'}
         return t
 
     def info_write(self, outfile):
@@ -167,11 +169,13 @@ class LofasmFileInfo(object):
             file_range = np.array([self.info_table[start_col_key][i], \
                                    self.info_table[end_col_key][i]])
             select_range = np.array([lower_limit, higher_limit])
-            if (select_range[0] >= file_range[0] and select_range[0] <= file_range[1]) or \
-               (select_range[1] >= file_range[0] and select_range[1] <= file_range[1]):
-               select_file.append(self.info_table['filename'][i])
-            elif select_range[0] <= file_range[0] and select_range[1] >= select_range[1]:
-               select_file.append(self.info_table['filename'][i])
+            if (lower_limit >= file_range[0] and lower_limit <= file_range[1]) or \
+               (higher_limit >= file_range[0] and higher_limit <= file_range[1]):
+                print "Overlap"
+                select_file.append(self.info_table['filename'][i])
+            elif lower_limit <= file_range[0] and higher_limit >= file_range[1]:
+                print "Cover"
+                select_file.append(self.info_table['filename'][i])
             else:
                 continue
         return select_file
