@@ -54,7 +54,11 @@ class LofasmFileInfo(object):
                     if new_files != []:
                         self.new_files_table = self.get_files_info(new_files)
                         self.info_table = table.vstack([self.info_table, self.new_files_table])
-
+        # TODO: In the future, more then filter bank data file can be processed
+        self.match_keys = ['filename', 'lofasm_station', 'channel','is_complex']
+        self.range_keys = ['time', 'freq']
+        self.key_map = {'time' : '_time_pass_J2000',
+                        'freq' : '_freq'}
     def get_files_info(self, filenames):
         """This function checks if all the lofasm files info and put them in
         an astropy table.
@@ -94,10 +98,7 @@ class LofasmFileInfo(object):
         t['end_time_pass_J2000'].unit = u.second
         t['start_freq'].unit = u.Hz
         t['end_freq'].unit = u.Hz
-        self.match_keys = ['filename', 'lofasm_station', 'channel','is_complex']
-        self.range_keys = ['time', 'freq']
-        self.key_map = {'time' : '_time_pass_J2000',
-                        'freq' : '_freq'}
+
         return t
 
     def info_write(self, outfile):
