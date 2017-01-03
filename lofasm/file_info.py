@@ -1,5 +1,4 @@
-"""This is a script/module for checking the information of a list of lofasm files
-and outputing the information to a simple info file.
+"""This is a script/module for checking and parsing file information to an astropy table. 
 Copyright (c) 2016 Jing Luo.
 """
 from .bbx.bbx import  LofasmFile, is_lofasm_file
