@@ -46,10 +46,10 @@ class HeaderInfoCollector(InfoCollector):
             return getattr(self, 'get_header_info_'+'fmt')(fmt_cls, fieldname)
         header_method.__name__ = 'get_' + fieldname +'_'+ fmt
         header_method.__doc__ = 'This is a function to get heard information %s form %s file.\n' % (fieldname, fmt)
-        header_method.__doc__ = 'Parameter\n---------\nfmt_cls : object\n file class for LoFasm %s format.\n' % (fmt)
-        header_method.__doc__ = 'Return\n------\n Header information for field %s' % fieldname
+        header_method.__doc__ += 'Parameter\n---------\nfmt_cls : object\n file class for LoFasm %s format.\n' % (fmt)
+        header_method.__doc__ += 'Return\n------\n Header information for field %s' % fieldname
         return header_method
-        
+
     def get_header_info_bbx(self, bbx_cls, fieldname):
         return bbx_cls.header[fieldname]
 
