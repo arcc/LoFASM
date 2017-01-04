@@ -1,14 +1,13 @@
 """This is a script/module for checking and parsing file information to an astropy table.
 Copyright (c) 2016 Jing Luo.
 """
-from .bbx.bbx import  LofasmFile, is_lofasm_bbx
 import os
 import astropy.table as table
 from astropy import log
 from astropy.io import ascii
 import astropy.units as u
 import numpy as np
-from .formats.format import DataFormat
+from ..formats.format import DataFormat
 
 class LofasmFileInfo(object):
     """This class provides a storage for a list of lofasm files information
