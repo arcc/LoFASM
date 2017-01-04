@@ -7,7 +7,7 @@ import gzip
 import numpy as np
 import struct
 
-SUPPORTED_FILE_SIGNATURES = ['\x02BX', 'ABX']
+SUPPORTED_FILE_SIGNATURES = ['\x02BX', 'ABX', 'BX']
 SUPPORTED_ENCODING_SCHEMES = ['raw256']
 SUPPORTED_HDR_TYPES = ['LoFASM-filterbank', 'LoFASM-dedispersion-dm-time']
 REQUIRED_HDR_COMMENT_FIELDS = {
@@ -462,6 +462,10 @@ def is_lofasm_bbx(filename):
     else:
         f = open(filename,'rb')
     line1 = f.readline().strip()
+    if line1.startswith('%'):
+        line1 = line1.strip('%')
+    else:
+        return False
     if line1 in SUPPORTED_FILE_SIGNATURES:
         return True
     else:
