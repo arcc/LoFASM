@@ -454,7 +454,7 @@ class LofasmFile(object):
         return val
 
 # a light function for check if a file in lofasm bbx formate.
-def is_lofasm_file(filename):
+def is_lofasm_bbx(filename):
     """ Check the file is lofasm file or not.
     """
     if filename.endswith('.gz'):
@@ -462,7 +462,7 @@ def is_lofasm_file(filename):
     else:
         f = open(filename,'rb')
     line1 = f.readline().strip()
-    if line1 in ['%\x02BX','%BX']:
+    if line1 in SUPPORTED_FILE_SIGNATURES:
         return True
     else:
         return False
