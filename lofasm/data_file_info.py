@@ -1,19 +1,20 @@
 """This is a script/module for checking and parsing file information to an astropy table.
 Copyright (c) 2016 Jing Luo.
 """
-from .bbx.bbx import  LofasmFile, is_lofasm_file
+from .bbx.bbx import  LofasmFile, is_lofasm_bbx
 import os
 import astropy.table as table
+from astropy import log
 from astropy.io import ascii
 import astropy.units as u
 import numpy as np
-import argparse
+from .formats.format import DataFormat
 
 class LofasmFileInfo(object):
     """This class provides a storage for a list of lofasm files information
     and set of methods to check the information.
     """
-    def __init__(self, dir):
+    def __init__(self, directory='.'):
         """
         This is a class for reading a directory's the lofasm related file or
         directories and parsing the information to an astropy table. It provides
@@ -28,10 +29,106 @@ class LofasmFileInfo(object):
             Filename for the directory.
         """
         # Get all the files for the directory.
-        all_files = os.listdir(dir)
+        all_files = os.listdir(directory)
+        self.directory = directory
+        self.directory_abs_path = os.path.abspath(self.directory)
+        self.directory_basename = os.path.basename(self.directory_abs_path.rstrip(os.sep))
         # different file category
-        info_file = []
-        bbx_file =
+        self.formats = {}
+        # instantiate format classes
+        for k, kv in zip(DataFormat._format_list.keys(), DataFormat._format_list.values()):
+            self.formats[k] = kv()
+        # set up the file category list depends on the formats
+        self.files = self.check_file_types(all_files, self.directory)
+        num_info_files = len(self.files['info'])
+        if num_info_files < 1:
+            self.info_file_name = self.directory_basename + '.info'
+        else:
+            if num_info_files > 1:
+                log.warn("More then one .info file detected, " \
+                         "use '%s' as information file." % self.files['info'][0])
+            self.info_file_name = self.files['info'][0]
+        self.table_update = False
+        self.setup_info_table()
+
+    def check_file_types(self, files, directory='.'):
+        """
+        This is a class method for checking file types. It only log the lofasm
+        related files.
+        """
+        # Check file type
+        file_type = {}
+        file_type['data_dir'] = []
+        file_type['info'] = []
+        for fn in files:
+            f = os.path.join(directory, fn)
+            if fn.endswith('.info'):
+                file_type['info'].append(fn)
+            if os.path.isdir(f):
+                file_type['data_dir'].append(fn)
+            else:
+                for k, kc in zip(self.formats.keys(), self.formats.values()):
+                    if k not in file_type.keys():
+                        file_type[k] = []
+                    if kc.is_format(f):
+                        file_type[k].append(fn)
+                        break
+        return file_type
+
+    def get_type_map(self):
+        data_files = []
+        file_types = []
+        for tp, flist in zip(self.files.keys(), self.files.values()):
+            if not tp == 'info':
+                tpl = [tp] * len(flist)
+                data_files += flist
+                file_types += tpl
+        type_map = dict(zip(data_files, file_types))
+        return type_map
+
+    def setup_info_table(self):
+        # Check directories
+        for d in self.files['data_dir']:
+            fs = os.listdir(os.path.join(self.directory, d))
+            if any(ff.endswith('.info') for ff in fs):
+                continue
+            else:
+                self.files['data_dir'].remove(d)
+
+        type_map = self.get_type_map()
+        # Check out info_file
+        info_file = os.path.join(self.directory, self.info_file_name)
+        if os.path.isfile(info_file):
+            self.info_table = table.Table.read(info_file, format='ascii.ecsv')
+            new_files = list(set(type_map.keys()) - set(self.info_table['filename']))
+            if new_files != []:
+                new_file_tp = [type_map[f] for f in new_files]
+                new_f_table = table.Table([new_files, new_file_tp], \
+                                           names=('filename', 'filetype'))
+                self.info_table = table.vstack([self.info_table, new_f_table])
+                if 'data_dir' in new_file_tp:
+                    self.info_table.meta['haschild'] = True
+                self.table_update = True
+        else:
+            if len(self.files['data_dir']) > 0:
+                haschild = True
+            else:
+                haschild = False
+            self.info_table = table.Table([type_map.keys(), type_map.values()], \
+                                          names=('filename', 'filetype'),\
+                                          meta={'name':self.directory_basename + '_info_table',
+                                                'haschild': haschild})
+            self.table_update = True
+
+    def add_columns(self):
+        """This method needs a FileInfoCollector class
+        """
+        pass
+
+    def write_info_table(self):
+        outpath = os.path.join(self.directory_abs_path, self.info_file_name)
+        if self.table_update:
+            self.info_table.write(outpath, format='ascii.ecsv', overwrite=True)
 
 
     #     self.info_table = None
