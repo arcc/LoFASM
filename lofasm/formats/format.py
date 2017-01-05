@@ -51,7 +51,7 @@ class BBXFormat(DataFormat):
         self.instance_error = "Please instantiate the format class first using"
         self.instance_error += " '.instantiate_format_cls' method"
         # add docstring
-        
+
     def instantiate_format_cls(self, filename, verbose=False, mode='read', gz=None):
         """
         This is a wrapper function for instantiate bbx class. The description of
@@ -67,7 +67,7 @@ class BBXFormat(DataFormat):
         if self.format_instance is None:
             raise AttributeError(self.instance_error)
         else:
-            return self.instance_error.header
+            return self.format_instance.header
 
     def read_data(self, N=None):
         if self.format_instance is None:
