@@ -8,6 +8,7 @@ from astropy.io import ascii
 import astropy.units as u
 import numpy as np
 from ..formats.format import DataFormat
+from .info_collector import InfoCollector
 
 class LofasmFileInfo(object):
     """This class provides a storage for a list of lofasm files information
