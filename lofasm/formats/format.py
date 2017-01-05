@@ -25,8 +25,9 @@ class DataFormat(object):
     def __init__(self, format_cls):
         self.format_name = None
         self.format_cls = format_cls
+        self.file_clas_kws = {}
 
-    def instantiate_format_cls(self,):
+    def instantiate_format_cls(self, filename):
         raise NotImplementedError
 
     def is_format(self, filename):
@@ -47,53 +48,19 @@ class BBXFormat(DataFormat):
     def __init__(self,):
         super(BBXFormat, self).__init__(bbx.LofasmFile)
         self.format_name = 'bbx'
-        self.format_instance = None
-        self.instance_error = "Please instantiate the format class first using"
-        self.instance_error += " '.instantiate_format_cls' method"
-        # add docstring
 
-    def instantiate_format_cls(self, filename, verbose=False, mode='read', gz=None):
+    def instantiate_format_cls(self, filename):
         """
         This is a wrapper function for instantiate bbx class. The description of
         parameters are given in ../bbx/bbx.py LofasmFile class docstring.
         """
-        self.format_instance = self.format_cls(filename, verbose=False, \
-                                               mode='read', gz=None)
+        kwargs = self.file_clas_kws
+        if filename.endswith('.gz'):
+            kwargs['gz'] = True
+        else:
+            kwargs['gz'] = False
+        file_instance = self.format_cls(filename, **kwargs)
+        return file_instance
 
     def is_format(self, filename):
         return bbx.is_lofasm_bbx(filename)
-
-    def read_header(self):
-        if self.format_instance is None:
-            raise AttributeError(self.instance_error)
-        else:
-            return self.format_instance.header
-
-    def read_data(self, N=None):
-        if self.format_instance is None:
-            raise AttributeError(self.instance_error)
-        else:
-            self.format_instance.read_data(self, N=None)
-            return self.format_instance.data
-
-    def write_data(self, data, **kwargs):
-        """
-        Parameter
-        ---------
-        data : numpy.ndarray
-            Data array to be added to memory
-            `data.ndim` must be either 1 or 2.
-            The data type of the elements in the stored array will be inferred from `data`.
-            Supported data types are np.complex128 and np.float64.
-        Notes
-        -----
-        The keyword arguments is for the input header information.
-        """
-        if self.format_instance is None:
-            raise AttributeError(self.instance_error)
-        else:
-            for k, v in zip(kwargs.keys(), kwargs.values()):
-                self.header[k] = v
-            self.format_instance.add_data(data)
-            self.format_instance.write()
-            self.format_instance.close()
