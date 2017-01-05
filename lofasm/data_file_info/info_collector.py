@@ -4,7 +4,7 @@ is able to define the information collection methods
 import abc
 from ..formats.format import DataFormat
 
-HEADER_PARSE_FIELDS = ['station', 'channel', 'hdr_type', 'start_time', 'complex', \
+HEADER_PARSE_FIELDS = ['station', 'channel', 'hdr_type', 'start_time', \
                        'data_label']
 
 class InfoCollectorMeta(abc.ABCMeta):
@@ -80,7 +80,7 @@ class stationCollector(HeaderInfoCollector):
     """
     info_name = 'station'
     def __init__(self):
-        super(StationCollector, self).__init__()
+        super(stationCollector, self).__init__()
         self.column = 'station'
         self.collect_method['bbx'] = self.make_header_collect_method('station', 'bbx')
         self.collect_method['raw'] = self.make_header_collect_method('station', 'raw')

@@ -39,7 +39,7 @@ class LofasmFileInfo(object):
         for k, kv in zip(DataFormat._format_list.keys(), DataFormat._format_list.values()):
             self.formats[k] = kv()
         # set up the file category list depends on the formats
-        self.files = self.check_file_types(all_files, self.directory)
+        self.files = self.check_file_format(all_files, self.directory)
         num_info_files = len(self.files['info'])
         if num_info_files < 1:
             self.info_file_name = self.directory_basename + '.info'
@@ -48,43 +48,50 @@ class LofasmFileInfo(object):
                 log.warn("More then one .info file detected, " \
                          "use '%s' as information file." % self.files['info'][0])
             self.info_file_name = self.files['info'][0]
+        self.built_in_collectors = {}
+        for k, v in zip(InfoCollector._info_name_list.keys(), \
+                        InfoCollector._info_name_list.values()):
+            self.built_in_collectors[k] = v()
+        self.new_files = []
         self.table_update = False
         self.setup_info_table()
 
-    def check_file_types(self, files, directory='.'):
+    def check_file_format(self, files, directory='.'):
         """
-        This is a class method for checking file types. It only log the lofasm
+        This is a class method for checking file format. It only log the lofasm
         related files.
         """
-        # Check file type
-        file_type = {}
-        file_type['data_dir'] = []
-        file_type['info'] = []
+        # Check file format
+        file_format = {}
+        file_format['data_dir'] = []
+        file_format['info'] = []
         for fn in files:
             f = os.path.join(directory, fn)
             if fn.endswith('.info'):
-                file_type['info'].append(fn)
+                file_format['info'].append(fn)
             if os.path.isdir(f):
-                file_type['data_dir'].append(fn)
+                file_format['data_dir'].append(fn)
             else:
                 for k, kc in zip(self.formats.keys(), self.formats.values()):
-                    if k not in file_type.keys():
-                        file_type[k] = []
+                    if k not in file_format.keys():
+                        file_format[k] = []
                     if kc.is_format(f):
-                        file_type[k].append(fn)
+                        file_format[k].append(fn)
                         break
-        return file_type
+        return file_format
 
-    def get_type_map(self):
+    def get_format_map(self):
+        """ List all the file name as the key and the formats as the value.
+        """
         data_files = []
-        file_types = []
+        file_formats = []
         for tp, flist in zip(self.files.keys(), self.files.values()):
             if not tp == 'info':
                 tpl = [tp] * len(flist)
                 data_files += flist
-                file_types += tpl
-        type_map = dict(zip(data_files, file_types))
-        return type_map
+                file_formats += tpl
+        format_map = dict(zip(data_files, file_formats))
+        return format_map
 
     def setup_info_table(self):
         # Check directories
@@ -95,16 +102,16 @@ class LofasmFileInfo(object):
             else:
                 self.files['data_dir'].remove(d)
 
-        type_map = self.get_type_map()
+        format_map = self.get_format_map()
         # Check out info_file
         info_file = os.path.join(self.directory, self.info_file_name)
         if os.path.isfile(info_file):
             self.info_table = table.Table.read(info_file, format='ascii.ecsv')
-            new_files = list(set(type_map.keys()) - set(self.info_table['filename']))
-            if new_files != []:
-                new_file_tp = [type_map[f] for f in new_files]
-                new_f_table = table.Table([new_files, new_file_tp], \
-                                           names=('filename', 'filetype'))
+            self.new_files = list(set(format_map.keys()) - set(self.info_table['filename']))
+            if self.new_files != []:
+                new_file_tp = [format_map[f] for f in self.new_files]
+                new_f_table = table.Table([self.new_files, new_file_tp], \
+                                           names=('filename', 'fileformat'))
                 self.info_table = table.vstack([self.info_table, new_f_table])
                 if 'data_dir' in new_file_tp:
                     self.info_table.meta['haschild'] = True
@@ -114,16 +121,54 @@ class LofasmFileInfo(object):
                 haschild = True
             else:
                 haschild = False
-            self.info_table = table.Table([type_map.keys(), type_map.values()], \
-                                          names=('filename', 'filetype'),\
+            self.info_table = table.Table([format_map.keys(), format_map.values()], \
+                                          names=('filename', 'fileformat'),\
                                           meta={'name':self.directory_basename + '_info_table',
                                                 'haschild': haschild})
             self.table_update = True
 
-    def add_columns(self):
-        """This method needs a FileInfoCollector class
+    def process_new_files(self, new_files):
+        format_map = self.get_format_map()
+        new_file_tp = [format_map[f] for f in new_files]
+        new_f_table = table.Table([new_files, new_file_tp], \
+                                   names=('filename', 'fileformat'))
+        self.add_columns()
+
+    def add_columns(self, col_collectors, target_table, overwrite=False):
         """
-        pass
+        This method is a function add a column to info table.
+        Parameter
+        ---------
+        col_collector : dictionary
+            The dictrionary has to use the column name as the key, and the associated
+            column information collector as the value.
+        target_table : astropy table
+            The table has to have column 'filename' and 'fileformat'.
+        """
+        col_info = {}
+        # Check if col_name in the table.
+        for cn in col_collectors.keys():
+            if cn in target_table.keys() and not overwrite:
+                log.warn("Column '%s' exists in the table. If you want to"
+                         " overwrite the column please set  'overwrite'"
+                         " flag True." % cn)
+                continue
+            else:
+                col_info[cn] = []
+
+        for fn, fmt in zip(target_table['filename'], target_table['fileformat']):
+            f = os.path.join(self.directory, fn)
+            f_obj = self.formats[fmt].instantiate_format_cls(f)
+            for k in col_info.keys():
+                try:
+                    cvalue = col_collectors[k].collect_method[fmt](f_obj)
+                except NotImplementedError:
+                    cvalue = None
+                col_info[k].append(cvalue)
+            f_obj.close()
+        for key in col_info.keys():
+            target_table[key] = col_info[key]
+        return target_table
 
     def write_info_table(self):
         outpath = os.path.join(self.directory_abs_path, self.info_file_name)
