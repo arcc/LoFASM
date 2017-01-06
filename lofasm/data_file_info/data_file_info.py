@@ -179,6 +179,7 @@ class LofasmFileInfo(object):
             target_table[key] = col_info[key]
             if key not in self.col_names:
                 self.col_names.append(key)
+        self.table_update = True
         return target_table
 
     def write_info_table(self):
