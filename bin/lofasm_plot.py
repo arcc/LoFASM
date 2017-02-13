@@ -10,7 +10,7 @@ if __name__ == '__main__':
     from lofasm import parse_data as pdat
     from optparse import OptionParser
 #    from lofasm import lofasm_dat_lib as lofasm
-    
+
     p = OptionParser()
     p.set_usage('lofasm_plot.py -f lofasm_data_filename [options]')
     p.set_description(__doc__)
