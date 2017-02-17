@@ -1,6 +1,6 @@
 # This is module to simulate time series
 import numpy as np
-
+import copy
 
 class SeriesGen(object):
     """
@@ -44,8 +44,8 @@ class WhiteNoiseGen(SeriesGen):
     """
     def __init__(self):
         super(WhiteNoiseGen, self).__init__()
-    def gen_func(self, t, nu, sigma):
-        return np.random.normal(nu, sigma, len(t))
+    def gen_func(self, t, mu, sigma, **params):
+        return np.random.normal(mu, sigma, len(t))
 
 
 class TimeSeries(object):
@@ -125,6 +125,32 @@ class TimeSeries(object):
 
     def __sub__(self, other):
         return self.__add__(other.__neg__())
+
+    def __mul__(self, number):
+        new_series = TimeSeries(self.name + '_mul', self.fs, self.time_length, self.start_time)
+        new_series.info[new_series.name].update(self.info[self.name])
+        new_series.data = self.data * number
+        new_series.info[new_series.name]['amp'] = new_series.data.max()
+        new_series.info.update(self.info)
+        return new_series
+
+    def __div__(self, number):
+        new_series = TimeSeries(self.name + '_div', self.fs, self.time_length, self.start_time)
+        new_series.info[new_series.name].update(self.info[self.name])
+        new_series.data = self.data / number
+        new_series.info[new_series.name]['amp'] = new_series.data.max()
+        new_series.info.update(self.info)
+        return new_series
+
+    def __imul__(self, number):
+        self.data *= number
+        self.info[self.name]['amp'] = self.data.max()
+        return self
+
+    def __idiv__(self, number):
+        self.data /= number
+        self.info[self.name]['amp'] = self.data.max()
+        return self
 
     def __iadd__(self, other):
         if other.fs != self.fs:
