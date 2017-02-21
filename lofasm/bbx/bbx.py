@@ -453,7 +453,7 @@ class LofasmFile(object):
 
         return val
 
-# a light function for check if a file in lofasm bbx formate.
+# a light function for check if a file in lofasm bbx format.
 def is_lofasm_bbx(filename):
     """ Check the file is lofasm file or not.
     """

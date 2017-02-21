@@ -19,13 +19,14 @@ class LofasmFileInfo(object):
         This is a class for reading a directory's the lofasm related file or
         directories and parsing the information to an astropy table. It provides
         the writing the information to a text file as well.
+
         Notes
         -----
         This class only applies to one directory.
 
         Parameter
         ----------
-        dir : str, optinal
+        dir : str, optional
             Filename for the directory.
         """
         # Get all the files for the directory.
@@ -148,8 +149,8 @@ class LofasmFileInfo(object):
         This method is a function add a column to info table.
         Parameter
         ---------
-        col_collector : dictionary
-            The dictrionary has to use the column name as the key, and the associated
+        col_collectors : dictionary
+            The dictionary has to use the column name as the key, and the associated
             column information collector as the value.
         target_table : astropy table
             The table has to have column 'filename' and 'fileformat'.
