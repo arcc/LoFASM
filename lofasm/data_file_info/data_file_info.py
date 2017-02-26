@@ -14,7 +14,7 @@ class LofasmFileInfo(object):
     """This class provides a storage for a list of lofasm files information
     and set of methods to check the information.
     """
-    def __init__(self, directory='.', add_col_names=[], recurse_mode=False):
+    def __init__(self, directory='.', add_col_names=[], check_subdir=False):
         """
         This is a class for reading a directory's the lofasm related file or
         directories and parsing the information to an astropy table. It provides
@@ -60,7 +60,7 @@ class LofasmFileInfo(object):
         # Those are the default column names
         self.col_names = ['station', 'channel', 'hdr_type', 'start_time'] + add_col_names
         self.setup_info_table()
-        if recurse_mode:
+        if check_subdir:
             self.process_data_dirs()
 
     def check_file_format(self, files, directory='.'):
@@ -224,7 +224,7 @@ class LofasmFileInfo(object):
     def process_data_dirs(self):
         for d in self.files['data_dir']:
             path_d = os.path.join(self.directory_abs_path, d)
-            dirclass = LofasmFileInfo(path_d, recurse_mode=True)
+            dirclass = LofasmFileInfo(path_d, check_subdir=True)
             add_col = []
             for c in self.col_names:
                 if c not in dirclass.col_names:
