@@ -14,7 +14,7 @@ class LofasmFileInfo(object):
     """This class provides a storage for a list of lofasm files information
     and set of methods to check the information.
     """
-    def __init__(self, directory='.', add_col_names=[]):
+    def __init__(self, directory='.', add_col_names=[], recurse_mode=False):
         """
         This is a class for reading a directory's the lofasm related file or
         directories and parsing the information to an astropy table. It provides
@@ -40,21 +40,28 @@ class LofasmFileInfo(object):
         for k, kv in zip(DataFormat._format_list.keys(), DataFormat._format_list.values()):
             self.formats[k] = kv()
         # set up the file category list depends on the formats
-        self.files = self.check_file_format(all_files, self.directory)
+        self.files, self.num_data_files = self.check_file_format(all_files, self.directory)
         num_info_files = len(self.files['info'])
         if num_info_files < 1:
-            self.info_file_name = self.directory_basename + '.info'
+            self.info_file_name = '.info'
         else:
             if num_info_files > 1:
                 log.warn("More then one .info file detected, " \
                          "use '%s' as information file." % self.files['info'][0])
             self.info_file_name = self.files['info'][0]
+        if self.num_data_files > 0 or len(self.files['data_dir']) > 0 or \
+            len(self.files['info']) > 0:
+            self.is_data_dir = True
+        else:
+            self.is_data_dir = False
         self.built_in_collectors = {}
         self.new_files = []
         self.table_update = False
         # Those are the default column names
         self.col_names = ['station', 'channel', 'hdr_type', 'start_time'] + add_col_names
         self.setup_info_table()
+        if recurse_mode:
+            self.process_data_dirs()
 
     def check_file_format(self, files, directory='.'):
         """
@@ -63,22 +70,51 @@ class LofasmFileInfo(object):
         """
         # Check file format
         file_format = {}
-        file_format['data_dir'] = []
+        file_format['dir'] = []
         file_format['info'] = []
+        file_format['data_dir'] = []
         for fn in files:
             f = os.path.join(directory, fn)
-            if fn.endswith('.info'):
+            if f.endswith('.info'):
                 file_format['info'].append(fn)
             if os.path.isdir(f):
-                file_format['data_dir'].append(fn)
+                file_format['dir'].append(fn)
             else:
                 for k, kc in zip(self.formats.keys(), self.formats.values()):
                     if k not in file_format.keys():
                         file_format[k] = []
-                    if kc.is_format(f):
+                    if kc.is_format(f) and k != 'data_dir':
                         file_format[k].append(fn)
                         break
-        return file_format
+        # check dirs
+        for d in file_format['dir']:
+            if self.check_dir(d):
+                file_format['data_dir'] += [d,]
+        num_data_files = 0
+        for k, v in file_format.items():
+            if k not in ['info', 'dir','data_dir']:
+                num_data_files += len(v)
+
+        return file_format, num_data_files
+
+    def check_dir(self, d):
+        path_d = os.path.join(self.directory_abs_path, d)
+        dirclass = LofasmFileInfo(path_d)
+        if dirclass.num_data_files == 0 and dirclass.files['info'] == []:
+            if dirclass.files['data_dir'] != []:
+                return True
+            else:
+                # check contained dirs
+                for subd in dirclass.files['dir']:
+                    sudbpath = os.path.join(dirclass.directory_abs_path, subd)
+                    subdirclass = LofasmFileInfo(subdpath)
+                    if subdirclass.data_dir.is_data_dir:
+                        return True
+                    else:
+                        continue
+        else:
+            return True
+
 
     def get_format_map(self):
         """ List all the file name as the key and the formats as the value.
@@ -86,6 +122,8 @@ class LofasmFileInfo(object):
         data_files = []
         file_formats = []
         for tp, flist in zip(self.files.keys(), self.files.values()):
+            if tp == 'dir':  # Do not process dir key.
+                continue
             if not tp == 'info':
                 tpl = [tp] * len(flist)
                 data_files += flist
@@ -105,17 +143,9 @@ class LofasmFileInfo(object):
         return curr_col_collector
 
     def setup_info_table(self):
-        # Check directories
-        for d in self.files['data_dir']:
-            fs = os.listdir(os.path.join(self.directory, d))
-            if any(ff.endswith('.info') for ff in fs):
-                continue
-            else:
-                self.files['data_dir'].remove(d)
-
         format_map = self.get_format_map()
         # Check out info_file
-        info_file = os.path.join(self.directory, self.info_file_name)
+        info_file = os.path.join(self.directory_abs_path, self.info_file_name)
         if os.path.isfile(info_file):
             self.info_table = table.Table.read(info_file, format='ascii.ecsv')
             curr_col = self.info_table.keys()
@@ -175,7 +205,10 @@ class LofasmFileInfo(object):
                 except NotImplementedError:
                     cvalue = None
                 col_info[k].append(cvalue)
-            f_obj.close()
+            try:
+                f_obj.close()
+            except:
+                pass
         for key in col_info.keys():
             target_table[key] = col_info[key]
             if key not in self.col_names:
@@ -187,3 +220,15 @@ class LofasmFileInfo(object):
         outpath = os.path.join(self.directory_abs_path, self.info_file_name)
         if self.table_update:
             self.info_table.write(outpath, format='ascii.ecsv', overwrite=True)
+
+    def process_data_dirs(self):
+        for d in self.files['data_dir']:
+            path_d = os.path.join(self.directory_abs_path, d)
+            dirclass = LofasmFileInfo(path_d, recurse_mode=True)
+            add_col = []
+            for c in self.col_names:
+                if c not in dirclass.col_names:
+                    add_col.append(c)
+            new_col_collector = self.get_col_collector(add_col)
+            dirclass.info_table = dirclass.add_columns(new_col_collector, dirclass.info_table)
+            dirclass.write_info_table()

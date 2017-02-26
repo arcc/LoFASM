@@ -26,6 +26,7 @@ class DataFormat(object):
         self.format_name = None
         self.format_cls = format_cls
         self.file_clas_kws = {}
+        self.get_instance = None
 
     def instantiate_format_cls(self, filename):
         raise NotImplementedError
@@ -48,6 +49,7 @@ class BBXFormat(DataFormat):
     def __init__(self,):
         super(BBXFormat, self).__init__(bbx.LofasmFile)
         self.format_name = 'bbx'
+        self.get_instance = self.instantiate_format_cls
 
     def instantiate_format_cls(self, filename):
         """
@@ -64,3 +66,21 @@ class BBXFormat(DataFormat):
 
     def is_format(self, filename):
         return bbx.is_lofasm_bbx(filename)
+
+
+class DataDir(DataFormat):
+    format = 'data_dir'
+    def __init__(self,):
+        super(DataDir, self).__init__(None)
+        self.format_name = 'data_dir'
+        self.get_instance = self.instantiate_format_cls
+
+    def instantiate_format_cls(self, filename):
+        """
+        This is a wrapper function for instantiate bbx class. The description of
+        parameters are given in ../bbx/bbx.py LofasmFile class docstring.
+        """
+        return None
+
+    def is_format(self, filename):
+        pass
