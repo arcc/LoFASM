@@ -28,9 +28,18 @@ class LofasmFileInfo(object):
         ----------
         dir : str, optional
             Filename for the directory.
+        add_col_names: list optional
+            The new added column names, other then the default ones.
+        check_subdir: bool optional
+            Check subdir information or not. It will create .info file in the
+            end data subdirector.
+
+        Note
+        ----
+        Use check_subdir option. A new directory's information can be set up totally.
         """
         # Get all the files for the directory.
-        all_files = os.listdir(directory)
+        self.all_files = os.listdir(directory)
         self.directory = directory
         self.directory_abs_path = os.path.abspath(self.directory)
         self.directory_basename = os.path.basename(self.directory_abs_path.rstrip(os.sep))
@@ -40,7 +49,7 @@ class LofasmFileInfo(object):
         for k, kv in zip(DataFormat._format_list.keys(), DataFormat._format_list.values()):
             self.formats[k] = kv()
         # set up the file category list depends on the formats
-        self.files, self.num_data_files = self.check_file_format(all_files, self.directory)
+        self.files, self.num_data_files = self.check_file_format(self.all_files, self.directory)
         num_info_files = len(self.files['info'])
         if num_info_files < 1:
             self.info_file_name = '.info'
@@ -49,8 +58,7 @@ class LofasmFileInfo(object):
                 log.warn("More then one .info file detected, " \
                          "use '%s' as information file." % self.files['info'][0])
             self.info_file_name = self.files['info'][0]
-        if self.num_data_files > 0 or len(self.files['data_dir']) > 0 or \
-            len(self.files['info']) > 0:
+        if self.num_data_files > 0:
             self.is_data_dir = True
         else:
             self.is_data_dir = False
@@ -92,12 +100,14 @@ class LofasmFileInfo(object):
                 file_format['data_dir'] += [d,]
         num_data_files = 0
         for k, v in file_format.items():
-            if k not in ['info', 'dir','data_dir']:
+            if k not in ['info', 'dir']:
                 num_data_files += len(v)
 
         return file_format, num_data_files
 
     def check_dir(self, d):
+        """ This is for checking if a directory a data directory
+        """
         path_d = os.path.join(self.directory_abs_path, d)
         dirclass = LofasmFileInfo(path_d)
         if dirclass.num_data_files == 0 and dirclass.files['info'] == []:
@@ -143,6 +153,10 @@ class LofasmFileInfo(object):
         return curr_col_collector
 
     def setup_info_table(self):
+        """
+        This if for set up the data information table. If the '.info' file
+        exists, it will read .info first, and then add new files.
+        """
         format_map = self.get_format_map()
         # Check out info_file
         info_file = os.path.join(self.directory_abs_path, self.info_file_name)
@@ -157,10 +171,20 @@ class LofasmFileInfo(object):
                                            names=('filename', 'fileformat'))
                 curr_col_collector = self.get_col_collector(curr_col)
                 new_f_table = self.add_columns(curr_col_collector, new_f_table)
+                # change new table data type
+                for col in new_f_table.keys():
+                    new_f_table[col] = new_f_table[col].astype(self.info_table[col].dtype)
                 self.info_table = table.vstack([self.info_table, new_f_table])
                 if 'data_dir' in new_file_tp:
                     self.info_table.meta['haschild'] = True
                 self.table_update = True
+                # check deleted data files.
+            if self.num_data_files < len(self.info_table):
+                deleted_file_index = []
+                for ii in range(len(self.info_table)):
+                    if self.info_table[ii]['filename'] not in self.all_files:
+                        deleted_file_index.append(ii)
+                self.info_table.remove_rows(deleted_file_index)
         else:
             if len(self.files['data_dir']) > 0:
                 haschild = True
@@ -222,6 +246,9 @@ class LofasmFileInfo(object):
             self.info_table.write(outpath, format='ascii.ecsv', overwrite=True)
 
     def process_data_dirs(self):
+        """
+        Get all the file info from the sub directories
+        """
         for d in self.files['data_dir']:
             path_d = os.path.join(self.directory_abs_path, d)
             dirclass = LofasmFileInfo(path_d, check_subdir=True)
