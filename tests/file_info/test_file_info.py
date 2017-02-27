@@ -6,6 +6,12 @@ import unittest
 lofasm_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 datafile = os.path.join(lofasm_dir, 'fs')
 
+if os.path.exists(os.path.join(datafile, '.info')):
+    os.remove(os.path.join(datafile, '.info'))
+if os.path.exists(os.path.join(datafile, '20170202/.info')):
+    os.remove(os.path.join(datafile, '20170202/.info'))
+if os.path.exists(os.path.join(datafile, '20170202/obs_session/.info')):
+    os.remove(os.path.join(datafile, '20170202/obs_session/.info'))
 
 class TestFileInfo(unittest.TestCase):
     def setUp(self):
@@ -41,8 +47,13 @@ class TestFileInfo(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(ssubpath, '.info')))
         ssubdcls = dif.LofasmFileInfo(ssubpath)
         self.assertTrue(ssubdcls.info_table['channel'] == ['CC'])
-        # test remove file
-        os.remove(os.path.join(datafile, '.info'))
-        self.assertFalse(os.path.exists(os.path.join(datafile, '.info')))
-        os.remove(os.path.join(datafile, '20170202/.info'))
-        os.remove(os.path.join(datafile, '20170202/obs_session/.info'))
+
+    def test_move_file(self):
+        old_path = os.path.join(datafile, '20170202/20170202_065550_AA.bbx.gz')
+        new_path = os.path.join(datafile, '20170202_065550_AA.bbx.gz')
+        os.rename(old_path, new_path)
+        new_cls = dif.LofasmFileInfo(datafile, check_subdir=True)
+        self.assertTrue(len(new_cls.info_table) == 2)
+        new_sub_cls = dif.LofasmFileInfo(os.path.join(datafile, '20170202'), check_subdir=True)
+        self.assertTrue(len(new_sub_cls.info_table) == 3)
+        os.rename(new_path, old_path)
