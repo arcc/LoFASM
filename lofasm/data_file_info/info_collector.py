@@ -43,7 +43,7 @@ class HeaderInfoCollector(InfoCollector):
         super(HeaderInfoCollector, self).__init__()
         self.collect_method['bbx'] = self.get_header_info_bbx
         self.collect_method['raw'] = self.get_header_info_raw
-        self.collect_method['data_dir'] = self.get_header_info_dir
+        self.collect_method['data_dir'] = self.get_header_info_data_dir
 
     def make_header_collect_method(self, fieldname, fmt):
         def header_method(fmt_cls):
@@ -60,11 +60,11 @@ class HeaderInfoCollector(InfoCollector):
     def get_header_info_bbx(self, bbx_cls, fieldname):
         return bbx_cls.header[fieldname]
 
-    def get_header_info_raw(self,):
+    def get_header_info_raw(self,raw_cls, fieldname):
         raise NotImplementedError
 
-    def get_header_info_dir(self,):
-        return None
+    def get_header_info_data_dir(self, data_cls, fieldname):
+        return ''
 
 def _make_header_collect_class(fieldname):
     class header_info_collector(HeaderInfoCollector):
@@ -88,7 +88,7 @@ class stationCollector(HeaderInfoCollector):
         self.column = 'station'
         self.collect_method['bbx'] = self.make_header_collect_method('station', 'bbx')
         self.collect_method['raw'] = self.make_header_collect_method('station', 'raw')
-        self.collect_method['data_dir'] =  lambda *args: None
+        self.collect_method['data_dir'] =  lambda *args: ''
 
 # This is a script to create some more built-in collector classes like stationCollector.
 BUILTIN_COLLECTORS = {}
