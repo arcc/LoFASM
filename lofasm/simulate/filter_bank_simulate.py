@@ -2,6 +2,28 @@ import numpy as np
 from ..bbx.bbx import LofasmFile as lfbbx
 
 
+class FilterBankGen(object):
+    """This is a class to generate filter bank data.
+    """
+    def __init__(self, fs_time, time_bin, fs_freq, freq_bin):
+        self.fs_time = fs_time
+        self.time_bin = time_bin
+        self.fs_freq = fs_freq
+        self.freq_bin = freq_bin
+
+    def gen_func(self, *agrs, **kwarg):
+        raise NotImplementedError
+
+class FBWhiteNoiseGen(FilterBankGen):
+    """This is a class to generate filter bank data.
+    """
+    def __init__(self, fs_time, time_bin, fs_freq, freq_bin):
+        super(FBWhiteNoiseGen, self).__init__(fs_time, time_bin, fs_freq,\
+                                              freq_bin)
+    def gen_func(self, amp=1.0, offset=0.0):
+        data = amp * np.random.randn(self.time_bin, self.freq_bin) + offset
+        return data
+
 def get_info_bbx(self, bbx_cls):
     """
     This is function the get all the necessary information from bbx file.
