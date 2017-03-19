@@ -5,10 +5,10 @@ from ..bbx.bbx import LofasmFile as lfbbx
 class FilterBankGen(object):
     """This is a class to generate filter bank data.
     """
-    def __init__(self, fs_time, time_bin, fs_freq, freq_bin):
-        self.fs_time = fs_time
+    def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
+        self.resolution_time = resolution_time
         self.time_bin = time_bin
-        self.fs_freq = fs_freq
+        self.resolution_freq = resolution_freq
         self.freq_bin = freq_bin
 
     def gen_func(self, *agrs, **kwarg):
@@ -17,12 +17,32 @@ class FilterBankGen(object):
 class FBWhiteNoiseGen(FilterBankGen):
     """This is a class to generate filter bank data.
     """
-    def __init__(self, fs_time, time_bin, fs_freq, freq_bin):
-        super(FBWhiteNoiseGen, self).__init__(fs_time, time_bin, fs_freq,\
+    def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
+        super(FBWhiteNoiseGen, self).__init__(resolution_time, time_bin, resolution_freq,\
                                               freq_bin)
     def gen_func(self, amp=1.0, offset=0.0):
         data = amp * np.random.randn(self.time_bin, self.freq_bin) + offset
         return data
+
+class GaussinanPulseGen(FilterBankGen):
+    """This is a class to generate Gaussian pulse in filter bank data.
+    """
+    def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
+        super(GaussinanPulseGen, self).__init__(resolution_time, time_bin, resolution_freq,\
+                                              freq_bin)
+    def gen_func(self, amp=1.0, center_time_bin=0, center_freq_bin=0, std_time=1, std_freq=1):
+        time_axis = np.arange(0, self.resolution_time * time_bin, self.resolution_time)
+        freq_axis = np.arange(0, self.resolution_freq * freq_bin, self.resolution_freq)
+        center_t = time_axis[center_time_bin]
+        center_f = freq_axis[center_freq_bin]
+        data = np.zeros((self.time_bin, self.freq_bin))
+        for ii, tt in enumerate(time_axis):
+            for jj, ff in enumerate(freq_axis):
+                exponent = -(tt - center_t)**2/(2 * std_time**2) - \
+                            (ff - center_ff)**2/(2 * std_freq**2)
+                data[ii,jj] = 1.0/(2.0*np.pi*std_time*std_freq) * np.exp(exponent)
+
+        return amp * data
 
 def get_info_bbx(self, bbx_cls):
     """
@@ -70,7 +90,8 @@ class FilterBank(object):
         self.time_axis = np.arange(self.time_start, self.time_end, time_reslt)
         self.freq_axis = np.arange(self.freq_start, self.freq_end, freq_reslt)
         self.data = np.zeros((self.num_time_bin, self.num_freq_bin))
-        self.data_gen = data_gen
+        self.data_gen = data_gen(self.time_resolution, self.num_time_bin, \
+                                 self.freq_resolution, self.num_freq_bin)
 
         if from_file:
             if filetype is None or filename is None:
@@ -221,7 +242,7 @@ class FilterBank(object):
         return self
 
     def generate_data(self, **kws):
-        return self.data_gen(self.data, **kws)
+        self.data_gen(self.data, **kws)
 
     def gap_fill_default(self, gap):
         """
