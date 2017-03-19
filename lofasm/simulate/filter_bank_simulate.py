@@ -1,6 +1,6 @@
 import numpy as np
 from ..bbx.bbx import LofasmFile as lfbbx
-
+from astropy import log
 
 class FilterBankGen(object):
     """This is a class to generate filter bank data.
@@ -13,6 +13,16 @@ class FilterBankGen(object):
 
     def gen_func(self, *agrs, **kwarg):
         raise NotImplementedError
+
+class UniformDataGen(FilterBankGen):
+    """This is a class to generate filter bank data.
+    """
+    def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
+        super(ZeroDataGen, self).__init__(resolution_time, time_bin, resolution_freq,\
+                                              freq_bin)
+    def gen_func(self, amp=1.0):
+        data = amp * np.ones((self.time_bin, self.freq_bin))
+        return data
 
 class FBWhiteNoiseGen(FilterBankGen):
     """This is a class to generate filter bank data.
@@ -31,18 +41,18 @@ class GaussinanPulseGen(FilterBankGen):
         super(GaussinanPulseGen, self).__init__(resolution_time, time_bin, resolution_freq,\
                                               freq_bin)
     def gen_func(self, amp=1.0, center_time_bin=0, center_freq_bin=0, std_time=1, std_freq=1):
-        time_axis = np.arange(0, self.resolution_time * time_bin, self.resolution_time)
-        freq_axis = np.arange(0, self.resolution_freq * freq_bin, self.resolution_freq)
+        time_axis = np.arange(0, self.resolution_time * self.time_bin, self.resolution_time)
+        freq_axis = np.arange(0, self.resolution_freq * self.freq_bin, self.resolution_freq)
         center_t = time_axis[center_time_bin]
         center_f = freq_axis[center_freq_bin]
-        data = np.zeros((self.time_bin, self.freq_bin))
+        g_data = np.zeros((self.time_bin, self.freq_bin))
         for ii, tt in enumerate(time_axis):
             for jj, ff in enumerate(freq_axis):
                 exponent = -(tt - center_t)**2/(2 * std_time**2) - \
-                            (ff - center_ff)**2/(2 * std_freq**2)
-                data[ii,jj] = 1.0/(2.0*np.pi*std_time*std_freq) * np.exp(exponent)
+                            (ff - center_f)**2/(2 * std_freq**2)
+                g_data[ii,jj] = 1.0/(2.0*np.pi*std_time*std_freq) * np.exp(exponent)
 
-        return amp * data
+        return amp * g_data
 
 def get_info_bbx(self, bbx_cls):
     """
@@ -55,7 +65,7 @@ def get_info_bbx(self, bbx_cls):
     info['num_freq_bin'] = int(hdr['dim2_len'])
     info['freq_resolution'] = float(hdr['dim2_span'])/info['num_freq_bin']
     freq_off_set_DC = float(hdr['frequency_offset_DC'].split()[0])
-    info['freq_start'] = float(hdr['dim2_start']) + freq_off_set_DC)
+    info['freq_start'] = float(hdr['dim2_start']) + float(freq_off_set_DC)
     time_off_J2000 = float(hdr['time_offset_J2000'].split()[0])
     info['time_start'] = float(hdr['dim1_start']) + time_off_J2000
     info['time_end'] = info['time_start'] + float(hdr['dim1_span'])
@@ -70,8 +80,8 @@ class FilterBank(object):
     """
     This is a class for holding filter bank data.
     A filter bank data is a two dimesion array.
-    dim 1 (x-axis) : time
-    dim 2 (y-axis) : frequency
+    dim 1 (x-axis) : time second
+    dim 2 (y-axis) : frequency Hz
     dim 3          : power. undefined unit
     """
     def __init__(self, name, from_file=False, time_reslt=0.0,  num_time_bin=0, \
@@ -89,10 +99,9 @@ class FilterBank(object):
         self.freq_end = freq_start + freq_reslt * num_freq_bin
         self.time_axis = np.arange(self.time_start, self.time_end, time_reslt)
         self.freq_axis = np.arange(self.freq_start, self.freq_end, freq_reslt)
-        self.data = np.zeros((self.num_time_bin, self.num_freq_bin))
         self.data_gen = data_gen(self.time_resolution, self.num_time_bin, \
                                  self.freq_resolution, self.num_freq_bin)
-
+        self._data = None
         if from_file:
             if filetype is None or filename is None:
                 raise ValueError('Please provide file name and file type to'
@@ -100,6 +109,16 @@ class FilterBank(object):
             self.read_from_file(filename, filetype)
         if gap_filling is None:
             self.gap_fill_fun = self.gap_fill_default
+
+    @property
+    def data(self):
+        if self._data is None:
+            log.warn('Filter Bank data has not been generated yet.')
+        return self._data
+
+    @data.setter
+    def data(self, val):
+        self._data = val
 
     @property
     def time_start(self):
@@ -145,8 +164,8 @@ class FilterBank(object):
                              ' frequency resolution.')
 
         if not np.array_equal(self.freq_axis, other.freq):
-            raise ValueError('Can only add two filter bank data with the same
-                             'freq range.')
+            raise ValueError('Can only add two filter bank data with the same' \
+                             ' freq range.')
         # Check time range.
         time_range = np.array([self.time_start, self.time_end, other.time_start, \
                                other.time_end])
@@ -201,7 +220,7 @@ class FilterBank(object):
                              ' frequency resolution.')
 
         if not np.array_equal(self.freq_axis, other.freq):
-            raise ValueError('Can only add two filter bank data with the same
+            raise ValueError('Can only add two filter bank data with the same'
                              'freq range.')
         # Check time range.
         time_range = np.array([self.time_start, self.time_end, other.time_start, \
@@ -242,7 +261,7 @@ class FilterBank(object):
         return self
 
     def generate_data(self, **kws):
-        self.data_gen(self.data, **kws)
+        self.data = self.data_gen.gen_func(**kws)
 
     def gap_fill_default(self, gap):
         """
