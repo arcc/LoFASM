@@ -18,7 +18,7 @@ class UniformDataGen(FilterBankGen):
     """This is a class to generate filter bank data.
     """
     def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
-        super(ZeroDataGen, self).__init__(resolution_time, time_bin, resolution_freq,\
+        super(UniformDataGen, self).__init__(resolution_time, time_bin, resolution_freq,\
                                               freq_bin)
     def gen_func(self, amp=1.0):
         data = amp * np.ones((self.time_bin, self.freq_bin))
