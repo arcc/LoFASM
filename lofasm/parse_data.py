@@ -5,6 +5,7 @@ import parse_data_H as pdat_H
 from parse_data_H import IntegrationError
 import datetime
 from astropy.time import Time, TimeDelta
+import gzip
 
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
 HDR_V1_SIGNATURE = 14613675
@@ -599,7 +600,7 @@ class LoFASMFileCrawler(object):
     File crawler for LoFASM data files.
     '''
 
-    def __init__(self, filename, scan_file=False, start_loc=None):
+    def __init__(self, filename, scan_file=False, start_loc=None, gz=False):
         '''
         initialize LoFASM File Crawler instance
 
@@ -614,6 +615,8 @@ class LoFASMFileCrawler(object):
         self.start_loc = start_loc
         self._status_open = False
         self.corrupt = False
+        self.gz = gz
+        self.eof = False
 
         self._int_hdr = {} #integration header
         self._file_hdr = {} #file header
@@ -649,7 +652,10 @@ class LoFASMFileCrawler(object):
                     print "Warning: file extension not recognized. Attempting to open anyway."
 
                 #get file handler
-                self._lofasm_file = open(filename, 'rb')
+                if self.gz:
+                    self._lofasm_file = gzip.open(filename, 'rb')
+                else:
+                    self._lofasm_file = open(filename, 'rb')
 
         except IOError as err:
             print "Error opening ", filename
@@ -660,7 +666,7 @@ class LoFASMFileCrawler(object):
         self._file_hdr = parse_file_header(self._lofasm_file)
 
         #find end of file
-        self._lofasm_file_end = self._get_file_end_loc()
+        #self._lofasm_file_end = self._get_file_end_loc()
 
         #get integration/burst size
         self._int_size = INTEGRATION_SIZE_B
@@ -709,11 +715,11 @@ class LoFASMFileCrawler(object):
         self._status_open = True
 
         #quick sanity check
-        try:
-            self.forward(self.getNumberOfIntegrationsInFile()-1)
-            self.reset()
-        except IntegrationError:
-            self.corrupt = True
+        #try:
+        #    self.forward(self.getNumberOfIntegrationsInFile()-1)
+        #    self.reset()
+        #except IntegrationError:
+        #    self.corrupt = True
 
 
     def isopen(self):
@@ -735,13 +741,13 @@ class LoFASMFileCrawler(object):
         self._update_data(N)
         self._update_time()
 
-    def getNumberOfIntegrationsInFile(self):
-        '''
-        return the total number of integrations in current
-        LoFASM file.
-        '''
-
-        return int((self._lofasm_file_end - self._data_start) / self._int_size)
+    #def getNumberOfIntegrationsInFile(self):
+    #    '''
+    #    return the total number of integrations in current
+    #    LoFASM file.
+    #    '''
+    #
+    #    return int((self._lofasm_file_end - self._data_start) / self._int_size)
 
     def _update_time(self):
         '''
@@ -756,7 +762,10 @@ class LoFASMFileCrawler(object):
 
         #read and update pointers
         self._move_ptr(N-1)
-        self._burst = LoFASM_burst(self._lofasm_file.read(self._int_size))
+        data = self._lofasm_file.read(self._int_size)
+        if data == '':
+            raise EOFError
+        self._burst = LoFASM_burst(data)
         self._burst.create_LoFASM_beams()
         self._update_ptr()
 
@@ -798,17 +807,25 @@ class LoFASMFileCrawler(object):
         self._ptr_loc = self._lofasm_file.tell()
 
     def forward(self, N=1):
-        '''Move forward by N integrations.'''
+        '''Move forward by N integrations.
+        On EOF, do nothing.
+        '''
 
         if N < 0:
             self.backward(abs(N))
             return
 
         #check boundaries
-        if (self._lofasm_file_end - self._ptr_loc) >= N*INTEGRATION_SIZE_B:
+        #if (self._lofasm_file_end - self._ptr_loc) >= N*INTEGRATION_SIZE_B:
+        #    self._update(N)
+        #else:
+        #    raise EOFError
+
+        try:
             self._update(N)
-        else:
-            raise EOFError
+        except EOFError:
+            self.eof = True
+            print "End of LoFASM File."
 
     def backward(self, N=1):
         '''Move back to previous integration.'''
