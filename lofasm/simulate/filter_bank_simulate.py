@@ -1,6 +1,6 @@
 import numpy as np
 from ..bbx.bbx import LofasmFile as lfbbx
-from astropy import log
+#from astropy import log
 
 class FilterBankGen(object):
     """This is a class to generate filter bank data.
@@ -89,6 +89,11 @@ class FilterBank(object):
                  data_gen=None, gap_filling=None, filename=None, filetype=None):
         self.name = name
         self.info = {self.name:{},}
+        if from_file:
+            if filetype is None or filename is None:
+                raise ValueError('Please provide file name and file type to'
+                                 ' input data from a file.')
+            self.read_from_file(filename, filetype)
         self.time_resolution = time_reslt
         self.num_time_bin = num_time_bin
         self.freq_resolution = freq_reslt
@@ -102,18 +107,14 @@ class FilterBank(object):
         self.data_gen = data_gen(self.time_resolution, self.num_time_bin, \
                                  self.freq_resolution, self.num_freq_bin)
         self._data = None
-        if from_file:
-            if filetype is None or filename is None:
-                raise ValueError('Please provide file name and file type to'
-                                 ' input data from a file.')
-            self.read_from_file(filename, filetype)
+
         if gap_filling is None:
             self.gap_fill_fun = self.gap_fill_default
 
     @property
     def data(self):
         if self._data is None:
-            log.warn('Filter Bank data has not been generated yet.')
+            print('Filter Bank data has not been generated yet.')
         return self._data
 
     @data.setter
