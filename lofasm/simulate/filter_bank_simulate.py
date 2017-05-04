@@ -21,7 +21,7 @@ class UniformDataGen(FilterBankGen):
         super(UniformDataGen, self).__init__(resolution_time, time_bin, resolution_freq,\
                                               freq_bin)
     def gen_func(self, amp=1.0):
-        data = amp * np.ones((self.time_bin, self.freq_bin))
+        data = amp * np.ones((self.freq_bin, self.time_bin))
         return data
 
 class FBWhiteNoiseGen(FilterBankGen):
@@ -31,7 +31,7 @@ class FBWhiteNoiseGen(FilterBankGen):
         super(FBWhiteNoiseGen, self).__init__(resolution_time, time_bin, resolution_freq,\
                                               freq_bin)
     def gen_func(self, amp=1.0, offset=0.0):
-        data = amp * np.random.randn(self.time_bin, self.freq_bin) + offset
+        data = amp * np.random.randn(self.freq_bin, self.time_bin) + offset
         return data
 
 class GaussinanPulseGen(FilterBankGen):
@@ -45,24 +45,25 @@ class GaussinanPulseGen(FilterBankGen):
         freq_axis = np.arange(0, self.resolution_freq * self.freq_bin, self.resolution_freq)
         center_t = time_axis[center_time_bin]
         center_f = freq_axis[center_freq_bin]
-        g_data = np.zeros((self.time_bin, self.freq_bin))
+        g_data = np.zeros((self.freq_bin, self.time_bin))
         for ii, tt in enumerate(time_axis):
             for jj, ff in enumerate(freq_axis):
                 exponent = -(tt - center_t)**2/(2 * std_time**2) - \
                             (ff - center_f)**2/(2 * std_freq**2)
-                g_data[ii,jj] = 1.0/(2.0*np.pi*std_time*std_freq) * np.exp(exponent)
-
+                #g_data[ii,jj] = 1.0/(2.0*np.pi*std_time*std_freq) * np.exp(exponent)
+                g_data[jj,ii] = np.exp(exponent)
         return amp * g_data
 
-def get_info_bbx(self, bbx_cls):
+def get_info_bbx(bbx_cls):
     """
     This is function the get all the necessary information from bbx file.
     """
     hdr = bbx_cls.header
+    meta = hdr['metadata']
     info = {}
-    info['num_time_bin'] = int(hdr['dim1_len'])
+    info['num_time_bin'] = int(meta['dim1_len'])
     info['time_resolution'] = float(hdr['dim1_span'])/info['num_time_bin']
-    info['num_freq_bin'] = int(hdr['dim2_len'])
+    info['num_freq_bin'] = int(meta['dim2_len'])
     info['freq_resolution'] = float(hdr['dim2_span'])/info['num_freq_bin']
     freq_off_set_DC = float(hdr['frequency_offset_DC'].split()[0])
     info['freq_start'] = float(hdr['dim2_start']) + float(freq_off_set_DC)
@@ -89,24 +90,28 @@ class FilterBank(object):
                  data_gen=None, gap_filling=None, filename=None, filetype=None):
         self.name = name
         self.info = {self.name:{},}
+        self._data = None
         if from_file:
             if filetype is None or filename is None:
                 raise ValueError('Please provide file name and file type to'
                                  ' input data from a file.')
             self.read_from_file(filename, filetype)
-        self.time_resolution = time_reslt
-        self.num_time_bin = num_time_bin
-        self.freq_resolution = freq_reslt
-        self.num_freq_bin = num_freq_bin
-        self.freq_start = freq_start
-        self.time_start = time_start
-        self.time_end = time_start + time_reslt * num_time_bin
-        self.freq_end = freq_start + freq_reslt * num_freq_bin
-        self.time_axis = np.arange(self.time_start, self.time_end, time_reslt)
-        self.freq_axis = np.arange(self.freq_start, self.freq_end, freq_reslt)
-        self.data_gen = data_gen(self.time_resolution, self.num_time_bin, \
-                                 self.freq_resolution, self.num_freq_bin)
-        self._data = None
+        else:
+            self.time_resolution = time_reslt
+            self.num_time_bin = num_time_bin
+            self.freq_resolution = freq_reslt
+            self.num_freq_bin = num_freq_bin
+            self.freq_start = freq_start
+            self.time_start = time_start
+            self.time_end = time_start + time_reslt * num_time_bin
+            self.freq_end = freq_start + freq_reslt * num_freq_bin
+            self.time_axis = np.arange(self.time_start, self.time_end, time_reslt)
+            self.freq_axis = np.arange(self.freq_start, self.freq_end, freq_reslt)
+        if data_gen is not None:
+            self.data_gen = data_gen(self.time_resolution, self.num_time_bin, \
+                                     self.freq_resolution, self.num_freq_bin)
+        else:
+            self.data_gen = data_gen
 
         if gap_filling is None:
             self.gap_fill_fun = self.gap_fill_default
@@ -164,7 +169,7 @@ class FilterBank(object):
             raise ValueError('Can only add two filter bank data with the same'
                              ' frequency resolution.')
 
-        if not np.array_equal(self.freq_axis, other.freq):
+        if not np.array_equal(self.freq_axis, other.freq_axis):
             raise ValueError('Can only add two filter bank data with the same' \
                              ' freq range.')
         # Check time range.
@@ -174,9 +179,12 @@ class FilterBank(object):
         new_start = time_range.min()
         new_end = time_range.max()
         new_time_bin = (new_end - new_start)/self.time_resolution
-        new_flt_data = FilterBank('total', self.time_resolution, new_time_bin,\
-                                  self.freq_resolution, self.num_freq_bin, \
-                                  self.freq_start, new_start)
+        new_flt_data = FilterBank('total', time_reslt=self.time_resolution,
+                                  num_time_bin=new_time_bin,\
+                                  freq_reslt=self.freq_resolution,
+                                  num_freq_bin=self.num_freq_bin, \
+                                  freq_start=self.freq_start,
+                                  time_start=new_start)
         new_start_idx = np.array([0,0])
         for st in [self.time_start, other.time_start]:
             new_start_idx[0] = np.abs(st - new_flt_data.time_axis).argmin()
@@ -275,10 +283,10 @@ class FilterBank(object):
     def get_info_from_file(self, filecls, filetype):
         info = FILETYPE[filetype][1](filecls)
         for k in info.keys():
-            setter(self, k, info[k])
+            setattr(self, k, info[k])
 
 
-    def read_from_file(self, filename, filetype):
+    def read_from_file(self, filename, filetype, read_data=True):
         """
         This function is to read a filter bank data from a file.
         Parameter
@@ -290,10 +298,13 @@ class FilterBank(object):
         """
         df = FILETYPE[filetype][0](filename)
         self.get_info_from_file(df, filetype)
-        self.data = df.data
+        if read_data:
+            df.read_data()
+            self.data = df.data
 
 
-    def write(self, filename, filetype, gz=True):
+    def write(self, filename, filetype, gz=True, extra_info={'station':'simulate',\
+                                                             'channel':'simulate'}):
         filecls = FILETYPE[filetype][0](filename, mode='write', gz=gz)
         filecls.add_data(self.data)
         hdr = {}
@@ -301,6 +312,9 @@ class FilterBank(object):
         hdr['dim2_span'] = self.freq_end - self.freq_start
         hdr['dim1_start'] = self.time_start
         hdr['dim2_start'] = self.freq_start
+        hdr['station'] = extra_info['station']
+        hdr['channel'] = extra_info['channel']
+
         for k, v in hdr.items():
             filecls.set(k, v)
         filecls.write()

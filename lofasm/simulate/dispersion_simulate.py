@@ -81,11 +81,11 @@ def disperse_filterbank(dm, filter_bank_data, full_result=False):
                                data_gen=fbs.UniformDataGen)
     dispersed.generate_data(amp=0.0)
     for ii in range(filter_bank_data.num_time_bin):
-        powers = power_distr * filter_bank_data.data[ii, :][:, np.newaxis]
+        powers = power_distr * filter_bank_data.data[:, ii][:,np.newaxis]
         for jj in range(filter_bank_data.num_freq_bin):
             target_time_idx = ii + delay_prim_index[jj]
             changed_idx = np.arange(target_time_idx, target_time_idx+powers.shape[1])
             d_idx = dispersed.num_time_bin - changed_idx
             effect = changed_idx[np.where(d_idx>0)[0]]
-            dispersed.data[effect, jj] += powers[jj, 0:len(effect)]
+            dispersed.data[jj, effect] += powers[jj, 0:len(effect)]
     return dispersed
