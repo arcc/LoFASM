@@ -65,9 +65,15 @@ def get_info_bbx(bbx_cls):
     info['time_resolution'] = float(hdr['dim1_span'])/info['num_time_bin']
     info['num_freq_bin'] = int(meta['dim2_len'])
     info['freq_resolution'] = float(hdr['dim2_span'])/info['num_freq_bin']
-    freq_off_set_DC = float(hdr['frequency_offset_DC'].split()[0])
+    if 'frequency_offset_DC' in hdr.keys():
+        freq_off_set_DC = float(hdr['frequency_offset_DC'].split()[0])
+    else:
+        freq_off_set_DC = 0.0
     info['freq_start'] = float(hdr['dim2_start']) + float(freq_off_set_DC)
-    time_off_J2000 = float(hdr['time_offset_J2000'].split()[0])
+    if 'time_offset_J2000' in hdr.keys():
+        time_off_J2000 = float(hdr['time_offset_J2000'].split()[0])
+    else:
+        time_off_J2000 = 0.0
     info['time_start'] = float(hdr['dim1_start']) + time_off_J2000
     info['time_end'] = info['time_start'] + float(hdr['dim1_span'])
     info['freq_end'] = info['freq_start'] + float(hdr['dim2_span'])
