@@ -1,15 +1,51 @@
 import numpy as np
 from ..bbx.bbx import LofasmFile as lfbbx
+import abc
+import six
 #from astropy import log
 
+
+class DataGenMeta(abc.ABCMeta):
+    """
+    This is a Meta class for filter bank data generator registeration. In order
+    ot get a data generator registered, a member called 'register' has to be set
+    true in the FilterBankGen subclass.
+    """
+    def __init__(cls, name, bases, dct):
+        regname = '_data_gen_list'
+        if not hasattr(cls,regname):
+            setattr(cls,regname,{})
+        if 'register' in dct:
+            if cls.register:
+                getattr(cls,regname)[name] = cls
+        super(DataGenMeta, cls).__init__(name, bases, dct)
+
+
+@six.add_metaclass(DataGenMeta)
 class FilterBankGen(object):
     """This is a class to generate filter bank data.
     """
+    full_name = ''
+    @classmethod
+    def data_gen_help(cls, detail=False):
+        if hasattr(cls, '__name__'):
+            result = "Class '%s' is a '%s' simulator.\n" % (cls.__name__, cls.full_name)
+        else:
+            result = "Object '%s' is a '%s' simulator.\n" % (cls.__class__.__name__, \
+                    cls.full_name)
+        if detail:
+            result += cls.gen_func.__doc__
+        return result
+
+
     def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
         self.resolution_time = resolution_time
         self.time_bin = time_bin
         self.resolution_freq = resolution_freq
         self.freq_bin = freq_bin
+
+
+
 
     def gen_func(self, *agrs, **kwarg):
         raise NotImplementedError
@@ -17,30 +53,68 @@ class FilterBankGen(object):
 class UniformDataGen(FilterBankGen):
     """This is a class to generate filter bank data.
     """
+    register = True
+    full_name = 'Filter bank uniformed data generator'
     def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
         super(UniformDataGen, self).__init__(resolution_time, time_bin, resolution_freq,\
-                                              freq_bin)
+                                             freq_bin)
     def gen_func(self, amp=1.0):
+        """
+        Parameter
+        ---------
+        amp: float, optional
+            The amplitude of uniformed data.
+        """
         data = amp * np.ones((self.freq_bin, self.time_bin))
         return data
 
 class FBWhiteNoiseGen(FilterBankGen):
     """This is a class to generate filter bank data.
     """
+    register = True
+    full_name = 'Filter bank white noise generator'
     def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
         super(FBWhiteNoiseGen, self).__init__(resolution_time, time_bin, resolution_freq,\
                                               freq_bin)
     def gen_func(self, amp=1.0, offset=0.0):
+        """
+        This is a filter bank white noise generator.
+        Parameter
+        ---------
+        amp: float, optional
+            Amplitude of white noise.
+        offset: float, optional
+            DC offset from zero
+        """
         data = amp * np.random.randn(self.freq_bin, self.time_bin) + offset
         return data
 
-class GaussinanPulseGen(FilterBankGen):
+class GaussianPulseGen(FilterBankGen):
     """This is a class to generate Gaussian pulse in filter bank data.
     """
+    register = True
+    full_name = 'Filter bank gussian pulse generator'
     def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
         super(GaussinanPulseGen, self).__init__(resolution_time, time_bin, resolution_freq,\
                                               freq_bin)
+
     def gen_func(self, amp=1.0, center_time_bin=0, center_freq_bin=0, std_time=1, std_freq=1):
+        """
+        This is a filter bank gussian signal generator. The signal will be a
+        gaussian shape in both frequency and time.
+        Parameter
+        ---------
+        amp: float
+            Amplitude of the signal.(The peak value of the signal)
+        center_time_bin: int
+            The signal peak bin in time.
+        center_freq_bin: int
+            The signal peak bin in frequency
+        std_time: float
+            Standard deviation in time
+        std_freq: float
+            Standard deviation in frequency
+        """
         time_axis = np.arange(0, self.resolution_time * self.time_bin, self.resolution_time)
         freq_axis = np.arange(0, self.resolution_freq * self.freq_bin, self.resolution_freq)
         center_t = time_axis[center_time_bin]
