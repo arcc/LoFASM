@@ -123,6 +123,7 @@ if __name__ == "__main__":
                     num_freq_bin=sfd.num_freq_bin,\
                     freq_resolution=sfd.freq_resolution, \
                     freq_start=sfd.freq_start,
+                    time_start=sfd.time_start,
                     time_resolution=sfd.time_resolution,
                     data_gen=GENS['UniformDataGen'])
         d, n = cd.normalize(sfd.data)
@@ -135,6 +136,7 @@ if __name__ == "__main__":
                     num_freq_bin=sfd.num_freq_bin,\
                     freq_resolution=sfd.freq_resolution, \
                     freq_start=sfd.freq_start,
+                    time_start=sfd.time_start,
                     time_resolution=sfd.time_resolution,
                     data_gen=GENS['UniformDataGen'])
         d = sfd.data
@@ -173,6 +175,7 @@ if __name__ == "__main__":
                 num_freq_bin=sfd.num_freq_bin,\
                 freq_resolution=sfd.freq_resolution, \
                 freq_start=sfd.freq_start,
+                time_start=sfd.time_start,
                 time_resolution=sfd.time_resolution,
                 data_gen=GENS['UniformDataGen'])
     signal.generate_data(amp=0.0)
