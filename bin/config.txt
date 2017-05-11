@@ -42,7 +42,3 @@
 <FBWhiteNoise>
 @gen: FBWhiteNoiseGen
 @amp: 0.1
-<UniformData2>
-@gen: UniformDataGen2
-@path: ./new_gen.py
-@amp: 2
