@@ -16,6 +16,7 @@ import sys
 import imp
 
 GENS = fbs.FilterBankGen._data_gen_list
+MAX_TIME_DIFF = 86400.0 * 3
 class ListGenAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         result = ''
@@ -165,10 +166,15 @@ if __name__ == "__main__":
 
     # add noise to normalized data.
     for k, v in list(noises.items()):
-        print k
         v.generate_data(**configs[k])
+        time_diff = norm_sfd.time_start - v.time_start
+        # if simulated noise start time is too far way from target time
+        # bring it to the target
+        if np.abs(time_diff) > MAX_TIME_DIFF:
+            raise ValueError("Noise '%s' start time '%lf' is too far away from the "
+                             "target simulation start time '%lf'." %(k, v.time_start,
+                             norm_sfd.time_start))
         norm_sfd += v
-        print "Finish_gen"
     noise_level = norm_sfd.data.std()
     print "nv",noise_level
     signal = fbs.FilterBank('signals', num_time_bin=sfd.num_time_bin, \
@@ -188,6 +194,13 @@ if __name__ == "__main__":
             title = 'Simulated ' + sk + ' Signal'
             do_plot(sv, title, save=save_plot)
 
+        time_diff =  signal.time_start - sv.time_start
+        # if simulated noise start time is too far way from target time
+        # bring it to the target
+        if np.abs(time_diff) > MAX_TIME_DIFF:
+            raise ValueError("Signal '%s' start time '%lf' is too far away from the "
+                             "target simulation start time '%lf'." %(sk, sv.time_start,
+                             signal.time_start))
         if 'dm' in list(configs[sk].keys()):
             dispersed_signal = ds.disperse_filterbank(configs[sk]['dm'], sv)
             signal += dispersed_signal
