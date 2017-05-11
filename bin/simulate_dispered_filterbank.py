@@ -209,3 +209,4 @@ if __name__ == "__main__":
     if is_plot:
         title = 'Simulated Signal and noise unWhitened'
         do_plot(sfd, title, save=save_plot)
+    sfd.write(args.output, 'bbx')
