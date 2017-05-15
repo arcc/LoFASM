@@ -1,46 +1,122 @@
 import numpy as np
 from ..bbx.bbx import LofasmFile as lfbbx
+import abc
+import six
 #from astropy import log
 
+
+class DataGenMeta(abc.ABCMeta):
+    """
+    This is a Meta class for filter bank data generator registeration. In order
+    ot get a data generator registered, a member called 'register' has to be set
+    true in the FilterBankGen subclass.
+    """
+    def __init__(cls, name, bases, dct):
+        regname = '_data_gen_list'
+        if not hasattr(cls,regname):
+            setattr(cls,regname,{})
+        if 'register' in dct:
+            if cls.register:
+                getattr(cls,regname)[name] = cls
+        super(DataGenMeta, cls).__init__(name, bases, dct)
+
+
+@six.add_metaclass(DataGenMeta)
 class FilterBankGen(object):
     """This is a class to generate filter bank data.
     """
+    full_name = ''
+    @classmethod
+    def data_gen_help(cls, detail=False):
+        if hasattr(cls, '__name__'):
+            result = "Class '%s' is a '%s' simulator.\n" % (cls.__name__, cls.full_name)
+        else:
+            result = "Object '%s' is a '%s' simulator.\n" % (cls.__class__.__name__, \
+                    cls.full_name)
+        if detail:
+            result += cls.gen_func.__doc__
+        return result
+
+
     def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
         self.resolution_time = resolution_time
         self.time_bin = time_bin
         self.resolution_freq = resolution_freq
         self.freq_bin = freq_bin
 
-    def gen_func(self, *agrs, **kwarg):
+
+    def gen_func(self, **kwarg):
         raise NotImplementedError
 
 class UniformDataGen(FilterBankGen):
     """This is a class to generate filter bank data.
     """
+    register = True
+    full_name = 'Filter bank uniformed data generator'
+    category = 'noise'
     def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
         super(UniformDataGen, self).__init__(resolution_time, time_bin, resolution_freq,\
-                                              freq_bin)
-    def gen_func(self, amp=1.0):
+                                             freq_bin)
+    def gen_func(self, amp=1.0,**kwarg):
+        """
+        Parameter
+        ---------
+        amp: float, optional
+            The amplitude of uniformed data.
+        """
         data = amp * np.ones((self.freq_bin, self.time_bin))
         return data
 
 class FBWhiteNoiseGen(FilterBankGen):
     """This is a class to generate filter bank data.
     """
+    register = True
+    full_name = 'Filter bank white noise generator'
+    category = 'noise'
     def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
         super(FBWhiteNoiseGen, self).__init__(resolution_time, time_bin, resolution_freq,\
                                               freq_bin)
-    def gen_func(self, amp=1.0, offset=0.0):
+    def gen_func(self, amp=1.0, offset=0.0, **kwarg):
+        """
+        This is a filter bank white noise generator.
+        Parameter
+        ---------
+        amp: float, optional
+            Amplitude of white noise.
+        offset: float, optional
+            DC offset from zero
+        """
         data = amp * np.random.randn(self.freq_bin, self.time_bin) + offset
         return data
 
-class GaussinanPulseGen(FilterBankGen):
+class GaussianPulseGen(FilterBankGen):
     """This is a class to generate Gaussian pulse in filter bank data.
     """
+    register = True
+    full_name = 'Filter bank gussian pulse generator'
+    category = 'signal'
     def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
-        super(GaussinanPulseGen, self).__init__(resolution_time, time_bin, resolution_freq,\
+        super(GaussianPulseGen, self).__init__(resolution_time, time_bin, resolution_freq,\
                                               freq_bin)
-    def gen_func(self, amp=1.0, center_time_bin=0, center_freq_bin=0, std_time=1, std_freq=1):
+
+    def gen_func(self, amp=1.0, center_time_bin=0, center_freq_bin=0,\
+                 std_time=1, std_freq=1, **kwarg):
+        """
+        This is a filter bank gussian signal generator. The signal will be a
+        gaussian shape in both frequency and time.
+        Parameter
+        ---------
+        amp: float
+            Amplitude of the signal.(The peak value of the signal)
+        center_time_bin: int
+            The signal peak bin in time.
+        center_freq_bin: int
+            The signal peak bin in frequency
+        std_time: float
+            Standard deviation in time
+        std_freq: float
+            Standard deviation in frequency
+        """
         time_axis = np.arange(0, self.resolution_time * self.time_bin, self.resolution_time)
         freq_axis = np.arange(0, self.resolution_freq * self.freq_bin, self.resolution_freq)
         center_t = time_axis[center_time_bin]
@@ -91,9 +167,10 @@ class FilterBank(object):
     dim 2 (y-axis) : frequency Hz
     dim 3          : power. undefined unit
     """
-    def __init__(self, name, from_file=False, time_reslt=0.0,  num_time_bin=0, \
-                 freq_reslt=0.0, num_freq_bin=0, freq_start=0.0, time_start=0.0,\
-                 data_gen=None, gap_filling=None, filename=None, filetype=None):
+    def __init__(self, name, from_file=False, time_resolution=0.0,  num_time_bin=0, \
+                 freq_resolution=0.0, num_freq_bin=0, freq_start=0.0, time_start=0.0,\
+                 data_gen=None, gap_filling=None, filename=None, filetype=None,
+                 **kwarg):
         self.name = name
         self.info = {self.name:{},}
         self._data = None
@@ -103,16 +180,16 @@ class FilterBank(object):
                                  ' input data from a file.')
             self.read_from_file(filename, filetype)
         else:
-            self.time_resolution = time_reslt
+            self.time_resolution = time_resolution
             self.num_time_bin = num_time_bin
-            self.freq_resolution = freq_reslt
+            self.freq_resolution = freq_resolution
             self.num_freq_bin = num_freq_bin
             self.freq_start = freq_start
             self.time_start = time_start
-            self.time_end = time_start + time_reslt * num_time_bin
-            self.freq_end = freq_start + freq_reslt * num_freq_bin
-            self.time_axis = np.arange(self.time_start, self.time_end, time_reslt)
-            self.freq_axis = np.arange(self.freq_start, self.freq_end, freq_reslt)
+            self.time_end = time_start + time_resolution * num_time_bin
+            self.freq_end = freq_start + freq_resolution * num_freq_bin
+            self.time_axis = np.arange(self.time_start, self.time_end, time_resolution)
+            self.freq_axis = np.arange(self.freq_start, self.freq_end, freq_resolution)
         if data_gen is not None:
             self.data_gen = data_gen(self.time_resolution, self.num_time_bin, \
                                      self.freq_resolution, self.num_freq_bin)
@@ -185,12 +262,13 @@ class FilterBank(object):
         new_start = time_range.min()
         new_end = time_range.max()
         new_time_bin = (new_end - new_start)/self.time_resolution
-        new_flt_data = FilterBank('total', time_reslt=self.time_resolution,
+        new_flt_data = FilterBank('total', time_resolution=self.time_resolution,
                                   num_time_bin=new_time_bin,\
-                                  freq_reslt=self.freq_resolution,
+                                  freq_resolution=self.freq_resolution,
                                   num_freq_bin=self.num_freq_bin, \
                                   freq_start=self.freq_start,
-                                  time_start=new_start)
+                                  time_start=new_start, data_gen=UniformDataGen)
+        new_flt_data.generate_data(amp=0.0)
         new_start_idx = np.array([0,0])
         for st in [self.time_start, other.time_start]:
             new_start_idx[0] = np.abs(st - new_flt_data.time_axis).argmin()
@@ -223,7 +301,7 @@ class FilterBank(object):
     def __sub__(self, other):
         self.__add__(other.__neg__())
 
-    def __isub__(self, other):
+    def __iadd__(self, other):
         """
         Define the operator for adding two filter bank data together.
         """
@@ -234,7 +312,7 @@ class FilterBank(object):
             raise ValueError('Can only add two filter bank data with the same'
                              ' frequency resolution.')
 
-        if not np.array_equal(self.freq_axis, other.freq):
+        if not np.array_equal(self.freq_axis, other.freq_axis):
             raise ValueError('Can only add two filter bank data with the same'
                              'freq range.')
         # Check time range.
@@ -250,7 +328,7 @@ class FilterBank(object):
             # resize time axis
             self.time_axis = np.arange(new_start, new_end, self.time_resolution)
             # resize data
-            tempo = np.zeros((new_time_bin, self.num_freq_bin))
+            temp = np.zeros((new_time_bin, self.num_freq_bin))
             new_start_idx = np.array([0,0])
             for st in [self.time_start, other.time_start]:
                 new_start_idx[0] = np.abs(st - new_flt_data.time_axis).argmin()
@@ -272,7 +350,7 @@ class FilterBank(object):
         self.time_start = new_start
         self.time_end = new_end
         self.num_time_bin = new_time_bin
-        self.info.updata(other.info)
+        self.info.update(other.info)
         return self
 
     def generate_data(self, **kws):
