@@ -99,11 +99,14 @@ if __name__ == "__main__":
                         action="store_true",default=False)
     parser.add_argument("--saveplot",help="Save simulate data plot",
                         action="store_true",default=False)
+    parser.add_argument("--savefile",help="Save intermeida files",
+                        action="store_true",default=False)
     args = parser.parse_args()
 
     configs = process_config(args.config)
     is_plot = args.plot
     save_plot = args.saveplot
+    save_file = args.savefile
     # get generators
     required_gens = list(configs.keys())
     required_gens.remove('top')
@@ -213,13 +216,16 @@ if __name__ == "__main__":
     if is_plot:
         title = 'Simulated Signal'
         do_plot(signal, title, save=save_plot)
-
+    if save_file:
+        signal.write(signal.name+'.bbx', 'bbx')
 
     norm_sfd += signal
     if is_plot:
         title = 'Simulated Signal and noise'
         do_plot(norm_sfd, title, save=save_plot)
 
+    if save_file:
+        norm_sfd.write(norm_sfd.name+'.bbx', 'bbx')
     # Anti-normalize signal plus noise
     sfd.data = norm_sfd.data * n
     if is_plot:
