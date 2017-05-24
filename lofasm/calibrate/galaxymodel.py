@@ -8,8 +8,9 @@ import datetime
 import healpy as hp
 from astropy.time import Time
 #Imports from this module:
-import sidereal
+import sidereal #3rd party
 import LoFASM_simulation_v3 as v3
+import os
 
 class station(object):
 
@@ -43,9 +44,12 @@ class station(object):
             self.time = time
 
         self.aa = sidereal.AltAz(0,0)
-        self.hpmap = hp.read_map('/home/alex22x/bin/lofasm/calitools/LoFASM Calibration Scripts/Calibration Tools/lambda_haslam408_dsds.fits.txt',verbose=False) #Path to Haslam map
+        #self.hpmap = hp.read_map('/home/alex22x/bin/lofasm/calitools/LoFASM Calibration Scripts/Calibration Tools/lambda_haslam408_dsds.fits.txt',verbose=False) #Path to Haslam map
 #        self.hpmap = hp.read_map('lambda_haslam408_nofilt.fits.txt',verbose=False)
-        self.Rotator = hp.Rotator(coord=['C','G'])
+	#self.hpmap = hp.read_map(os.path.join(os.path.dirname(__file__), "lambda_haslam408_dsds.fits.txt"))
+        self.hpmap = hp.read_map(raw_input('Path to skymap?'), verbose=False)
+
+	self.Rotator = hp.Rotator(coord=['C','G'])
 #        self.lofasm = v3.LoFASM(350.0)
 
         if(one_ring=='inner'):
