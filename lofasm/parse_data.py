@@ -12,6 +12,9 @@ HDR_V1_SIGNATURE = 14613675
 INTEGRATION_SIZE_B = 139264 #bytes
 START_DATA = 204896
 PACKET_SIZE_B = 8192
+
+
+# station polarization mapping
 BASELINE_ID = {
     'LoFASMI' : {
         'A' : 'INS',
@@ -34,6 +37,8 @@ BASELINE_ID = {
         'C' : 'IEW',
         'D' : 'INS'}
     }
+
+
 Baselines = pdat_H.Baselines
 
 ##### Function Definitions
@@ -164,6 +169,16 @@ def parse_file_header(file_obj, fileType='lofasm'):
         fhdr_field_dict[11][1] = remaining_hdr_string[56:64].strip()
         fhdr_field_dict[12][1] = remaining_hdr_string[64:74].strip()
         fhdr_field_dict[13][1] = remaining_hdr_string[74:84].strip()
+    elif file_hdr_version == 4:
+        fhdr_field_dict[4][1] = remaining_hdr_string[:8].strip()
+        fhdr_field_dict[5][1] = remaining_hdr_string[8:16].strip()
+        fhdr_field_dict[6][1] = remaining_hdr_string[16:24].strip()
+        fhdr_field_dict[7][1] = remaining_hdr_string[24:32].strip()
+        fhdr_field_dict[8][1] = remaining_hdr_string[32:40].strip()
+        fhdr_field_dict[9][1] = remaining_hdr_string[40:48].strip()
+        fhdr_field_dict[10][1] = remaining_hdr_string[48:56].strip()
+        fhdr_field_dict[11][1] = remaining_hdr_string[56:64].strip()
+        fhdr_field_dict[12][1] = remaining_hdr_string[64:74].strip()
 
     #move file cursor back to original position
     file_obj.seek(freeze_pointer)
@@ -741,13 +756,18 @@ class LoFASMFileCrawler(object):
         self._update_data(N)
         self._update_time()
 
-    #def getNumberOfIntegrationsInFile(self):
-    #    '''
-    #    return the total number of integrations in current
-    #    LoFASM file.
-    #    '''
-    #
-    #    return int((self._lofasm_file_end - self._data_start) / self._int_size)
+
+    def getNumberOfIntegrationsInFile(self):
+        '''
+        return the total number of integrations in current
+        LoFASM file.
+        '''
+
+        # check file header version
+        if self._file_hdr[2][1] == 4:
+            return int(self._file_hdr[12][1])
+        else:
+            return int((self._lofasm_file_end - self._data_start) / self._int_size)
 
     def _update_time(self):
         '''

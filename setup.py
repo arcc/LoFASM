@@ -9,7 +9,7 @@ setup(
     author='Louis P. Dartez',
     author_email='louis.dartez@gmail.com',
 
-    packages=['lofasm', 'lofasm.simulate', 'lofasm.bbx'],
+    packages=['lofasm', 'lofasm.simulate', 'lofasm.bbx','lofasm.clean'],
 
     scripts=['bin/initialize.py','bin/ten_gbe_recorder.py','bin/lofasm_plot.py',
     'bin/rec_snap.sh', 'bin/init_roach.sh', 'bin/simulate_signal_as_AA.py',
@@ -17,7 +17,8 @@ setup(
     'bin/sched_parser.py','bin/schedule_obs.py', 'bin/lofasm2fil.py',
      'bin/fbplot.py', 'bin/applyDelay.py', 'bin/lofasm2d.py', 'bin/lightcurve.py',
      'bin/skymap.py', 'bin/readfile.py', 'bin/waterfall.py', 'bin/stethoscope.py',
-     'bin/record.py', 'bin/loco2bx.py', 'bin/lofasm_check_files.py', 'bin/lofasm2csv.py'],
+     'bin/record.py', 'bin/loco2bx.py', 'bin/lofasm_check_files.py', 'bin/lofasm2csv.py',
+     'bin/cleandata.py', 'bin/simulate_dispered_filterbank.py'],
     description='LoFASM Tools',
     long_description=open('README.md').read(),
     install_requires=[
