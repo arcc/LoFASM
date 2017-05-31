@@ -136,8 +136,8 @@ class station(object):
 
 #	power = self.calculate_gnoise(lst)
         for hour in lst:
-#            print hour
-            print str((lst.index(hour))*100/len(lst)) + '%'
+            if lst.index(hour)%4 == 0:
+                print str((lst.index(hour))*100/len(lst)) + '%'
             power.append(self.calculate_gnoise(lst=hour)) #If "lst=", type(hour)==datetime.datetime is true.
         print np.shape(lst)
 
@@ -180,9 +180,9 @@ def galaxy():
 
 		return power
 
-power = galaxy()
-plt.plot(power)
-plt.show()
+#power = galaxy()
+#plt.plot(power)
+#plt.show()
 
 #~ LoFASMI        = station('VLA',[26,33,19.676],[97,26,31.174],FOV_color='r')
 #~ LoFASMI_inner  = station('VLA',[26,33,19.676],[97,26,31.174],FOV_color='r',one_ring='inner')

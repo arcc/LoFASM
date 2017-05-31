@@ -1,12 +1,13 @@
 #Calibration tool for LoFASM Data:
 
-import lofasm_tools as lt
+import galaxymodel as gm
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
 import lofasm.bbx.bbx as bb
 import datetime
 import scipy.optimize
+import datetime
 
 class calibrate:
 	"""	Class that contains and calibrates lofasm data.	
@@ -27,7 +28,7 @@ class calibrate:
 		filelist = glob.glob(files)
 		self.filelist = sorted(filelist)
 		self.station = station
-		self.freq = float(freq*10)
+		self.freq = int(freq*10)
 		self.res = len(filelist)
 
 		date = self.filelist[0][-25:-17]
@@ -67,26 +68,35 @@ class calibrate:
 		----------
 		dsample : bool
 		"""
-		data_power = []
+		#~ full_data_power = []
+		dsampled_power = []
 		datachunk = []
-
+		start_time = datetime.datetime.now()
 		for filename in range(len(self.filelist)):
 
 			dat = bb.LofasmFile(self.filelist[filename])
 			dat.read_data()
-			data_power = np.append(data_power,
-								   np.average(dat.data[self.freq-5:self.freq+5,:],
-								   axis=0)) ##Avg 10 bins around freq
-			if (filename%5 == 0):
-				print str(filename*100/len(self.filelist)) + '%'
+			avg_10freq_bins = np.average(dat.data[self.freq-5:self.freq+5,:],
+								   axis=0) ##Avg 10 bins around frequency
+			avg_datafile_power = np.average(avg_10freq_bins)
 
-		if dsample:
-			for i in range(len(data_power)):
-				modul = len(data_power)%self.res
-				R = (len(data_power)-modul)/self.res
-				data_power = data_power[modul:].reshape(-1,R).mean(axis=1)
+			#~ full_data_power = np.append(full_data_power, avg_10freq_bins)
+			dsampled_power = np.append(dsampled_power, avg_datafile_power)
 
-		return data_power
+			if (filename%100 == 0) and filename != 0 or filename == 50:
+				now = datetime.datetime.now()
+				diff = now-start_time
+				total_time = diff.total_seconds()*len(self.filelist)/filename
+				ETR = str(datetime.timedelta(seconds=(total_time-diff.total_seconds())))
+
+				print str(filename*100/len(self.filelist)) + '% - ETR: ' + ETR
+
+		#~ if dsample:
+			#~ data_power = dsampled_power
+		#~ else:
+			#~ data_power = full_data_power
+
+		return dsampled_power
 
 	def galaxy(self):
 		"""Return a model of the power from the galaxy.
@@ -107,18 +117,17 @@ class calibrate:
 		lfs = lfdic[self.station]
 		long_radians = (lfs['long'][0] + lfs['long'][1]/60.0 + lfs['long'][2]/3600.0)*np.pi/180.0
 
-		LoFASM = lt.station(lfs['name'],lfs['lat'],lfs['long'],FOV_color='b',
+		LoFASM = gm.station(lfs['name'],lfs['lat'],lfs['long'],FOV_color='b',
 							time=self.date,frequency=self.freq,one_ring='inner',
 							rot_angle=rot_ang,pol_angle=pol_ang)
 		innerNS_FOV = 0.61975795698554226 #LoFASM.lofasm.Omega()
 		inner_conversion_NS = np.divide((np.power(np.divide(3.0*1.0e8,45.0e6),2)),(innerNS_FOV))
 
 		for i in range(len(time_array)):	#Change starting times in UTC to LST
-			time_array[i] = time_array[i]# - datetime.timedelta(hours=lfs['t_offset']) ##Check if this timedelta is needed!
-		#~ print 'Stage 1/2 Done.'
+			time_array[i] = time_array[i] + datetime.timedelta(seconds=150)# Make model times == middle of file times ##Check if this timedelta is needed!
 
-		powe = np.multiply(LoFASM.calculate_gpowervslstarray(time_array),inner_conversion_NS)
-		#~ power = 10*np.log10(np.array(powe))
+		power = np.multiply(LoFASM.calculate_gpowervslstarray(time_array),inner_conversion_NS)
+		#~ power = 10*np.log10(np.array(power))
 		print 'Done.'
 
 		return power
