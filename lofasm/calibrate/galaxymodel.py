@@ -7,10 +7,10 @@ import matplotlib
 import datetime
 import healpy as hp
 from astropy.time import Time
+#~ import os
 #Imports from this module:
 import sidereal #3rd party
 import LoFASM_simulation_v3 as v3
-import os
 
 class station(object):
 
@@ -39,7 +39,7 @@ class station(object):
         self.one_ring = one_ring
 
         if not type(time) == datetime.datetime:
-            self.time   = datetime.datetime.utcnow()
+            self.time = datetime.datetime.utcnow()
         else:
             self.time = time
 
@@ -49,7 +49,7 @@ class station(object):
 	#self.hpmap = hp.read_map(os.path.join(os.path.dirname(__file__), "lambda_haslam408_dsds.fits.txt"))
         self.hpmap = hp.read_map(raw_input('Path to skymap?'), verbose=False)
 
-	self.Rotator = hp.Rotator(coord=['C','G'])
+        self.Rotator = hp.Rotator(coord=['C','G'])
 #        self.lofasm = v3.LoFASM(350.0)
 
         if(one_ring=='inner'):
@@ -61,11 +61,11 @@ class station(object):
 
         self.lofasm.set_frequency(frequency)
 
-    def set_time(self,time):
-	if not type(time) == datetime.datetime:
-		self.time = Time(time).datetime
-	else:
-		self.time = time
+    #~ def set_time(self,time):
+	#~ if not type(time) == datetime.datetime:
+		#~ self.time = Time(time).datetime
+	#~ else:
+		#~ self.time = time
 
     def lst(self):
 
@@ -103,7 +103,7 @@ class station(object):
         return np.pi/2.0 - 10.0*np.pi/180
 
 
-    def calculate_gnoise(self,lst=-1):
+    def calculate_gnoise(self,utc=-1):
 
         M = 30
         gasleg = np.polynomial.legendre.leggauss(M)
@@ -115,10 +115,10 @@ class station(object):
         weights *= np.pi/M
 
         O = 0
-        if (lst == -1):
+        if (utc == -1):
             self.__lst_current = self.lst()
         else:
-			t = sidereal.SiderealTime.fromDatetime(lst)
+			t = sidereal.SiderealTime.fromDatetime(utc)
 			self.__lst_current = t.lst(self.east_long_radians)
 
         #~ t0 = time.time()
@@ -129,17 +129,18 @@ class station(object):
 
         return O
 
-    def calculate_gpowervslstarray(self,lst_time,lst=''):
+    def calculate_gpowervslstarray(self,utc_time,lst=''):
 
         power = []
-	lst = lst_time
+        utc = utc_time
 
 #	power = self.calculate_gnoise(lst)
-        for hour in lst:
-            if lst.index(hour)%4 == 0:
-                print str((lst.index(hour))*100/len(lst)) + '%'
-            power.append(self.calculate_gnoise(lst=hour)) #If "lst=", type(hour)==datetime.datetime is true.
-        print np.shape(lst)
+        for hour in utc:
+            if utc.index(hour)%4 == 0:
+                print str((utc.index(hour))*100/len(utc)) + '%'
+            power.append(self.calculate_gnoise(utc=hour)) #If "lst=", type(hour)==datetime.datetime is true.
+            #~ print self.__lst_current
+        print np.shape(utc)
 
         return power
 

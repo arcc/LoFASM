@@ -20,15 +20,14 @@ class calibrate:
 		The station from which the data comes from.
 	freq : int or float, optional
 		The frequency to calibrate at in megahertz (the default is 20.0 MHz).
-	res : int, optional
-		The ammount of datapoints to downsample to (the default is 100).
 	"""
-	def __init__(self, files, station, freq=20.0, res=100):
+	def __init__(self, files, station, freq=20.0):
 
 		filelist = glob.glob(files)
 		self.filelist = sorted(filelist)
 		self.station = station
-		self.freq = int(freq*10)
+		self.freq = freq
+		self.freqmhz = int(freq*10)
 		self.res = len(filelist)
 
 		date = self.filelist[0][-25:-17]
@@ -76,7 +75,7 @@ class calibrate:
 
 			dat = bb.LofasmFile(self.filelist[filename])
 			dat.read_data()
-			avg_10freq_bins = np.average(dat.data[self.freq-5:self.freq+5,:],
+			avg_10freq_bins = np.average(dat.data[self.freqmhz-5:self.freqmhz+5,:],
 								   axis=0) ##Avg 10 bins around frequency
 			avg_datafile_power = np.average(avg_10freq_bins)
 
@@ -103,7 +102,7 @@ class calibrate:
 
 		The model is generated using Dr. Rick Jenet's galaxy model generation
 		code.
-		The timebins will match the res parameter of the calibrate class.
+		The timebins will match the number of datafiles of the calibrate class.
 		"""
 		rot_ang = 1
 		pol_ang = 1
@@ -124,7 +123,7 @@ class calibrate:
 		inner_conversion_NS = np.divide((np.power(np.divide(3.0*1.0e8,45.0e6),2)),(innerNS_FOV))
 
 		for i in range(len(time_array)):	#Change starting times in UTC to LST
-			time_array[i] = time_array[i] + datetime.timedelta(seconds=150)# Make model times == middle of file times ##Check if this timedelta is needed!
+			time_array[i] = time_array[i] + datetime.timedelta(seconds=150)# Make model times == middle of file times
 
 		power = np.multiply(LoFASM.calculate_gpowervslstarray(time_array),inner_conversion_NS)
 		#~ power = 10*np.log10(np.array(power))
@@ -222,5 +221,3 @@ class calibrate:
 		return popt
 
 #~ x = calibrate('/home/alex22x/bin/lofasm/LoFASM_3_Data/20170204/20170204_00*_CC.bbx.gz', 4, freq=20.0)
-#~ x.res = 4
-#~ print f
