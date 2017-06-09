@@ -15,7 +15,8 @@ class calibrate:
 	Parameters
 	----------
 	files : str
-		A path to lofasm `.bbx.gz` files. `*` wildcard can be used for multiple files.
+		A path to lofasm `.bbx.gz` files. `*` wildcard can be used for multiple 
+		files.
 	station : {1, 2, 3, 4}
 		The station from which the data comes from.
 	freq : int or float, optional
@@ -44,33 +45,77 @@ class calibrate:
 
 			start_time = datetime.datetime.strptime(file_startt[:-8],
 													'%Y-%m-%dT%H:%M:%S')
+
 			time_array.append(start_time)
 			station_array.append(file_station)
 		self.cali_array = [time_array, station_array]
 
-	#~ def add_files(self, files):
-#~ 
-		#~ 
+		for i in reversed(range(len(self.filelist))):
+			if self.cali_array[1][i] != str(self.station):
+				del self.cali_array[0][i]
+				del self.cali_array[1][i]
 
-	#~ def chfreq(self, new_freq):
-#~ 
-		#~ self.freq = int(new_freq*10.0)
+	def add_files(self, files):
+		"""Add files to the calibrate class.
 
-	def get_data(self, dsample=True):
+		New files are sorted, duplicates are ignored, header data is read, and 
+		the file lists are appended together.
+
+		Parameters
+		----------
+		files : str
+			A path to lofasm `.bbx.gz` files. `*` wildcard can be used for multiple 
+			files.
+		"""
+		new_filelist = glob.glob(files)
+
+		for i in new_filelist:
+			if i in self.filelist:
+				new_filelist.remove(i)
+
+		self.filelist = (self.filelist + new_filelist)
+		self.filelist = sorted(self.filelist)
+
+		time_array = []
+		station_array = []
+
+		for i in range(len(self.filelist)):
+			head = bb.LofasmFile(self.filelist[i]).header
+			file_startt = head['start_time']
+			file_station = head['station']
+			start_time = datetime.datetime.strptime(file_startt[:-8],
+													'%Y-%m-%dT%H:%M:%S')
+
+			time_array.append(start_time)
+			station_array.append(file_station)
+		self.cali_array = [time_array, station_array]
+
+		for i in reversed(range(len(self.filelist))):
+			if self.cali_array[1][i] != str(self.station):
+				del self.cali_array[0][i]
+				del self.cali_array[1][i]
+
+	def chfreq(self, new_freq):
+		"""Change to a new calibration frequency.
+
+		Parameters
+		----------
+		new_freq : int or float
+			The new frequency to work with in megahertz.
+		"""
+		self.freq = new_freq
+		self.freqmhz = int(new_freq*10)
+
+	def get_data(self):
 		"""Return an array of lofasm data for however many files are loaded to
 		calibrate class.
 
 		Data from each file is appended to one data array after sorting
 		regardless of contiguity.
-
-		Parameters
-		----------
-		dsample : bool
 		"""
-		#~ full_data_power = []
 		dsampled_power = []
 		datachunk = []
-		start_time = datetime.datetime.now()
+
 		for filename in range(len(self.filelist)):
 
 			dat = bb.LofasmFile(self.filelist[filename])
@@ -78,22 +123,10 @@ class calibrate:
 			avg_10freq_bins = np.average(dat.data[self.freqmhz-5:self.freqmhz+5,:],
 								   axis=0) ##Avg 10 bins around frequency
 			avg_datafile_power = np.average(avg_10freq_bins)
-
-			#~ full_data_power = np.append(full_data_power, avg_10freq_bins)
 			dsampled_power = np.append(dsampled_power, avg_datafile_power)
 
 			if (filename%100 == 0) and filename != 0 or filename == 50:
-				now = datetime.datetime.now()
-				diff = now-start_time
-				total_time = diff.total_seconds()*len(self.filelist)/filename
-				ETR = str(datetime.timedelta(seconds=(total_time-diff.total_seconds())))
-
-				print str(filename*100/len(self.filelist)) + '% - ETR: ' + ETR
-
-		#~ if dsample:
-			#~ data_power = dsampled_power
-		#~ else:
-			#~ data_power = full_data_power
+				print str(filename*100/len(self.filelist)) + '%'
 
 		return dsampled_power
 
