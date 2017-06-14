@@ -1,6 +1,6 @@
 #Calibration tool for LoFASM Data:
 
-import galaxymodel as gm
+import lofasm.simulate.galaxymodel as gm
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
