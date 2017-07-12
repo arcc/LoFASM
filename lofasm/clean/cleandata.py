@@ -145,8 +145,8 @@ def wide_band_mask(data,threshold=1.7):
     print "creating wide band mask"
     wb_mask = np.ones_like(data)
     tbins = len(data[0,:])
-    sub_bands = np.zeros((5.0 , tbins))
-    sub_band_size = 100.0
+    sub_bands = np.zeros((5 , tbins))
+    sub_band_size = 100
     for i in range(5):
 
         sub_bands[i] = np.nansum(data[i*sub_band_size:(i*sub_band_size)+sub_band_size,:], axis = 0)
@@ -171,3 +171,56 @@ def wide_band_mask(data,threshold=1.7):
     percent_clean_time = float(np.count_nonzero(~np.isnan(wb_mask[300,:])))/ len(wb_mask[300,:])
 
     return wb_mask, percent_clean_time
+
+
+
+def clean(data):
+
+    lf = b.LofasmFile(fname)
+    lf.read_data()      
+    data = 10*np.log10(lf.data[args.lower_frequency_bin:args.upper_frequnecy_bin])
+
+    
+    norm_data, normalize_array                                  = c.normalize(data,fast=args.fast)
+    o_mask   , outlier_average_top, outlier_average_bottom      = c.outlier_mask(norm_data,threshold= args.o_thresh)
+    nb_mask  , percent_clean_freq_channels                      = c.narrow_band_mask(norm_data,threshold= args.nb_thresh)
+    wb_mask  , percent_clean_time                               = c.wide_band_mask(norm_data,threshold= args.wb_thresh)
+    
+    print fname + '---------------------------'
+    print 'top outlier average               : '+str(outlier_average_top)
+    print 'bottom outlier average            : '+str(outlier_average_bottom)
+    print 'percentage of clean freq channels : '+str(percent_clean_freq_channels)
+    print 'percentage of clean time          : '+str(percent_clean_time)
+    print ''
+    print '-------------------------------------------------------'
+    
+    final = norm_data*wb_mask*o_mask*nb_mask
+    final[np.isnan(final)]=1
+    final = final*normalize_array
+    
+
+    lfc = b.LofasmFile('Clean_' + fname.rstrip('.gz'), mode = 'write')
+
+    lfc.add_data(final)
+
+
+
+    lfc.set('dim1_start',lf.header['dim1_start'])
+    lfc.set('dim1_span',lf.header['dim1_span'])
+    lfc.set('dim2_start',lower_frequency * 1e6)
+    lfc.set('dim2_span',(upper_frequency - lower_frequency)*1e6)
+    lfc.set('clean', True)
+    lfc.set('station',lf.header['station'])
+    lfc.set('channel',lf.header['channel'])
+
+    lfc.write()
+    lfc.close()
+
+    print 'done'
+
+    '''
+    plt.imshow(final, aspect = 'auto', origin = 'lower', cmap='gray')
+    plt.colorbar()
+    plt.savefig('Cleaned/' + fname.rstrip('.bbx.gz') + '.png', dpi=200)
+    plt.close()
+    '''

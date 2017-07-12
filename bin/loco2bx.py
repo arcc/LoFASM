@@ -79,7 +79,7 @@ for inname in args.files:
     # Check input file name, and test for existing output files.
     filepols = list( pols )
     splitname = os.path.splitext( inname )
-    if splitname[1] != ".lofasm":
+    if splitname[1] != ".lofasm" and splitname[1] != '.gz':
         print "Skipping " + inname + " (not a .lofasm file)"
         continue
     if not args.force:

@@ -119,32 +119,31 @@ def setup_all_plots(xmin, xmax, ymin, ymax, station, crawler, norm_cross=False):
     update_all_baseline_plots(0, fig, crawler, auto_lines+cross_lines+overlay_lines, forward=False)
     return [auto_lines+cross_lines+overlay_lines, fig]
 
-def update_all_baseline_plots(i, fig, crawler, lines, norm_cross=False, forward=True):
+def update_all_baseline_plots(i, fig, c, lines, norm_cross=False, forward=True):
 
     if forward:
         try:
-            crawler.forward()
+            c.forward()
         except EOFError as err:
             print err
             raw_input("End of File. Press enter to quit.")
             sys.exit()
 
-    burst = crawler
 
     for k in range(len(BASELINES)):
         if k < 4:
             #autos
-            lines[k].set_data(FREQS, 10*np.log10(burst.autos[BASELINES[k]]))
+            lines[k].set_data(FREQS, 10*np.log10(c.autos[BASELINES[k]]))
             #overlays
-            lines[-(k+1)].set_data(FREQS,10*np.log10(burst.autos[BASELINES[k]]))
+            lines[-(k+1)].set_data(FREQS,10*np.log10(c.autos[BASELINES[k]]))
 
         elif norm_cross:
 
-			norm_val = np.array(burst.cross[BASELINES[k]])/np.sqrt(np.array(burst.autos[BASELINES[k][0]*2])*np.array(burst.autos[BASELINES[k][1]*2]))
+			norm_val = np.array(c.cross[BASELINES[k]])/np.sqrt(np.array(c.autos[BASELINES[k][0]*2])*np.array(c.autos[BASELINES[k][1]*2]))
 			lines[k]['real'].set_data(FREQS, np.real(norm_val))
 			lines[k]['imag'].set_data(FREQS, np.imag(norm_val))
         else:
-			lines[k].set_data(FREQS, 10*np.log10(np.abs(np.real(burst.cross[BASELINES[k]]))))
+			lines[k].set_data(FREQS, 10*np.log10(np.abs(np.real(c.cross[BASELINES[k]]))))
 
 
 
