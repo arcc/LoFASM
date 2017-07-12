@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import cleandata as c
 import lofasm.bbx.bbx as b
 import numpy as np
@@ -66,7 +68,7 @@ for fname in glob.glob(args.file_name):
 	final = final*normalize_array
 	
 
-	lfc = b.LofasmFile('Clean_' + fname.rstrip('.gz'), mode = 'write')
+	lfc = b.LofasmFile('Clean_' + fname.rstrip('.gz'), header=lf.header, mode = 'write')
 
 	lfc.add_data(final)
 

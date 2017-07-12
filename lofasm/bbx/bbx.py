@@ -24,9 +24,9 @@ class LofasmFile(object):
 
     Currently, the only data format supported is 'LoFASM-filterbank'.
     """
-    def __init__(self, lofasm_file, verbose=False, mode='read', gz=None):
+    def __init__(self, lofasm_file, header={}, verbose=False, mode='read', gz=None):
         self.debug = True if verbose else False
-        self.header = {}
+        self.header = header
         self.iscplx = None
         self.fpath = lofasm_file
         self.fname = os.path.basename(lofasm_file)
@@ -69,7 +69,9 @@ class LofasmFile(object):
             self._load_header()
         elif mode == 'write':
             self._debug("prepping file")
-            self._prep_new()
+
+            if not header:
+                self._prep_new()
 
         # private copy of certain methods
         self._set = self.set
@@ -376,6 +378,9 @@ class LofasmFile(object):
                'dim2_start': None,
                'dim2_span': None,
                'data_type': 'real64',
+               'frequency_offset_DC': '0 (Hz)',
+               'data_scale': '1',
+               ''
                'metadata': metadata}
 
         self._new_file = True
