@@ -209,7 +209,7 @@ def clean(data):
     lfc.set('dim1_span',lf.header['dim1_span'])
     lfc.set('dim2_start',lower_frequency * 1e6)
     lfc.set('dim2_span',(upper_frequency - lower_frequency)*1e6)
-    lfc.set('clean', True)7uup
+    lfc.set('clean', True)
     lfc.set('station',lf.header['station'])
     lfc.set('channel',lf.header['channel'])
 
