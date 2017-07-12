@@ -145,8 +145,8 @@ def wide_band_mask(data,threshold=1.7):
     print "creating wide band mask"
     wb_mask = np.ones_like(data)
     tbins = len(data[0,:])
-    sub_bands = np.zeros((5.0 , tbins))
-    sub_band_size = 100.0
+    sub_bands = np.zeros((5 , tbins))
+    sub_band_size = 100
     for i in range(5):
 
         sub_bands[i] = np.nansum(data[i*sub_band_size:(i*sub_band_size)+sub_band_size,:], axis = 0)
