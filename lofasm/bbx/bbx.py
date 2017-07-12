@@ -27,6 +27,7 @@ class LofasmFile(object):
     def __init__(self, lofasm_file, header={}, verbose=False, mode='read', gz=None):
         self.debug = True if verbose else False
         self.header = header
+
         self.iscplx = None
         self.fpath = lofasm_file
         self.fname = os.path.basename(lofasm_file)
@@ -350,11 +351,11 @@ class LofasmFile(object):
 
     def _prep_new(self):
         """
-        prepare object to begin writing a new bbx file.
+        prepare header to begin writing a new bbx file.
         :return:
         """
 
-        if self.header:
+        if not self.header:
             metadata = {
                 'dim1_len': None,
                 'dim2_len': None,
@@ -382,6 +383,7 @@ class LofasmFile(object):
                 'data_scale': '1',
                 ''
                 'metadata': metadata}
+
 
         self._new_file = True
 
