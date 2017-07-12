@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import cleandata as c
+from lofasm.clean import cleandata as c
 import lofasm.bbx.bbx as b
 import numpy as np
 import matplotlib.pyplot as plt
