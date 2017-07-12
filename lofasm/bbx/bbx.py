@@ -69,9 +69,7 @@ class LofasmFile(object):
             self._load_header()
         elif mode == 'write':
             self._debug("prepping file")
-
-            if not header:
-                self._prep_new()
+            self._prep_new()
 
         # private copy of certain methods
         self._set = self.set
@@ -355,33 +353,35 @@ class LofasmFile(object):
         prepare object to begin writing a new bbx file.
         :return:
         """
-        metadata = {
-            'dim1_len': None,
-            'dim2_len': None,
-            'complex': None,
-            'nbits': 64,
-            'encoding': 'raw256'
-        }
-        if self.iscplx:
-            metadata['complex'] = '2'
-        elif self.iscplx is False:
-            metadata['complex'] = '1'
 
-        self.header = {'hdr_type': 'LoFASM-filterbank',
-               'hdr_version': '0000803F',
-               'station': None,
-               'channel': None,
-               'dim1_start': None,
-               'dim1_label': 'time (s)',
-               'dim1_span': None,
-               'dim2_label': 'frequency (Hz)',
-               'dim2_start': None,
-               'dim2_span': None,
-               'data_type': 'real64',
-               'frequency_offset_DC': '0 (Hz)',
-               'data_scale': '1',
-               ''
-               'metadata': metadata}
+        if self.header:
+            metadata = {
+                'dim1_len': None,
+                'dim2_len': None,
+                'complex': None,
+                'nbits': 64,
+                'encoding': 'raw256'
+            }
+            if self.iscplx:
+                metadata['complex'] = '2'
+            elif self.iscplx is False:
+                metadata['complex'] = '1'
+
+            self.header = {'hdr_type': 'LoFASM-filterbank',
+                'hdr_version': '0000803F',
+                'station': None,
+                'channel': None,
+                'dim1_start': None,
+                'dim1_label': 'time (s)',
+                'dim1_span': None,
+                'dim2_label': 'frequency (Hz)',
+                'dim2_start': None,
+                'dim2_span': None,
+                'data_type': 'real64',
+                'frequency_offset_DC': '0 (Hz)',
+                'data_scale': '1',
+                ''
+                'metadata': metadata}
 
         self._new_file = True
 
