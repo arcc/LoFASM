@@ -381,7 +381,6 @@ class LofasmFile(object):
                 'data_type': 'real64',
                 'frequency_offset_DC': '0 (Hz)',
                 'data_scale': '1',
-                ''
                 'metadata': metadata}
 
 
