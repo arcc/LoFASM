@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-import cleandata as c
+from lofasm.clean import cleandata as c
 import lofasm.bbx.bbx as b
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,8 +39,8 @@ help = 'do you want to clean a specific file or type of file? try ')
 
 args = parser.parse_args()
 
-lower_frequency = args.lower_frequency_bin*(100/1024)
-upper_frequency = args.upper_frequnecy_bin*(100/1024)
+lower_frequency = args.lower_frequency_bin*(100.0/1024.0)
+upper_frequency = args.upper_frequnecy_bin*(100.0/1024.0)
 
 for fname in glob.glob(args.file_name):
 
@@ -72,7 +72,8 @@ for fname in glob.glob(args.file_name):
 
 	lfc.add_data(final)
 
-
+	print lower_frequency
+	print upper_frequency
 
 	lfc.set('dim1_start',lf.header['dim1_start'])
 	lfc.set('dim1_span',lf.header['dim1_span'])
