@@ -5,12 +5,16 @@ import parse_data_H as pdat_H
 from parse_data_H import IntegrationError
 import datetime
 from astropy.time import Time, TimeDelta
+import gzip
 
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
 HDR_V1_SIGNATURE = 14613675
 INTEGRATION_SIZE_B = 139264 #bytes
 START_DATA = 204896
 PACKET_SIZE_B = 8192
+
+
+# station polarization mapping
 BASELINE_ID = {
     'LoFASMI' : {
         'A' : 'INS',
@@ -33,6 +37,8 @@ BASELINE_ID = {
         'C' : 'IEW',
         'D' : 'INS'}
     }
+
+
 Baselines = pdat_H.Baselines
 
 ##### Function Definitions
@@ -108,6 +114,7 @@ def parse_file_header(file_obj, fileType='lofasm'):
 
     if freeze_pointer != 0:
         file_obj.seek(0)
+
     #get file signature
     file_sig = file_obj.read(pdat_H.HDR_ENTRY_LENGTH).strip(' ')
 
@@ -163,12 +170,22 @@ def parse_file_header(file_obj, fileType='lofasm'):
         fhdr_field_dict[11][1] = remaining_hdr_string[56:64].strip()
         fhdr_field_dict[12][1] = remaining_hdr_string[64:74].strip()
         fhdr_field_dict[13][1] = remaining_hdr_string[74:84].strip()
+    elif file_hdr_version == 4:
+        fhdr_field_dict[4][1] = remaining_hdr_string[:8].strip()
+        fhdr_field_dict[5][1] = remaining_hdr_string[8:16].strip()
+        fhdr_field_dict[6][1] = remaining_hdr_string[16:24].strip()
+        fhdr_field_dict[7][1] = remaining_hdr_string[24:32].strip()
+        fhdr_field_dict[8][1] = remaining_hdr_string[32:40].strip()
+        fhdr_field_dict[9][1] = remaining_hdr_string[40:48].strip()
+        fhdr_field_dict[10][1] = remaining_hdr_string[48:56].strip()
+        fhdr_field_dict[11][1] = remaining_hdr_string[56:64].strip()
+        fhdr_field_dict[12][1] = remaining_hdr_string[64:74].strip()
 
     #move file cursor back to original position
     file_obj.seek(freeze_pointer)
     return fhdr_field_dict
 
-def parse_hdr(hdr, hdr_size_bytes=8, version=1):
+def parse_hdr(hdr):
     '''
     Usage: parse_hdr(<64bit_string>,[version])
     Parse the first 64 bits of
@@ -187,6 +204,10 @@ def parse_hdr(hdr, hdr_size_bytes=8, version=1):
     return hdr_dict
 
 def print_hdr(hdr_dict):
+    '''
+    print header dictionary contents
+    '''
+
     for key in hdr_dict:
         val = str(hdr_dict[key])
         if val != '0':
@@ -284,11 +305,15 @@ def get_filesize(file_obj):
     '''
 
     freeze_pointer = file_obj.tell()
-    file_obj.seek(0,2) #move to end of file
-    end_pointer = file_obj.tell()
-    file_obj.seek(freeze_pointer)
 
-    return end_pointer
+    if type(file_obj) == gzip.GzipFile:
+        hdr = parse_file_header(file_obj)
+        return int(hdr[12][1])*INTEGRATION_SIZE_B + 96
+    else:
+        file_obj.seek(0,2) #move to end of file
+        end_pointer = file_obj.tell()
+        file_obj.seek(freeze_pointer)
+        return end_pointer
 
 def get_number_of_integrations(file_obj):
     '''returns number of integrations in data file'''
@@ -599,7 +624,7 @@ class LoFASMFileCrawler(object):
     File crawler for LoFASM data files.
     '''
 
-    def __init__(self, filename, scan_file=False, start_loc=None):
+    def __init__(self, filename, scan_file=False, start_loc=None, gz=False):
         '''
         initialize LoFASM File Crawler instance
 
@@ -609,12 +634,17 @@ class LoFASMFileCrawler(object):
         integration headers in file. This is an optional argrument.
         '''
 
+
         self.filename = filename
         self.scan_file = scan_file
         self.start_loc = start_loc
         self._status_open = False
         self.corrupt = False
-
+        if filename.endswith('.gz') or gz:
+            self.gz = True
+        else:
+            self.gz = gz
+        self.eof = False
         self._int_hdr = {} #integration header
         self._file_hdr = {} #file header
         self._acc_num_ref = None #first integration id
@@ -649,7 +679,11 @@ class LoFASMFileCrawler(object):
                     print "Warning: file extension not recognized. Attempting to open anyway."
 
                 #get file handler
-                self._lofasm_file = open(filename, 'rb')
+                if self.gz:
+                    print "Warning: gzipped files are only supported for header versions 4 or higher."
+                    self._lofasm_file = gzip.open(filename, 'rb')
+                else:
+                    self._lofasm_file = open(filename, 'rb')
 
         except IOError as err:
             print "Error opening ", filename
@@ -660,7 +694,10 @@ class LoFASMFileCrawler(object):
         self._file_hdr = parse_file_header(self._lofasm_file)
 
         #find end of file
-        self._lofasm_file_end = self._get_file_end_loc()
+        if int(self._file_hdr[2][1]) == 4:
+            self._lofasm_file_end = self._file_hdr[3][1] + int(self._file_hdr[12][1])*INTEGRATION_SIZE_B
+        else:
+            self._lofasm_file_end = self._get_file_end_loc()
 
         #get integration/burst size
         self._int_size = INTEGRATION_SIZE_B
@@ -709,11 +746,11 @@ class LoFASMFileCrawler(object):
         self._status_open = True
 
         #quick sanity check
-        try:
-            self.forward(self.getNumberOfIntegrationsInFile()-1)
-            self.reset()
-        except IntegrationError:
-            self.corrupt = True
+        #try:
+        #    self.forward(self.getNumberOfIntegrationsInFile()-1)
+        #    self.reset()
+        #except IntegrationError:
+        #    self.corrupt = True
 
 
     def isopen(self):
@@ -735,13 +772,18 @@ class LoFASMFileCrawler(object):
         self._update_data(N)
         self._update_time()
 
+
     def getNumberOfIntegrationsInFile(self):
         '''
         return the total number of integrations in current
         LoFASM file.
         '''
 
-        return int((self._lofasm_file_end - self._data_start) / self._int_size)
+        # check file header version
+        if int(self._file_hdr[2][1]) == 4:
+            return int(self._file_hdr[12][1])
+        else:
+            return int((self._lofasm_file_end - self._data_start) / self._int_size)
 
     def _update_time(self):
         '''
@@ -756,7 +798,10 @@ class LoFASMFileCrawler(object):
 
         #read and update pointers
         self._move_ptr(N-1)
-        self._burst = LoFASM_burst(self._lofasm_file.read(self._int_size))
+        data = self._lofasm_file.read(self._int_size)
+        if data == '':
+            raise EOFError
+        self._burst = LoFASM_burst(data)
         self._burst.create_LoFASM_beams()
         self._update_ptr()
 
@@ -798,17 +843,25 @@ class LoFASMFileCrawler(object):
         self._ptr_loc = self._lofasm_file.tell()
 
     def forward(self, N=1):
-        '''Move forward by N integrations.'''
+        '''Move forward by N integrations.
+        On EOF, do nothing.
+        '''
 
         if N < 0:
             self.backward(abs(N))
             return
 
         #check boundaries
-        if (self._lofasm_file_end - self._ptr_loc) >= N*INTEGRATION_SIZE_B:
+        #if (self._lofasm_file_end - self._ptr_loc) >= N*INTEGRATION_SIZE_B:
+        #    self._update(N)
+        #else:
+        #    raise EOFError
+
+        try:
             self._update(N)
-        else:
-            raise EOFError
+        except EOFError:
+            self.eof = True
+            print "End of LoFASM File."
 
     def backward(self, N=1):
         '''Move back to previous integration.'''

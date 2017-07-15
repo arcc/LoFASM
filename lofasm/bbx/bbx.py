@@ -24,9 +24,10 @@ class LofasmFile(object):
 
     Currently, the only data format supported is 'LoFASM-filterbank'.
     """
-    def __init__(self, lofasm_file, verbose=False, mode='read', gz=None):
+    def __init__(self, lofasm_file, header={}, verbose=False, mode='read', gz=None):
         self.debug = True if verbose else False
-        self.header = {}
+        self.header = header
+
         self.iscplx = None
         self.fpath = lofasm_file
         self.fname = os.path.basename(lofasm_file)
@@ -350,33 +351,38 @@ class LofasmFile(object):
 
     def _prep_new(self):
         """
-        prepare object to begin writing a new bbx file.
+        prepare header to begin writing a new bbx file.
         :return:
         """
-        metadata = {
-            'dim1_len': None,
-            'dim2_len': None,
-            'complex': None,
-            'nbits': 64,
-            'encoding': 'raw256'
-        }
-        if self.iscplx:
-            metadata['complex'] = '2'
-        elif self.iscplx is False:
-            metadata['complex'] = '1'
 
-        self.header = {'hdr_type': 'LoFASM-filterbank',
-               'hdr_version': '0000803F',
-               'station': None,
-               'channel': None,
-               'dim1_start': None,
-               'dim1_label': 'time (s)',
-               'dim1_span': None,
-               'dim2_label': 'frequency (Hz)',
-               'dim2_start': None,
-               'dim2_span': None,
-               'data_type': 'real64',
-               'metadata': metadata}
+        if not self.header:
+            metadata = {
+                'dim1_len': None,
+                'dim2_len': None,
+                'complex': None,
+                'nbits': 64,
+                'encoding': 'raw256'
+            }
+            if self.iscplx:
+                metadata['complex'] = '2'
+            elif self.iscplx is False:
+                metadata['complex'] = '1'
+
+            self.header = {'hdr_type': 'LoFASM-filterbank',
+                'hdr_version': '0000803F',
+                'station': None,
+                'channel': None,
+                'dim1_start': None,
+                'dim1_label': 'time (s)',
+                'dim1_span': None,
+                'dim2_label': 'frequency (Hz)',
+                'dim2_start': None,
+                'dim2_span': None,
+                'data_type': 'real64',
+                'frequency_offset_DC': '0 (Hz)',
+                'data_scale': '1',
+                'metadata': metadata}
+
 
         self._new_file = True
 

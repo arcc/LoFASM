@@ -9,6 +9,7 @@ if __name__ == '__main__':
     from lofasm import animate_lofasm as ani_lofasm
     from lofasm import parse_data as pdat
     from optparse import OptionParser
+    import gzip
 #    from lofasm import lofasm_dat_lib as lofasm
 
     p = OptionParser()
@@ -19,10 +20,10 @@ if __name__ == '__main__':
     p.add_option('--packet_size_bytes', dest='packet_size_bytes', type='int',
         default=8192, help="Set the size of each packet in bytes.")
     p.add_option('-s', '--start_position', dest='start_position', type='int', 
-        default=-1, 
+        default=-1,
         help='Set file start position. This is also the number \
         of bytes to skip at the beginning of the file.')
-    p.add_option('--getfilesize',dest='getFileSize',action='store_true')
+    p.add_option('--getfilesize', dest='getFileSize', action='store_true')
     p.add_option('--xmin', dest='xmin', type='float', default=18,
         help='set the xmin value to plot')
     p.add_option('--xmax', dest='xmax', type='float', default=80,
@@ -34,6 +35,8 @@ if __name__ == '__main__':
     p.add_option('-d','--frame_duration', dest='frame_dur', type='float',
         default=100, 
         help='duration of each animated frame in ms. default is 100.')
+    p.add_option('-G', dest='gzip', action='store_true',
+                 help="read in gzip mode. not needed if filename ends with '.gz' ")
 
     opts, args = p.parse_args(sys.argv[1:])
     
@@ -42,7 +45,10 @@ if __name__ == '__main__':
         exit()
     else:
         input_filename = opts.input_filename
-        lofasm_input_file = open(input_filename, 'rb')
+        if input_filename.endswith(".gz") or opts.gzip:
+            lofasm_input_file = gzip.open(input_filename, 'r')
+        else:
+            lofasm_input_file = open(input_filename, 'rb')
         
     hdr_dict = pdat.parse_file_header(lofasm_input_file)
 
