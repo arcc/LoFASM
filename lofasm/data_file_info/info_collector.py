@@ -5,7 +5,7 @@ import abc
 from ..formats.format import DataFormat
 
 HEADER_PARSE_FIELDS = ['station', 'channel', 'hdr_type', 'start_time', \
-                       'data_label']
+                       'data_label', 'time_span']
 
 class InfoCollectorMeta(abc.ABCMeta):
     """
@@ -89,6 +89,27 @@ class stationCollector(HeaderInfoCollector):
         self.collect_method['bbx'] = self.make_header_collect_method('station', 'bbx')
         self.collect_method['raw'] = self.make_header_collect_method('station', 'raw')
         self.collect_method['data_dir'] =  lambda *args: ''
+
+class timespanCollector(InfoCollector):
+    """ This is a class for colleting timespan from data file header
+    """
+    info_name = 'time_span'
+
+    def __init__(self):
+        super(timespanCollector, self).__init__()
+        self.column = 'time_span'
+        self.collect_method['bbx'] = self.get_time_span_bbx
+        self.collect_method['raw'] = lambda *args: None
+        self.collect_method['data_dir'] =  lambda *args: None
+
+    def get_time_span_bbx(self, bbx_cls):
+        if bbx_cls.header['dim1_label'].startswith('time'):
+            name = 'dim1_span'
+        elif bbx_cls.header['dim2_label'].startswith('time'):
+            name = 'dim2_span'
+        else:
+            return None
+        return float(bbx_cls.header[name])
 
 # This is a script to create some more built-in collector classes like stationCollector.
 BUILTIN_COLLECTORS = {}

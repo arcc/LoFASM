@@ -9,6 +9,8 @@ import astropy.units as u
 import numpy as np
 from ..formats.format import DataFormat
 from .info_collector import InfoCollector
+from .file_selector import FileSelector
+
 
 class LofasmFileInfo(object):
     """This class provides a storage for a list of lofasm files information
@@ -66,10 +68,11 @@ class LofasmFileInfo(object):
         self.new_files = []
         self.table_update = False
         # Those are the default column names
-        self.col_names = ['station', 'channel', 'hdr_type', 'start_time'] + add_col_names
+        self.col_names = ['station', 'channel', 'hdr_type', 'start_time', 'time_span'] \
+                           + add_col_names
         self.setup_info_table()
         if check_subdir:
-            self.process_data_dirs()
+           self.process_data_dirs()
 
     def check_file_format(self, files, directory='.'):
         """
@@ -164,16 +167,15 @@ class LofasmFileInfo(object):
             self.info_table = table.Table.read(info_file, format='ascii.ecsv')
             curr_col = self.info_table.keys()
             # Process the new files.
-            self.new_files = list(set(format_map.keys()) - set(self.info_table['filename']))
+            self.new_files = np.array(list(set(format_map.keys()) - \
+                                      set(self.info_table['filename'])))
             if self.new_files != []:
-                new_file_tp = [format_map[f] for f in self.new_files]
+                new_file_tp = np.array([format_map[f] for f in self.new_files])
                 new_f_table = table.Table([self.new_files, new_file_tp], \
                                            names=('filename', 'fileformat'))
                 curr_col_collector = self.get_col_collector(curr_col)
                 new_f_table = self.add_columns(curr_col_collector, new_f_table)
                 # change new table data type
-                for col in new_f_table.keys():
-                    new_f_table[col] = new_f_table[col].astype(self.info_table[col].dtype)
                 self.info_table = table.vstack([self.info_table, new_f_table])
                 if 'data_dir' in new_file_tp:
                     self.info_table.meta['haschild'] = True
@@ -190,7 +192,9 @@ class LofasmFileInfo(object):
                 haschild = True
             else:
                 haschild = False
-            self.info_table = table.Table([format_map.keys(), format_map.values()], \
+            filename = np.array(format_map.keys())
+            filetype = np.array(format_map.values())
+            self.info_table = table.Table([filename, filetype], \
                                           names=('filename', 'fileformat'),\
                                           meta={'name':self.directory_basename + '_info_table',
                                                 'haschild': haschild})
@@ -259,3 +263,28 @@ class LofasmFileInfo(object):
             new_col_collector = self.get_col_collector(add_col)
             dirclass.info_table = dirclass.add_columns(new_col_collector, dirclass.info_table)
             dirclass.write_info_table()
+
+    def search_files(self, selector_name, check_subdir=False, **kwarg):
+        """
+        This is a wrapper method for calling file selector and select files.
+        The selecting method is defined in the file_selector file. This function
+        will add absolute path to the file name. 
+        """
+        selector = FileSelector._selector_list[selector_name]()
+        selected_files = []
+        result = selector.get_files(self.info_table, **kwarg)
+        for ff in result:
+            selected_files.append(os.path.join(self.directory_abs_path, ff))
+        if check_subdir:
+            dirs_idx = np.where(self.info_table['fileformat']=='data_dir')[0]
+            dirs = self.info_table['filename'][dirs_idx]
+            if len(dirs) == 0:
+                fs = []
+            else:
+                for d in dirs:
+                    print "Checking data directory", d
+                    subdpath = os.path.join(self.directory_abs_path, d)
+                    lfi = LofasmFileInfo(directory=subdpath, check_subdir=True)
+                    fs = lfi.search_files(selector_name, check_subdir, **kwarg)
+            selected_files += fs
+        return selected_files
