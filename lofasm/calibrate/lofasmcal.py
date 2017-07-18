@@ -1,5 +1,5 @@
 #Calibration tool for LoFASM Data:
-
+import os, sys
 import lofasm.simulate.galaxymodel as gm
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,23 +31,33 @@ class calibrate:
 		self.freqmhz = int(freq*10)
 		self.res = len(filelist)
 
-		date = self.filelist[0][-25:-17]
-		self.date = datetime.datetime(int(date[:4]),
-									  int(date[4:6]),
-									  int(date[-2:]), 0, 0)
+		#~ date = self.filelist[0][-25:-17]
+		#~ self.date = datetime.datetime(int(date[:4]),
+									  #~ int(date[4:6]),
+									  #~ int(date[-2:]), 0, 0)
 
 		time_array = []
 		station_array = []
 		for i in range(len(self.filelist)):
+
+			#~ if 'Clean_' in self.filelist[i]:
+				#~ head = bb.LofasmFile(self.filelist[i]).header
+				#~ file_startt = self.filelist[i][-22:-7]
+				#~ file_station = head['station']
+
+				#~ start_time = datetime.datetime.strptime(self.filelist[i][-22:-7],
+																#~ '%Y%m%d_%H%M%S')
+
+			#~ else:
 			head = bb.LofasmFile(self.filelist[i]).header
 			file_startt = head['start_time']
 			file_station = head['station']
-
 			start_time = datetime.datetime.strptime(file_startt[:-8],
 													'%Y-%m-%dT%H:%M:%S')
 
 			time_array.append(start_time)
 			station_array.append(file_station)
+
 		self.cali_array = [time_array, station_array]
 
 		for i in reversed(range(len(self.filelist))):
@@ -125,16 +135,18 @@ class calibrate:
 			avg_datafile_power = np.average(avg_10freq_bins)
 			dsampled_power = np.append(dsampled_power, avg_datafile_power)
 
-			if (filename%100 == 0) and filename != 0 or filename == 50:
-				print str(filename*100/len(self.filelist)) + '%'
+			#~ if (filename%100 == 0) or filename == 50:
+			p = (str(filename*100/len(self.filelist)) + '%')
+			sys.stdout.write("\r%s" % p)
+			sys.stdout.flush()
 
 		return dsampled_power
 
 	def galaxy(self):
-		"""Return a model of the power from the galaxy.
+		"""Return an array of the modeled power from the galaxy.
 
-		The model is generated using Dr. Rick Jenet's galaxy model generation
-		code.
+		The model is generated using Dr. Fredrick Jenet's galaxy model generation
+		script.
 		The timebins will match the number of datafiles of the calibrate class.
 		"""
 		rot_ang = 1
@@ -150,7 +162,7 @@ class calibrate:
 		long_radians = (lfs['long'][0] + lfs['long'][1]/60.0 + lfs['long'][2]/3600.0)*np.pi/180.0
 
 		LoFASM = gm.station(lfs['name'],lfs['lat'],lfs['long'],FOV_color='b',
-							time=self.date,frequency=self.freq,one_ring='inner',
+							time=time_array[0],frequency=self.freq,one_ring='inner',
 							rot_angle=rot_ang,pol_angle=pol_ang)
 		innerNS_FOV = 0.61975795698554226 #LoFASM.lofasm.Omega()
 		inner_conversion_NS = np.divide((np.power(np.divide(3.0*1.0e8,45.0e6),2)),(innerNS_FOV))
@@ -195,7 +207,7 @@ class calibrate:
 			y0 = self.get_data()
 
 
-		if len(data) != len(galaxy):
+		if len(y0) != len(gbg):
 			raise Exception('Dimension mismatch: Array dimensions must be equal.')
 
 		def fun(l,a,b):
@@ -205,7 +217,7 @@ class calibrate:
 
 		fitted = (y0-popt[1])/popt[0]
 
-		return fitted
+		return fitted		
 
 	def calibration_parameters(self, data=None, galaxy=None):
 		"""Returns the calibration parameters.
@@ -243,7 +255,7 @@ class calibrate:
 		if data == None:
 			y0 = self.get_data()
 
-		if len(data) != len(galaxy):
+		if len(y0) != len(gbg):
 			raise Exception('Dimension mismatch: Array dimensions must be equal.')
 
 		def fun(l,a,b):
@@ -252,5 +264,80 @@ class calibrate:
 		popt,pcov = scipy.optimize.curve_fit(fun,l,y0)
 
 		return popt
+
+class calibrateio:
+	"""	Class to read and calibrate raw data and write Calibrated files.
+
+	Reads raw data from given path. Generates galaxy model and computes calibration.
+	Writes Calibrated files to output path corresponding to each raw data file.
+	Parameters
+	----------
+	files : str
+		A path to lofasm `.bbx` files. `*` wildcard can be used for multiple 
+		files.
+	output : str
+		A path were Calibrated files will be written to.
+	station : {1, 2, 3, 4}
+		The station from which the data comes from.
+	freq : int or float, optional
+		The frequency to calibrate at in megahertz (the default is 20.0 MHz).
+	"""
+	def __init__(self, files, output, station, freq=20.0):
+
+		cal = calibrate(files, station, freq=freq)
+
+		filelist = sorted(glob.glob(files))
+		dat1 = bb.LofasmFile(filelist[0])
+		dat1.read_data()
+		avgfull = np.average(dat1.data[cal.freqmhz-5:cal.freqmhz+5, :],
+									 axis=0) #First element of list of data arrays
+		list_of_powers = [avgfull]#List of data arrays (2d)
+		dat = np.average(list_of_powers[0]) #First element of dat array for calibration
+
+		re = 'Reading data... '
+		for filei in range(len(filelist)-1):
+
+			filei += 1
+			bbfile = bb.LofasmFile(filelist[filei])
+			bbfile.read_data()
+			### Preparing array containing full power of each file
+			avgfull_power = np.average(bbfile.data[cal.freqmhz-5:cal.freqmhz+5, :],
+										axis=0) ##Avg 10 bins around frequency
+			list_of_powers.append(avgfull_power)
+
+			### Preparing data array for calibration: Each datapoint is avg power of file
+			avg_datafile_power = np.average(avgfull_power)
+			dat = np.append(dat, avg_datafile_power)
+
+			p = (str(filei*100/len(filelist)) + '%')
+			if filei not in range(len(filelist)-1):
+				p = 'Done'
+			sys.stdout.write("\r%s%s" % (re,p))
+			sys.stdout.flush()
+
+		self.a = list_of_powers
+
+		print '\nGenerating models...'
+		calibration_pmts = cal.calibration_parameters(data=dat)
+
+		print 'Calibrating and writing files...\n'
+		if output[-1] != '/':
+			output += '/'
+
+		for i in range(len(filelist)):
+			filename = os.path.basename(filelist[i])
+
+			calname = (output + 'Calibrated_' + filename)
+			sys.stdout.write('\rWriting ' + os.path.basename(filename))
+			sys.stdout.flush()
+
+			calibrated = (list_of_powers[i]-calibration_pmts[1])/calibration_pmts[0]			
+			lfc = bb.LofasmFile(output + 'Calibrated_' + filename, mode = 'write')
+			lfc.add_data(calibrated)
+			lfc.write()
+			lfc.close()
+
+
+		print '\nDone'
 
 #~ x = calibrate('/home/alex22x/bin/lofasm/LoFASM_3_Data/20170204/20170204_00*_CC.bbx.gz', 4, freq=20.0)

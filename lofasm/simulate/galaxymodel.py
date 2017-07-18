@@ -7,7 +7,7 @@ import matplotlib
 import datetime
 import healpy as hp
 from astropy.time import Time
-#~ import os
+import sys
 #Imports from this module:
 import sidereal #3rd party
 import LoFASM_simulation_v3 as v3
@@ -136,10 +136,12 @@ class station(object):
 
 #	power = self.calculate_gnoise(lst)
         for hour in utc:
-            if utc.index(hour)%4 == 0:
-                print str((utc.index(hour))*100/len(utc)) + '%'
             power.append(self.calculate_gnoise(utc=hour)) #If "lst=", type(hour)==datetime.datetime is true.
-            #~ print self.__lst_current
+            p = (str((utc.index(hour))*100/len(utc)) + '%')
+            sys.stdout.write("\r%s" % p)
+            sys.stdout.flush()
+
+        print '\n'
         print np.shape(utc)
 
         return power
