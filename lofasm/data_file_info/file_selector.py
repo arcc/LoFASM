@@ -57,11 +57,30 @@ class KeySelector(FileSelector):
 
 class TimeSelector(FileSelector):
     """This is a file selector class design for the lofasm data time
-    selection when time is a dimension in the data.
+    selection when time is a dimension in the data. The info table has to have
+    start_time_J2000 and time_span column.
     """
     selector_name = 'time'
     def __init__(self):
         super(TimeSelector, self).__init__()
 
-    def get_files(self, info_table, range):
-        pass
+    def get_files(self, info_table, search_range):
+        """
+        Parameter
+        ---------
+        info_table: lofasm.data_file_info.LofasmFileInfo.info_table object
+            Information table
+        search_range: list
+            The range to select time, range[0] is the lower limit and range[1]
+            is the upper limit. It is in the format of second pass J2000.
+        """
+        start_times = np.array(info_table['start_time_J2000'], dtype=float)
+        time_span = np.array(info_table['time_span'], dtype = float)
+        start_in_range = np.logical_and(start_times >= search_range[0],
+                                        start_times <= search_range[1])
+        in_range_files1 = info_table['filename'][start_in_range]
+        end_times = start_times + time_span
+        end_in_range = np.logical_and(start_times >= search_range[0],
+                                        start_times <= search_range[1])
+        in_range_files2= info_table['filename'][end_in_range]
+        return list(set(in_range_files1) | set(in_range_files2))

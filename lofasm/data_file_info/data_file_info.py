@@ -68,8 +68,9 @@ class LofasmFileInfo(object):
         self.new_files = []
         self.table_update = False
         # Those are the default column names
-        self.col_names = ['station', 'channel', 'hdr_type', 'start_time', 'time_span'] \
-                           + add_col_names
+        self.add_col_names = add_col_names
+        self.col_names = ['station', 'channel', 'hdr_type', 'start_time', \
+                          'time_span', 'start_time_J2000'] + add_col_names
         self.setup_info_table()
         if check_subdir:
            self.process_data_dirs()
@@ -164,6 +165,7 @@ class LofasmFileInfo(object):
         # Check out info_file
         info_file = os.path.join(self.directory_abs_path, self.info_file_name)
         if os.path.isfile(info_file):
+            print "Reading information from info file '%s'." % info_file
             self.info_table = table.Table.read(info_file, format='ascii.ecsv')
             curr_col = self.info_table.keys()
             # Process the new files.
@@ -264,11 +266,54 @@ class LofasmFileInfo(object):
             dirclass.info_table = dirclass.add_columns(new_col_collector, dirclass.info_table)
             dirclass.write_info_table()
 
+    def get_one_file_info(self, file_abs_path):
+        """ This is a function to get the file info for an absolute path.
+        Parameter
+        ---------
+        file_abs_path : str
+            The absolute path of the file.
+        """
+        dir_name = os.path.dirname(file_abs_path)
+        lfi = LofasmFileInfo(directory=dir_name,                  \
+                             add_col_names=self.add_col_names)
+        base_name = os.path.basename(file_abs_path)
+        idx = np.where(lfi.info_table['filename'] == base_name)
+        return lfi.info_table[idx]
+
+    def get_info_all_dirs(self, column_name):
+        """This is a method for parsing one column's information from all the
+        directories.
+        """
+        result_filename = []
+        result_value = []
+        cols = self.info_table[column_name]
+        for ii, v in enumerate(cols):
+            fn = self.info_table['filename'][ii]
+            if v not in (None, '', np.nan) and not np.isnan(v):
+                result_filename.append(os.path.join(self.directory_abs_path, fn))
+                result_value.append(v)
+        dirs_idx = np.where(self.info_table['fileformat']=='data_dir')[0]
+        dirs = self.info_table['filename'][dirs_idx]
+        if len(dirs) == 0:
+            return (result_filename, result_value)
+        else:
+            for d in dirs:
+                print "Checking data directory", d
+                subdpath = os.path.join(self.directory_abs_path, d)
+                lfi = LofasmFileInfo(directory=subdpath,                  \
+                                     add_col_names=self.add_col_names,    \
+                                     check_subdir=True)
+                result_filename_sub, result_value_sub = lfi.get_info_all_dirs(column_name)
+                result_filename += result_filename_sub
+                result_value += result_value_sub
+        return (result_filename, result_value)
+
+
     def search_files(self, selector_name, check_subdir=False, **kwarg):
         """
         This is a wrapper method for calling file selector and select files.
         The selecting method is defined in the file_selector file. This function
-        will add absolute path to the file name. 
+        will add absolute path to the file name.
         """
         selector = FileSelector._selector_list[selector_name]()
         selected_files = []
@@ -284,7 +329,9 @@ class LofasmFileInfo(object):
                 for d in dirs:
                     print "Checking data directory", d
                     subdpath = os.path.join(self.directory_abs_path, d)
-                    lfi = LofasmFileInfo(directory=subdpath, check_subdir=True)
+                    lfi = LofasmFileInfo(directory=subdpath,                  \
+                                         add_col_names=self.add_col_names,    \
+                                         check_subdir=True)
                     fs = lfi.search_files(selector_name, check_subdir, **kwarg)
-            selected_files += fs
+                    selected_files += fs
         return selected_files
