@@ -134,15 +134,16 @@ class station(object):
         power = []
         utc = utc_time
 
-#	power = self.calculate_gnoise(lst)
+        ge = "Generating models... "
         for hour in utc:
             power.append(self.calculate_gnoise(utc=hour)) #If "lst=", type(hour)==datetime.datetime is true.
             p = (str((utc.index(hour))*100/len(utc)) + '%')
-            sys.stdout.write("\r%s" % p)
+            if utc.index(hour) == (len(utc)-1):
+                p = "Done"
+            sys.stdout.write("\r%s%s" % (ge,p))
             sys.stdout.flush()
 
-        print '\n'
-        print np.shape(utc)
+        #~ print np.shape(utc)
 
         return power
 

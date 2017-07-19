@@ -2,9 +2,10 @@
 import os, sys
 import lofasm.simulate.galaxymodel as gm
 import numpy as np
-import matplotlib.pyplot as plt
+#~ import matplotlib.pyplot as plt
 import glob
 import lofasm.bbx.bbx as bb
+import lofasm.parse_data as pd
 import datetime
 import scipy.optimize
 import datetime
@@ -27,8 +28,8 @@ class calibrate:
 		filelist = glob.glob(files)
 		self.filelist = sorted(filelist)
 		self.station = station
-		self.freq = freq
-		self.freqmhz = int(freq*10)
+		self.freqmhz = freq
+		self.freqbin = pd.freq2bin(freq)
 		self.res = len(filelist)
 
 		#~ date = self.filelist[0][-25:-17]
@@ -114,7 +115,7 @@ class calibrate:
 			The new frequency to work with in megahertz.
 		"""
 		self.freq = new_freq
-		self.freqmhz = int(new_freq*10)
+		self.freqbin = pd.freq2bin(new_freq)
 
 	def get_data(self):
 		"""Return an array of lofasm data for however many files are loaded to
@@ -130,7 +131,7 @@ class calibrate:
 
 			dat = bb.LofasmFile(self.filelist[filename])
 			dat.read_data()
-			avg_10freq_bins = np.average(dat.data[self.freqmhz-5:self.freqmhz+5,:],
+			avg_10freq_bins = np.average(dat.data[self.freqbin-5:self.freqbin+5,:],
 								   axis=0) ##Avg 10 bins around frequency
 			avg_datafile_power = np.average(avg_10freq_bins)
 			dsampled_power = np.append(dsampled_power, avg_datafile_power)
@@ -162,7 +163,7 @@ class calibrate:
 		long_radians = (lfs['long'][0] + lfs['long'][1]/60.0 + lfs['long'][2]/3600.0)*np.pi/180.0
 
 		LoFASM = gm.station(lfs['name'],lfs['lat'],lfs['long'],FOV_color='b',
-							time=time_array[0],frequency=self.freq,one_ring='inner',
+							time=time_array[0],frequency=self.freqmhz,one_ring='inner',
 							rot_angle=rot_ang,pol_angle=pol_ang)
 		innerNS_FOV = 0.61975795698554226 #LoFASM.lofasm.Omega()
 		inner_conversion_NS = np.divide((np.power(np.divide(3.0*1.0e8,45.0e6),2)),(innerNS_FOV))
@@ -249,10 +250,10 @@ class calibrate:
 		gbg = galaxy
 		l = range(self.res)
 
-		if galaxy == None:
+		if type(gbg) == type(None):
 			gbg = self.galaxy()
 
-		if data == None:
+		if type(y0) == type(None):
 			y0 = self.get_data()
 
 		if len(y0) != len(gbg):
@@ -289,8 +290,8 @@ class calibrateio:
 		filelist = sorted(glob.glob(files))
 		dat1 = bb.LofasmFile(filelist[0])
 		dat1.read_data()
-		avgfull = np.average(dat1.data[cal.freqmhz-5:cal.freqmhz+5, :],
-									 axis=0) #First element of list of data arrays
+		avgfull = np.average(dat1.data[cal.freqbin-5:cal.freqbin+5, :],
+							 axis=0) #First element of list of data arrays
 		list_of_powers = [avgfull]#List of data arrays (2d)
 		dat = np.average(list_of_powers[0]) #First element of dat array for calibration
 
@@ -301,7 +302,7 @@ class calibrateio:
 			bbfile = bb.LofasmFile(filelist[filei])
 			bbfile.read_data()
 			### Preparing array containing full power of each file
-			avgfull_power = np.average(bbfile.data[cal.freqmhz-5:cal.freqmhz+5, :],
+			avgfull_power = np.average(bbfile.data[cal.freqbin-5:cal.freqbin+5, :],
 										axis=0) ##Avg 10 bins around frequency
 			list_of_powers.append(avgfull_power)
 
@@ -309,18 +310,16 @@ class calibrateio:
 			avg_datafile_power = np.average(avgfull_power)
 			dat = np.append(dat, avg_datafile_power)
 
-			p = (str(filei*100/len(filelist)) + '%')
+			p = ((str(filei*100/len(filelist)) + '%') + ' - ['+str(filei+1)+' out of '+str(len(filelist))+' files]')
 			if filei not in range(len(filelist)-1):
-				p = 'Done'
+				p = 'Done                                                   \n'
 			sys.stdout.write("\r%s%s" % (re,p))
 			sys.stdout.flush()
 
-		self.a = list_of_powers
-
-		print '\nGenerating models...'
+		# print "Generating models... " done by calibration_pmts f'n
 		calibration_pmts = cal.calibration_parameters(data=dat)
 
-		print 'Calibrating and writing files...\n'
+		sys.stdout.write('\rCalibrating and writing files... ')
 		if output[-1] != '/':
 			output += '/'
 
@@ -328,16 +327,13 @@ class calibrateio:
 			filename = os.path.basename(filelist[i])
 
 			calname = (output + 'Calibrated_' + filename)
-			sys.stdout.write('\rWriting ' + os.path.basename(filename))
-			sys.stdout.flush()
-
 			calibrated = (list_of_powers[i]-calibration_pmts[1])/calibration_pmts[0]			
 			lfc = bb.LofasmFile(output + 'Calibrated_' + filename, mode = 'write')
 			lfc.add_data(calibrated)
 			lfc.write()
 			lfc.close()
 
-
-		print '\nDone'
+		sys.stdout.write('\rDone - '+str(len(filelist))+' calibrated files written.')
+		sys.stdout.flush()
 
 #~ x = calibrate('/home/alex22x/bin/lofasm/LoFASM_3_Data/20170204/20170204_00*_CC.bbx.gz', 4, freq=20.0)
