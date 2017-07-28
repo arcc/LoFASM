@@ -7,7 +7,7 @@ import gzip
 import numpy as np
 import struct
 
-SUPPORTED_FILE_SIGNATURES = ['\x02BX', 'ABX']
+SUPPORTED_FILE_SIGNATURES = ['\x02BX', 'ABX', 'BX']
 SUPPORTED_ENCODING_SCHEMES = ['raw256']
 SUPPORTED_HDR_TYPES = ['LoFASM-filterbank', 'LoFASM-dedispersion-dm-time']
 REQUIRED_HDR_COMMENT_FIELDS = {
@@ -453,8 +453,8 @@ class LofasmFile(object):
 
         return val
 
-# a light function for check if a file in lofasm bbx formate.
-def is_lofasm_file(filename):
+# a light function for check if a file in lofasm bbx format.
+def is_lofasm_bbx(filename):
     """ Check the file is lofasm file or not.
     """
     if filename.endswith('.gz'):
@@ -462,7 +462,11 @@ def is_lofasm_file(filename):
     else:
         f = open(filename,'rb')
     line1 = f.readline().strip()
-    if line1 in ['%\x02BX','%BX']:
+    if line1.startswith('%'):
+        line1 = line1.strip('%')
+    else:
+        return False
+    if line1 in SUPPORTED_FILE_SIGNATURES:
         return True
     else:
         return False
