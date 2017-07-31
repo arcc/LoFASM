@@ -60,7 +60,12 @@ class HeaderInfoCollector(InfoCollector):
         return header_method
 
     def get_header_info_bbx(self, bbx_cls, fieldname):
-        return bbx_cls.header[fieldname]
+        """This function only give some basic header file as string. 
+        """
+        if fieldname in list(bbx_cls.header.keys()):
+            return bbx_cls.header[fieldname]
+        else:
+            return ''
 
     def get_header_info_raw(self,raw_cls, fieldname):
         raise NotImplementedError
