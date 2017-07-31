@@ -60,7 +60,7 @@ class HeaderInfoCollector(InfoCollector):
         return header_method
 
     def get_header_info_bbx(self, bbx_cls, fieldname):
-        """This function only give some basic header file as string. 
+        """This function only give some basic header file as string.
         """
         if fieldname in list(bbx_cls.header.keys()):
             return bbx_cls.header[fieldname]
@@ -137,7 +137,10 @@ class secondJ2000Collector(InfoCollector):
             name = 'dim2_start'
         else:
             return np.nan
-        offset = bbx_cls.header['time_offset_J2000'].split()[0]
+        if 'time_offset_J2000' in bbx_cls.header.keys():
+            offset = bbx_cls.header['time_offset_J2000'].split()[0]
+        else:
+            offset = 0.0
         return float(bbx_cls.header[name]) + float(offset)
 
 class SamplingTimeCollector(InfoCollector):
