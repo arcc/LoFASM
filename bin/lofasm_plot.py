@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # LoFASM Data Plotter
 #import matplotlib.pyplot as plt
 #import numpy as np

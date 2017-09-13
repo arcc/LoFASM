@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! python
 # Converts .lofasm files to .bbx or .abx files.
 # Run with option -h or --help for full usage information.
 
