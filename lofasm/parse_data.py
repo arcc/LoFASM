@@ -663,6 +663,34 @@ class LoFASMFileCrawler(object):
         self.cross = None
         self.beams = None
 
+    def _find_next_burst(self, start=0):
+        '''
+        return the start location of the next packet burst
+
+        return -1 on failure to find burst
+        '''
+        burstKey = "\xde\xfc\xab"
+        blockSize = 8192*17
+        burstFound = False
+        testBlock = ''
+        offset = start
+        freeze_ptr = self._lofasm_file.tell()
+        self._lofasm_file.seek(start)
+        try:
+            while not burstFound:
+                testBlock = self._lofasm_file.read(blockSize)
+                blockPtr = testBlock.find(burstKey)
+                if blockPtr:
+                    burstFound = True
+                    blockPtr = blockPtr + offset # correct for location in file
+                else: # key not found
+                    offset += blockSize
+        except EOFError:
+            print "reached end of file."
+            blockPtr = -1
+        
+        return blockPtr
+
     def open(self):
         #open file
         filename = self.filename
@@ -716,7 +744,8 @@ class LoFASMFileCrawler(object):
                 if self._file_hdr[2][1] == 1 or self._file_hdr[2][1] == 2:
                     self._data_start = 204896
                 else:
-                    self._data_start = 204908
+                    #self._data_start = 204908 # damn, i've forgotten where this number came from! 09/25/2017
+                    self._data_start = self._find_next_burst(start=0)
 
         #move file pointer to data location
         self._lofasm_file.seek(self._data_start)
