@@ -40,9 +40,9 @@ class FilterBankGen(object):
 
     def __init__(self, resolution_time, time_bin, resolution_freq, freq_bin):
         self.resolution_time = resolution_time
-        self.time_bin = time_bin
+        self.time_bin = int(time_bin)
         self.resolution_freq = resolution_freq
-        self.freq_bin = freq_bin
+        self.freq_bin = int(freq_bin)
 
 
     def gen_func(self, **kwarg):
@@ -119,8 +119,8 @@ class GaussianPulseGen(FilterBankGen):
         """
         time_axis = np.arange(0, self.resolution_time * self.time_bin, self.resolution_time)
         freq_axis = np.arange(0, self.resolution_freq * self.freq_bin, self.resolution_freq)
-        center_t = time_axis[center_time_bin]
-        center_f = freq_axis[center_freq_bin]
+        center_t = time_axis[int(center_time_bin)]
+        center_f = freq_axis[int(center_freq_bin)]
         g_data = np.zeros((self.freq_bin, self.time_bin))
         for ii, tt in enumerate(time_axis):
             for jj, ff in enumerate(freq_axis):
@@ -181,9 +181,9 @@ class FilterBank(object):
             self.read_from_file(filename, filetype)
         else:
             self.time_resolution = time_resolution
-            self.num_time_bin = num_time_bin
+            self.num_time_bin = int(num_time_bin)
             self.freq_resolution = freq_resolution
-            self.num_freq_bin = num_freq_bin
+            self.num_freq_bin = int(num_freq_bin)
             self.freq_start = freq_start
             self.time_start = time_start
             self.time_end = time_start + time_resolution * num_time_bin
@@ -261,7 +261,7 @@ class FilterBank(object):
         # find the min and max time
         new_start = time_range.min()
         new_end = time_range.max()
-        new_time_bin = (new_end - new_start)/self.time_resolution
+        new_time_bin = int((new_end - new_start)/self.time_resolution)
         new_flt_data = FilterBank('total', time_resolution=self.time_resolution,
                                   num_time_bin=new_time_bin,\
                                   freq_resolution=self.freq_resolution,
@@ -321,7 +321,7 @@ class FilterBank(object):
         # find the min and max time
         new_start = time_range.min()
         new_end = time_range.max()
-        new_time_bin = (new_end - new_start)/self.time_resolution
+        new_time_bin = int((new_end - new_start)/self.time_resolution)
         if new_start == self.time_start and new_end == self.time_end:
             self.data += other.data
         else:
