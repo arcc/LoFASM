@@ -73,7 +73,7 @@ if __name__ == "__main__":
     base_name  = name_field[0]
     # Out put data.
     if outfile == "":
-        outfile = base_name + '_cleand'
+        outfile = base_name + '_cleaned'
         if norm:
             outfile += '_normalized.bbx'
         if compress:
