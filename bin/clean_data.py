@@ -39,9 +39,9 @@ if __name__ == "__main__":
     compress = args.compress
     window_size = int(args.window_size)
     norm = args.normalize
-    outlier_thrhd = args.o_thresh
-    narrowband_thrhd = args.nb_thresh
-    wideband_thrhd = args.wb_thresh
+    outlier_thrhd = float(args.o_thresh)
+    narrowband_thrhd = float(args.nb_thresh)
+    wideband_thrhd = float(args.wb_thresh)
 
     lf = b.LofasmFile(infile)
     lf.read_data()
