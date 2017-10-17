@@ -177,15 +177,15 @@ def wide_band_mask(data,threshold=1.7):
 def clean(data):
 
     lf = b.LofasmFile(fname)
-    lf.read_data()      
+    lf.read_data()
     data = 10*np.log10(lf.data[args.lower_frequency_bin:args.upper_frequnecy_bin])
 
-    
+
     norm_data, normalize_array                                  = c.normalize(data,fast=args.fast)
     o_mask   , outlier_average_top, outlier_average_bottom      = c.outlier_mask(norm_data,threshold= args.o_thresh)
     nb_mask  , percent_clean_freq_channels                      = c.narrow_band_mask(norm_data,threshold= args.nb_thresh)
     wb_mask  , percent_clean_time                               = c.wide_band_mask(norm_data,threshold= args.wb_thresh)
-    
+
     print fname + '---------------------------'
     print 'top outlier average               : '+str(outlier_average_top)
     print 'bottom outlier average            : '+str(outlier_average_bottom)
@@ -193,11 +193,11 @@ def clean(data):
     print 'percentage of clean time          : '+str(percent_clean_time)
     print ''
     print '-------------------------------------------------------'
-    
+
     final = norm_data*wb_mask*o_mask*nb_mask
     final[np.isnan(final)]=1
     final = final*normalize_array
-    
+
 
     lfc = b.LofasmFile('Clean_' + fname.rstrip('.gz'), mode = 'write')
 

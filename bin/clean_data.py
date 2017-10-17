@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 from lofasm.clean import cleandata as c
+from lofasm.clean import normalizedata as n
 import lofasm.bbx.bbx as b
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,8 +19,10 @@ if __name__ == "__main__":
                         help="The output data file name.")
     parser.add_argument('-f', dest='fast',action='store_true',
                         help='Using the fast method to normalize data. ')
-    parser.add_argument('-w', dest='window_size',default=200,
-                        help='Normalize window size')
+    parser.add_argument('-mw', dest='median_window_size',default=200,
+                        help='Normalize running median window size')
+    parser.add_argument('-minw', dest='running_minimum_window_size',default=100,
+                        help='Normalize runing minimum window size')
     parser.add_argument('-c', dest='compress',action='store_true',
                         help='A flag for compressing data.')
     parser.add_argument('-n', dest='normalize',action='store_true',
@@ -37,7 +40,8 @@ if __name__ == "__main__":
     infile = args.infilename
     outfile = args.outfilename
     compress = args.compress
-    window_size = int(args.window_size)
+    med_window_size = int(args.median_window_size)
+    min_window_size = int(args.running_minimum_window_size)
     norm = args.normalize
     outlier_thrhd = float(args.o_thresh)
     narrowband_thrhd = float(args.nb_thresh)
@@ -45,8 +49,11 @@ if __name__ == "__main__":
 
     lf = b.LofasmFile(infile)
     lf.read_data()
-    norm_data, normalize_array = c.normalize(lf.data, fast=args.fast,
-                                             window=window_size)
+    # norm_data, normalize_array = n.robust_normalize(lf.data,
+    #                                          median_window=med_window_size,
+    #                                          running_min_window=min_window_size)
+    medianed_data = n.running_median(lf.data, median_window=med_window_size)
+    norm_data, normalize_array = c.normalize(medianed_data, window=med_window_size)
     o_mask, outlier_average_top, outlier_average_bottom	= c.outlier_mask(norm_data,
                                              threshold= outlier_thrhd)
     nb_mask, percent_clean_freq_channels = c.narrow_band_mask(norm_data,
@@ -75,7 +82,8 @@ if __name__ == "__main__":
     if outfile == "":
         outfile = base_name + '_cleaned'
         if norm:
-            outfile += '_normalized.bbx'
+            outfile += '_normalized'
+        outfile += '.bbx'
         if compress:
             outfile += '.gz'
     else:
