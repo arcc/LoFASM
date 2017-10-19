@@ -135,9 +135,10 @@ if __name__ == "__main__":
     else:
         sfd = fbs.FilterBank('simulate', data_gen=GENS['UniformDataGen'], \
                              **configs['top'])
+        print configs['top']
         sfd.generate_data(amp=0.0)
-        norm_sfd = fbs.FilterBank('Normalized_simulate', num_time_bin=sfd.num_time_bin, \
-                    num_freq_bin=sfd.num_freq_bin,\
+        norm_sfd = fbs.FilterBank('Normalized_simulate', num_time_bin=int(sfd.num_time_bin), \
+                    num_freq_bin=int(sfd.num_freq_bin),\
                     freq_resolution=sfd.freq_resolution, \
                     freq_start=sfd.freq_start,
                     time_start=sfd.time_start,
@@ -179,7 +180,6 @@ if __name__ == "__main__":
                              norm_sfd.time_start))
         norm_sfd += v
     noise_level = norm_sfd.data.std()
-    print "nv",noise_level
     signal = fbs.FilterBank('signals', num_time_bin=sfd.num_time_bin, \
                 num_freq_bin=sfd.num_freq_bin,\
                 freq_resolution=sfd.freq_resolution, \

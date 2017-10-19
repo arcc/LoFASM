@@ -1,0 +1,21 @@
+dummy LoFASM data file system for testing
+
+
+this file should be in the root directory.
+
+The structure of this directory is as follows:
+
+- Root Directory (where this file is located)
+    - 20170202
+        - 20170202_065550_AA.bbx.gz
+        - 20170202_065550_BB.bbx.gz
+        - 20170202_065550_DD.bbx.gz
+        - obs_session (sub data directory)
+            - 20170202_065550_CC.bbx.gz
+    - 29990102
+        - README
+    README
+
+
+Note: No .lofasm files have been included here because that file format is 
+being deprecated and should no longer be used for top level data analysis.

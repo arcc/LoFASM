@@ -58,14 +58,14 @@ class antenna(object):
 
         for element in self:
             self.V += np.dot(electric_field.eval(element.location),element.direction)*element.length
-#        self.V = np.dot(electric_field.eval(self.location),self.pol)*self.length
+    #        self.V = np.dot(electric_field.eval(self.location),self.pol)*self.length
 
             
         self.calculate_currents()
 
-#    def calculate_currents(self):
-#        for element in self:
-#            element.current = 30*speed_of_light*(self.V/self.impedance)
+    #    def calculate_currents(self):
+    #        for element in self:
+    #            element.current = 30*speed_of_light*(self.V/self.impedance)
 
 
     def generated_field(self):
@@ -104,7 +104,7 @@ class dipole_antenna(antenna):
         self.nu         = 0
         self.pol        = np.array(pol)
     
-#        pol = np.array([np.cos(orientation_angle),np.sin(orientation_angle),0])
+    #        pol = np.array([np.cos(orientation_angle),np.sin(orientation_angle),0])
      
         dl  = length/self.Nelements
         dx  = self.pol*dl
@@ -355,16 +355,16 @@ class antenna_array(object):
                 X[i,j] = R*np.sin(theta[i,j])*np.cos(phi[i,j])
                 Y[i,j] = R*np.sin(theta[i,j])*np.sin(phi[i,j])
                 Z[i,j] = R*np.cos(theta[i,j])
-#        X = np.arange(-1,1,.1)
-#        Y = np.arange(-1,1,.1)        
-#        X,Y = np.meshgrid(X,Y)
-#        theta = X.copy()
-#        phi   = X.copy()
-#        Z     = X.copy()
-#        for i in np.arange(X[:,0].size):
-#            for j in np.arange(Y[0,:].size):
-#                theta = np.arctan2(Y[i,j],X[i,j])
-#                phi   = 
+    #        X = np.arange(-1,1,.1)
+    #        Y = np.arange(-1,1,.1)        
+    #        X,Y = np.meshgrid(X,Y)
+    #        theta = X.copy()
+    #        phi   = X.copy()
+    #        Z     = X.copy()
+    #        for i in np.arange(X[:,0].size):
+    #            for j in np.arange(Y[0,:].size):
+    #                theta = np.arctan2(Y[i,j],X[i,j])
+    #                phi   = 
 
         surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cm.jet,linewidth=0, antialiased=False)
         ax.set_zlim(0.0, 1.01)        
@@ -383,7 +383,7 @@ class antenna_array(object):
         R = 10*np.log10([self.beam_pattern(theta,x,pol) for x in phi])
 
         plt.plot(phi,R)
-#        plt.polar(phi,R)
+    #        plt.polar(phi,R)
 
         
 
@@ -397,7 +397,7 @@ class antenna_array(object):
     
     def Omega_hfun(self,y):
         """Upper Limit in theta integration used by Omega()"""
-        return np.pi/2.0 
+        return np.pi/2.0 - 20*np.pi/180 # Added "- 20*np.pi/180" Oct9
 
     def Omega(self):
         """Calculates the integrated beam (0<theta<pi/2). Assumes Peak power is directly overhead"""
@@ -406,9 +406,9 @@ class antenna_array(object):
         [O2,err2] = integrate.dblquad(self.beam_pattern_integrand,0,2*np.pi,self.Omega_gfun,self.Omega_hfun,([0,1,0],0))
 
         Peak_power = self.beam_pattern(0,0,[0,0,1]) + self.beam_pattern(0,0,[0,1,0])
-#        print O1,err1
-#        print O2,err2
-#        print Peak_power
+    #        print O1,err1
+    #        print O2,err2
+    #        print Peak_power
         return (O1+O2)/Peak_power
 
     def H_gfun(self,y):

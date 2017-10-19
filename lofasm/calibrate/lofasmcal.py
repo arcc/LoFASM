@@ -6,9 +6,8 @@ import numpy as np
 import glob
 import lofasm.bbx.bbx as bb
 import lofasm.parse_data as pd
-import datetime
+import datetime, sidereal
 import scipy.optimize
-import datetime
 
 class calibrate:
 	"""	Class that contains and calibrates lofasm data.	
@@ -23,48 +22,45 @@ class calibrate:
 	freq : int or float, optional
 		The frequency to calibrate at in megahertz (the default is 20.0 MHz).
 	"""
-	def __init__(self, files, station, freq=20.0):
+	def __init__(self, files, station, freq=20.0, chan='CC'):
 
 		filelist = glob.glob(files)
 		self.filelist = sorted(filelist)
 		self.station = station
+		self.chan = chan
 		self.freqmhz = freq
-		self.freqbin = pd.freq2bin(freq)
 		self.res = len(filelist)
-
-		#~ date = self.filelist[0][-25:-17]
-		#~ self.date = datetime.datetime(int(date[:4]),
-									  #~ int(date[4:6]),
-									  #~ int(date[-2:]), 0, 0)
 
 		time_array = []
 		station_array = []
+		freqbin_array = []
 		for i in range(len(self.filelist)):
 
-			#~ if 'Clean_' in self.filelist[i]:
-				#~ head = bb.LofasmFile(self.filelist[i]).header
-				#~ file_startt = self.filelist[i][-22:-7]
-				#~ file_station = head['station']
-
-				#~ start_time = datetime.datetime.strptime(self.filelist[i][-22:-7],
-																#~ '%Y%m%d_%H%M%S')
-
-			#~ else:
 			head = bb.LofasmFile(self.filelist[i]).header
 			file_startt = head['start_time']
 			file_station = head['station']
+			file_pol = head['channel']
 			start_time = datetime.datetime.strptime(file_startt[:-8],
 													'%Y-%m-%dT%H:%M:%S')
-
+			bw = (float(head['dim2_span'])/1000000.0)/head['metadata']['dim2_len']
+			freqbin = int((self.freqmhz-(float(head['dim2_start'])/1000000.0))/bw)
 			time_array.append(start_time)
 			station_array.append(file_station)
+			freqbin_array.append(freqbin)
 
 		self.cali_array = [time_array, station_array]
+		self.freqbins = freqbin_array
 
 		for i in reversed(range(len(self.filelist))):
 			if self.cali_array[1][i] != str(self.station):
 				del self.cali_array[0][i]
 				del self.cali_array[1][i]
+
+		lfdic = {1:{'name':'LI', 'lat':[26,33,19.676], 'long':[97,26,31.174], 't_offset':6.496132851851852},
+				 2:{'name':'LII', 'lat':[34,04,43.497], 'long':[107,37,5.819], 't_offset':7.174552203703703},
+				 3:{'name':'LIII', 'lat':[38,25,59.0], 'long':[79,50,23.0], 't_offset':5.322648148148148},
+				 4:{'name':'LIV', 'lat':[34,12,3.0], 'long':[118,10,18.0], 't_offset':7.87811111111111}}
+		self.lfs = lfdic[station]
 
 	def add_files(self, files):
 		"""Add files to the calibrate class.
@@ -105,6 +101,7 @@ class calibrate:
 			if self.cali_array[1][i] != str(self.station):
 				del self.cali_array[0][i]
 				del self.cali_array[1][i]
+				del self.filelist[i]
 
 	def chfreq(self, new_freq):
 		"""Change to a new calibration frequency.
@@ -117,7 +114,7 @@ class calibrate:
 		self.freq = new_freq
 		self.freqbin = pd.freq2bin(new_freq)
 
-	def get_data(self):
+	def get_data(self, minimum=True):
 		"""Return an array of lofasm data for however many files are loaded to
 		calibrate class.
 
@@ -126,19 +123,24 @@ class calibrate:
 		"""
 		dsampled_power = []
 		datachunk = []
-
+		re = 'Reading data... '
 		for filename in range(len(self.filelist)):
 
 			dat = bb.LofasmFile(self.filelist[filename])
 			dat.read_data()
-			avg_10freq_bins = np.average(dat.data[self.freqbin-5:self.freqbin+5,:],
-								   axis=0) ##Avg 10 bins around frequency
-			avg_datafile_power = np.average(avg_10freq_bins)
-			dsampled_power = np.append(dsampled_power, avg_datafile_power)
+			avg_10freq_bins = np.average(dat.data[self.freqbins[filename]-5:self.freqbins[filename]+5,:],
+										 axis=0) ##Avg 10 bins around frequency
+			if minimum == True:
+				lowest_datafile_power = avg_10freq_bins.min()
+				dsampled_power = np.append(dsampled_power, lowest_datafile_power)
+			else:
+				avg_datafile_power = np.average(avg_10freq_bins)
+				dsampled_power = np.append(dsampled_power, avg_datafile_power)
 
-			#~ if (filename%100 == 0) or filename == 50:
 			p = (str(filename*100/len(self.filelist)) + '%')
-			sys.stdout.write("\r%s" % p)
+			if filename+1 not in range(len(self.filelist)):
+				p = 'Done'
+			sys.stdout.write("\r%s%s" % (re,p))
 			sys.stdout.flush()
 
 		return dsampled_power
@@ -155,25 +157,55 @@ class calibrate:
 
 		time_array = self.cali_array[0]
 
-		lfdic = {1:{'name':'LI', 'lat':[26,33,19.676], 'long':[97,26,31.174], 't_offset':6.496132851851852},
-				 2:{'name':'LII', 'lat':[34,04,43.497], 'long':[107,37,5.819], 't_offset':7.174552203703703},
-				 3:{'name':'LIII', 'lat':[38,25,59.0], 'long':[79,50,23.0], 't_offset':5.322648148148148},
-				 4:{'name':'LIV', 'lat':[34,12,3.0], 'long':[118,10,18.0], 't_offset':7.87811111111111}}
-		lfs = lfdic[self.station]
-		long_radians = (lfs['long'][0] + lfs['long'][1]/60.0 + lfs['long'][2]/3600.0)*np.pi/180.0
+		long_radians = (self.lfs['long'][0] + self.lfs['long'][1]/60.0 + self.lfs['long'][2]/3600.0)*np.pi/180.0
 
-		LoFASM = gm.station(lfs['name'],lfs['lat'],lfs['long'],FOV_color='b',
+		LoFASM = gm.station(self.lfs['name'],self.lfs['lat'],self.lfs['long'],FOV_color='b',
 							time=time_array[0],frequency=self.freqmhz,one_ring='inner',
 							rot_angle=rot_ang,pol_angle=pol_ang)
-		innerNS_FOV = 0.61975795698554226 #LoFASM.lofasm.Omega()
+		innerNS_FOV = LoFASM.lofasm.Omega() #0.61975795698554226
 		inner_conversion_NS = np.divide((np.power(np.divide(3.0*1.0e8,45.0e6),2)),(innerNS_FOV))
 
-		for i in range(len(time_array)):	#Change starting times in UTC to LST
+		for i in range(len(time_array)):
 			time_array[i] = time_array[i] + datetime.timedelta(seconds=150)# Make model times == middle of file times
 
 		power = np.multiply(LoFASM.calculate_gpowervslstarray(time_array),inner_conversion_NS)
-		#~ power = 10*np.log10(np.array(power))
-		print 'Done.'
+
+		return power
+
+	def interpol_galaxy(self):
+		"""Return galaxy model array from pregenerated model file.
+		"""
+		g = os.path.join(os.path.dirname(os.path.realpath(__file__)), '170204_gal.txt')
+		t = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'times_hrs.txt')
+		gall = np.loadtxt(g) #[20-70 MHz in 5 MHz increments]
+		sidereal_model_t = np.loadtxt(t)
+
+		west_long_deg = (self.lfs['long'][0] + self.lfs['long'][1]/60.0 + self.lfs['long'][2]/3600.0)
+		east_long_deg = 360.0 - west_long_deg
+		elr = east_long_deg*np.pi/180.0
+
+		utc_data_t = self.cali_array[0]
+		sidereal_data_t = []
+
+		for i in utc_data_t:
+			t = sidereal.SiderealTime.fromDatetime(i)
+			sidereal_data_t.append(t.lst(elr).hours)
+
+		freqchans = {20.0:0,25.0:1,30.0:2,35.0:3,40.0:4,45.0:5,50.0:6,55.0:7,60.0:8,65.0:9,70.0:10}
+		power = []
+
+		for i in range(len(sidereal_data_t)):
+			for j in range(len(sidereal_model_t)-1):
+				if sidereal_data_t[i] >= sidereal_model_t[j] and sidereal_data_t[i] <= sidereal_model_t[j+1]:
+					dt = sidereal_model_t[j+1]-sidereal_model_t[j]
+					half_bin = sidereal_model_t[j] + (dt/2.0)
+					if sidereal_data_t[i] < half_bin:
+						timebin = j
+					elif sidereal_data_t[i] >= half_bin:
+						timebin = j+1
+					power.append(gall[freqchans[self.freqmhz]][timebin])
+					print timebin
+					break
 
 		return power
 
@@ -199,14 +231,13 @@ class calibrate:
 		y0 = data
 		gbg = galaxy
 		l = range(self.res)
-		if galaxy == None:
+		if type(gbg) == type(None):
 
 			gbg = self.galaxy()
 
-		if data == None:
+		if type(y0) == type(None):
 
 			y0 = self.get_data()
-
 
 		if len(y0) != len(gbg):
 			raise Exception('Dimension mismatch: Array dimensions must be equal.')
@@ -283,14 +314,14 @@ class calibrateio:
 	freq : int or float, optional
 		The frequency to calibrate at in megahertz (the default is 20.0 MHz).
 	"""
-	def __init__(self, files, output, station, freq=20.0):
+	def __init__(self, files, output, station, freq=20.0, ):
 
 		cal = calibrate(files, station, freq=freq)
 
 		filelist = sorted(glob.glob(files))
 		dat1 = bb.LofasmFile(filelist[0])
 		dat1.read_data()
-		avgfull = np.average(dat1.data[cal.freqbin-5:cal.freqbin+5, :],
+		avgfull = np.average(dat1.data[cal.freqbins[0]-5:cal.freqbins[0]+5, :],
 							 axis=0) #First element of list of data arrays
 		list_of_powers = [avgfull]#List of data arrays (2d)
 		dat = np.average(list_of_powers[0]) #First element of dat array for calibration
@@ -302,7 +333,7 @@ class calibrateio:
 			bbfile = bb.LofasmFile(filelist[filei])
 			bbfile.read_data()
 			### Preparing array containing full power of each file
-			avgfull_power = np.average(bbfile.data[cal.freqbin-5:cal.freqbin+5, :],
+			avgfull_power = np.average(bbfile.data[cal.freqbins[filei]-5:cal.freqbins[filei]+5, :],
 										axis=0) ##Avg 10 bins around frequency
 			list_of_powers.append(avgfull_power)
 

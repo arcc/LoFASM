@@ -46,9 +46,9 @@ class station(object):
         self.aa = sidereal.AltAz(0,0)
         #self.hpmap = hp.read_map('/home/alex22x/bin/lofasm/calitools/LoFASM Calibration Scripts/Calibration Tools/lambda_haslam408_dsds.fits.txt',verbose=False) #Path to Haslam map
 #        self.hpmap = hp.read_map('lambda_haslam408_nofilt.fits.txt',verbose=False)
-	#self.hpmap = hp.read_map(os.path.join(os.path.dirname(__file__), "lambda_haslam408_dsds.fits.txt"))
+        #self.hpmap = hp.read_map(os.path.join(os.path.dirname(__file__), "lambda_haslam408_dsds.fits.txt"))
         self.hpmap = hp.read_map(raw_input('Path to skymap?'), verbose=False)
-
+        #~ self.hpmap = hp.read_map('/home/alex22x/Desktop/lambda_haslam408_dsds.fits.txt.gz', verbose=False)
         self.Rotator = hp.Rotator(coord=['C','G'])
 #        self.lofasm = v3.LoFASM(350.0)
 
@@ -88,7 +88,7 @@ class station(object):
 
         Tsky = hp.get_interp_val(self.hpmap,coords[0],coords[1])*(self.frequency/408.0)**(-2.55)
 
-        ans= self.lofasm.beam_pattern(theta,phi,[0,0,1])
+        ans = self.lofasm.beam_pattern(theta,phi,[0,0,1])
         ans += self.lofasm.beam_pattern(theta,phi,[0,1,0]) 
         ans *= (Tsky*(1.3804e-23)/wavelength**2)/(1e-26)/2.0
 
@@ -157,6 +157,7 @@ def galaxy():
 		rot_ang = 1
 		pol_ang = 1
 
+
 		time_array = [datetime.datetime(2017, 5, 25, 2, 0),
 					  datetime.datetime(2017, 5, 26, 7, 0),
 					  #~ datetime.datetime(2017, 5, 28, 1, 0),
@@ -164,7 +165,7 @@ def galaxy():
 					  datetime.datetime(2017, 6, 4, 2, 0)]
 
 		lfdic = {1:{'name':'LI', 'lat':[26,33,19.676], 'long':[97,26,31.174], 't_offset':6.496132851851852},
-				 2:{'name':'LII', 'lat':[34,04,43.497], 'long':[107,37,5.819], 't_offset':7.174552203703703},
+				 2:{'name':'LII', 'lat':[34,4,43.497], 'long':[107,37,5.819], 't_offset':7.174552203703703},
 				 3:{'name':'LIII', 'lat':[38,25,59.0], 'long':[79,50,23.0], 't_offset':5.322648148148148},
 				 4:{'name':'LIV', 'lat':[34,12,3.0], 'long':[118,10,18.0], 't_offset':7.87811111111111}}
 		lfs = lfdic[4]
