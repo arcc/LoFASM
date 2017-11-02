@@ -28,7 +28,7 @@ class data_handler(object):
 
         #Remove non lofasm files from filelist
         for f in reversed(self.filelist):
-            if not bb.is_lofasm_file(f):
+            if not bb.is_lofasm_bbx(f):
                 self.filelist.remove(f)
 
         re = 'Reading data...'
