@@ -8,7 +8,7 @@ import datetime
 import healpy as hp
 from astropy.time import Time
 import sys
-#Imports from this module:
+#Imports from simulate:
 import sidereal #3rd party
 import LoFASM_simulation_v3 as v3
 
@@ -116,12 +116,11 @@ class station(object):
 
         O = 0
         if (utc == -1):
-            self.__lst_current = self.lst()
+            self.__lst_current = self.lst() #Remove
         else:
 			t = sidereal.SiderealTime.fromDatetime(utc)
 			self.__lst_current = t.lst(self.east_long_radians)
 
-        #~ t0 = time.time()
         for cos_theta1,weights1 in zip(cos_theta,weights):
             theta1 = np.arccos(cos_theta1)
             for phi1 in phi:
@@ -129,7 +128,7 @@ class station(object):
 
         return O
 
-    def calculate_gpowervslstarray(self,utc_time,lst=''):
+    def calculate_gpowervslstarray(self,utc_time,verbose=True):
 
         power = []
         utc = utc_time
@@ -137,11 +136,12 @@ class station(object):
         ge = "Generating models... "
         for hour in utc:
             power.append(self.calculate_gnoise(utc=hour)) #If "lst=", type(hour)==datetime.datetime is true.
-            p = (str((utc.index(hour))*100/len(utc)) + '%')
-            if utc.index(hour) == (len(utc)-1):
-                p = "Done"
-            sys.stdout.write("\r%s%s" % (ge,p))
-            sys.stdout.flush()
+            if verbose==True:
+                p = (str((utc.index(hour))*100/len(utc)) + '%')
+                if utc.index(hour) == (len(utc)-1):
+                    p = "Done"
+                sys.stdout.write("\r%s%s" % (ge,p))
+                sys.stdout.flush()
 
         #~ print np.shape(utc)
 
