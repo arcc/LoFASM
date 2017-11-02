@@ -53,7 +53,8 @@ def running_min(data, running_min_window=100):
         min_data[ii,:] = np.amin(windowed_data[np.nonzero(windowed_data)])
     return min_data
 
-def robust_normalize(data, median_window=201, running_min_window=100):
+def robust_normalize(data, median_window=201, running_min_window=5,
+                           average_window = 201):
     """
     This is a function to normalize data. Normalize steps
     1. Running median on time axis for each frequency, to clean some short time
@@ -77,7 +78,14 @@ def robust_normalize(data, median_window=201, running_min_window=100):
     median_data = running_median(data, median_window)
     print("Performing running minimum filter.")
     min_data = running_min(median_data, running_min_window)
-    ave_min = np.sum(min_data, axis=1)/min_data.shape[1]
-    ave_min = np.atleast_2d(ave_min)
-    normal_data = np.divide(data, ave_min.T)
+    t_bin = min_data.shape[1]
+    normal_data = np.zeros_like(data)
+    for ii in range(0, t_bin - average_window):
+        windowed_min = min_data[:, ii : ii + average_window]
+        ave_min = np.sum(windowed_min, axis=1)/windowed_min.shape[1]
+        normal_data[:, ii] = data[:, ii] / ave_min
+        print ii
+    for ii in range(t_bin - average_window, t_bin):
+        print ii
+        normal_data[:, ii] = data[:, ii] / ave_min
     return normal_data, ave_min
