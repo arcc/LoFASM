@@ -84,8 +84,6 @@ def robust_normalize(data, median_window=201, running_min_window=5,
         windowed_min = min_data[:, ii : ii + average_window]
         ave_min = np.sum(windowed_min, axis=1)/windowed_min.shape[1]
         normal_data[:, ii] = data[:, ii] / ave_min
-        print ii
     for ii in range(t_bin - average_window, t_bin):
-        print ii
         normal_data[:, ii] = data[:, ii] / ave_min
     return normal_data, ave_min
