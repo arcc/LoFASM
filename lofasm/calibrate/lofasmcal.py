@@ -8,7 +8,7 @@ import scipy.optimize
 import lofasm.simulate.sidereal as sidereal
 import lofasm.bbx.bbx as bb
 import lofasm.parse_data as pd
-import simulate.galaxymodel as gm
+import lofasm.simulate.galaxymodel as gm
 
 class data_handler(object):
     def __init__(self):
