@@ -49,11 +49,11 @@ if __name__ == "__main__":
 
     lf = b.LofasmFile(infile)
     lf.read_data()
-    # norm_data, normalize_array = n.robust_normalize(lf.data,
-    #                                          median_window=med_window_size,
-    #                                          running_min_window=min_window_size)
-    medianed_data = n.running_median(lf.data, median_window=med_window_size)
-    norm_data, normalize_array = c.normalize(medianed_data, window=med_window_size)
+    norm_data, normalize_array = n.robust_normalize(lf.data,
+                                             median_window=med_window_size,
+                                             running_min_window=min_window_size)
+    #medianed_data = n.running_median(lf.data, median_window=med_window_size)
+    #norm_data, normalize_array = c.normalize(medianed_data, fast=True,  window=med_window_size)
     o_mask, outlier_average_top, outlier_average_bottom	= c.outlier_mask(norm_data,
                                              threshold= outlier_thrhd)
     nb_mask, percent_clean_freq_channels = c.narrow_band_mask(norm_data,
