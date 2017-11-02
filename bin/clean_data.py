@@ -19,9 +19,9 @@ if __name__ == "__main__":
                         help="The output data file name.")
     parser.add_argument('-f', dest='fast',action='store_true',
                         help='Using the fast method to normalize data. ')
-    parser.add_argument('-mw', dest='median_window_size',default=200,
+    parser.add_argument('-mw', dest='median_window_size',default=100,
                         help='Normalize running median window size')
-    parser.add_argument('-minw', dest='running_minimum_window_size',default=100,
+    parser.add_argument('-minw', dest='running_minimum_window_size',default=5,
                         help='Normalize runing minimum window size')
     parser.add_argument('-c', dest='compress',action='store_true',
                         help='A flag for compressing data.')

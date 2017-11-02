@@ -19,7 +19,7 @@ setup(
      'bin/skymap.py', 'bin/readfile.py', 'bin/waterfall.py', 'bin/stethoscope.py',
      'bin/record.py', 'bin/loco2bx.py', 'bin/lofasm_check_files.py', 'bin/lofasm2csv.py',
      'bin/simulate_dispered_filterbank.py', 'bin/cleanfile.py', 'bin/normalize_data.py',
-     'bin/clean_data.py'],
+     'bin/clean_data.py', 'bin/plotbbx.py'],
     description='LoFASM Tools',
     long_description=open('README.md').read(),
     install_requires=[
