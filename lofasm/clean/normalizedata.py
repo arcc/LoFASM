@@ -50,7 +50,8 @@ def running_min(data, running_min_window=100):
     full = np.vstack((np.zeros((half_window, data.shape[1])), full))
     for ii in range(0, f_bin):
         windowed_data = full[ii : ii + running_min_window,:]
-        min_data[ii,:] = np.amin(windowed_data[np.nonzero(windowed_data)])
+        nonzero = np.ma.masked_equal(windowed_data, 0)
+        min_data[ii,:] = np.amin(nonzero, axis=0).data
     return min_data
 
 def robust_normalize(data, median_window=201, running_min_window=5,
