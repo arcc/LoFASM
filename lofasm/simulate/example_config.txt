@@ -1,0 +1,44 @@
+<top>
+@num_time_bin: 3000
+@num_freq_bin: 2000
+@freq_resolution: 0.09e6
+@freq_start: 10e6
+@time_resolution: 0.08
+# Below is the zone for data generators and its parameters
+# Each block has to start with the generator name
+# The parameters for the generator should start with '@'
+<GaussianPulse1>
+@gen: GaussianPulseGen
+@path: ./
+@amp: 1
+@center_time_bin: 50
+@center_freq_bin: 1200
+@std_time: 0.5
+@std_freq: 10e6
+@snr: 10
+@dm: 20
+
+<GaussianPulse2>
+@gen: GaussianPulseGen
+@path: ./
+@amp: 1
+@center_time_bin: 10
+@center_freq_bin: 100
+@std_time: 0.3
+@std_freq: 5e6
+@snr: 10
+@dm: 3
+
+<GaussianPulse3>
+@gen: GaussianPulseGen
+@path: ./
+@amp: 1
+@center_time_bin: 20
+@center_freq_bin: 100
+@std_time: 0.1
+@std_freq: 15e6
+@snr: 8
+
+<FBWhiteNoise>
+@gen: FBWhiteNoiseGen
+@amp: 0.1
