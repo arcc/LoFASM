@@ -6,11 +6,12 @@ from distutils.core import setup
 setup(
     name='lofasm',
     version='0.1',
-    author=['Louis P. Dartez', 'Jing Luo'],
+    author=['Louis P. Dartez', 'Jing Luo', 'LoFASM Data Analysis Team'],
     author_email='louis.dartez@gmail.com',
 
     packages=['lofasm', 'lofasm.simulate', 'lofasm.bbx', 'lofasm.formats',
               'lofasm.clean', 'lofasm.data_file_info', 'lofasm.calibrate'],
+              
     scripts=['bin/initialize.py','bin/ten_gbe_recorder.py','bin/lofasm_plot.py',
     'bin/rec_snap.sh', 'bin/init_roach.sh', 'bin/simulate_signal_as_AA.py',
     'bin/simulate_zeros_as_AA.py', 'bin/lofasm-chop.py','bin/LoFASM_GUI.py',

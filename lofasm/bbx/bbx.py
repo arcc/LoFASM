@@ -6,6 +6,7 @@ import os
 import gzip
 import numpy as np
 import struct
+from copy import deepcopy
 
 SUPPORTED_FILE_SIGNATURES = ['\x02BX', 'ABX', 'BX']
 SUPPORTED_ENCODING_SCHEMES = ['raw256']
@@ -26,7 +27,7 @@ class LofasmFile(object):
     """
     def __init__(self, lofasm_file, header={}, verbose=False, mode='read', gz=None):
         self.debug = True if verbose else False
-        self.header = header
+        self.header = deepcopy(header)
 
         self.iscplx = None
         self.fpath = lofasm_file

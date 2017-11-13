@@ -663,6 +663,42 @@ class LoFASMFileCrawler(object):
         self.cross = None
         self.beams = None
 
+    def _find_next_burst(self, start=0):
+        '''
+        return the start location of the next packet burst
+
+        return -1 on failure to find burst
+        '''
+        burstKey = "\xde\xfc\xab"
+        blockSize = 8192*17
+        burstFound = False
+        testBlock = ''
+        offset = start
+        freeze_ptr = self._lofasm_file.tell()
+        self._lofasm_file.seek(start)
+        try:
+            while not burstFound:
+                testBlock = self._lofasm_file.read(blockSize)
+                blockPtr = testBlock.find(burstKey)
+                if blockPtr:
+                    burstFound = True
+                    blockPtr = blockPtr + offset # correct for location in file
+                else: # key not found
+                    offset += blockSize
+        except EOFError:
+            print "reached end of file."
+            blockPtr = -1
+        self._lofasm_file.seek(freeze_ptr)
+        return blockPtr
+
+    def moveToNextBurst(self):
+        ptr = self._find_next_burst(start=self._lofasm_file.tell())
+        if ptr == -1:
+            raise EOFError
+        self._lofasm_file.seek(ptr)
+        self._update_ptr()
+        self._update()
+
     def open(self):
         #open file
         filename = self.filename
@@ -716,7 +752,8 @@ class LoFASMFileCrawler(object):
                 if self._file_hdr[2][1] == 1 or self._file_hdr[2][1] == 2:
                     self._data_start = 204896
                 else:
-                    self._data_start = 204908
+                    #self._data_start = 204908 # damn, i've forgotten where this number came from! 09/25/2017
+                    self._data_start = self._find_next_burst(start=0)
 
         #move file pointer to data location
         self._lofasm_file.seek(self._data_start)
@@ -799,7 +836,7 @@ class LoFASMFileCrawler(object):
         #read and update pointers
         self._move_ptr(N-1)
         data = self._lofasm_file.read(self._int_size)
-        if data == '':
+        if len(data) < self._int_size:
             raise EOFError
         self._burst = LoFASM_burst(data)
         self._burst.create_LoFASM_beams()
@@ -825,8 +862,11 @@ class LoFASMFileCrawler(object):
     def _get_file_end_loc(self):
         '''Return end pointer value.'''
         freeze_ptr = self._lofasm_file.tell()
-        self._lofasm_file.seek(0,2) #move to end of file
-        end_ptr = self._lofasm_file.tell()
+        if self._file_hdr[2][1] < 4 and self.gz:
+            end_ptr = -1
+        else:
+            self._lofasm_file.seek(0,2) #move to end of file
+            end_ptr = self._lofasm_file.tell()
         self._lofasm_file.seek(freeze_ptr) #ptr back in place
         return end_ptr
 
@@ -861,7 +901,7 @@ class LoFASMFileCrawler(object):
             self._update(N)
         except EOFError:
             self.eof = True
-            print "End of LoFASM File."
+            raise EOFError
 
     def backward(self, N=1):
         '''Move back to previous integration.'''

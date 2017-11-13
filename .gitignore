@@ -2,5 +2,6 @@
 *~
 build/*
 dist/*
-
+*.vscode
 *.sublime-workspace
+.vscode/settings.json
