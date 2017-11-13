@@ -9,8 +9,14 @@ setup(
     author=['Louis P. Dartez', 'Jing Luo', 'LoFASM Data Analysis Team'],
     author_email='louis.dartez@gmail.com',
 
-    packages=['lofasm', 'lofasm.simulate', 'lofasm.bbx', 'lofasm.formats',
-              'lofasm.clean', 'lofasm.data_file_info', 'lofasm.calibrate'],
+    packages=['lofasm',
+              'lofasm.simulate',
+              'lofasm.bbx',
+              'lofasm.formats',
+              'lofasm.clean',
+              'lofasm.data_file_info',
+              'lofasm.calibrate',
+              'lofasm.filter'],
               
     scripts=['bin/lofasm_plot.py',
              'bin/simulate_signal_as_AA.py',
