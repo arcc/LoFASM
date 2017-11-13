@@ -23,7 +23,7 @@ setup(
              'bin/simulate_zeros_as_AA.py',
              'bin/lofasm-chop.py',
              'bin/LoFASM_GUI.py',
-             'bin/lofasm2fi3l.py',
+             'bin/lofasm2fil.py',
              'bin/fbplot.py',
              'bin/applyDelay.py',
              'bin/lofasm2d.py',
@@ -46,6 +46,9 @@ setup(
     install_requires=[
         "matplotlib >= 1.1.1",
         "numpy >= 1.6.2",
-        "scipy",
-        "astropy"],
+        "scipy >= 0.18.1",
+        "astropy >= 2.0.2",
+        "sidereal",
+        "Sphinx >= 1.5",
+        "healpy >= 1.11.0"],
 )
