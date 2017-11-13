@@ -1,5 +1,5 @@
-#methods to facilitate creating LoFASM data 
-#structures for simulating purposes
+# methods to facilitate creating LoFASM data 
+# structures for simulating purposes
 
 import numpy as np
 import struct
