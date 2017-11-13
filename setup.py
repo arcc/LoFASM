@@ -17,7 +17,7 @@ setup(
              'bin/simulate_zeros_as_AA.py',
              'bin/lofasm-chop.py',
              'bin/LoFASM_GUI.py',
-             'bin/lofasm2fil.py',
+             'bin/lofasm2fi3l.py',
              'bin/fbplot.py',
              'bin/applyDelay.py',
              'bin/lofasm2d.py',
