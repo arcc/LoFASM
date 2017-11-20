@@ -3,29 +3,90 @@
 from lofasm.bbx.bbx import LofasmFile
 import numpy as np
 import matplotlib.pyplot as plt
-import argparse
+import os
+from lofasm.parse_data_H import Baselines
+import re
 
+def plot_single_file(bbxFile, **kwargs):
+    '''
+    Produce waterfall plot window of a single bbx file
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('inputfile', help="path to input file")
-    parser.add_argument('-l', dest='loged', action='store_true', help='plot loged data')
-    args = parser.parse_args()
+    power scaling is in dB; 10*np.log10(data) is plotted
 
-    infile = args.inputfile
-    loged = args.loged
+    Parameters
+    ----------
+    bbxFile : str
+        Path to bbx file to plot.
+    **kwargs
+        Arbitrary keyword args.
+    '''
+
+    infile = bbxFile
     f = LofasmFile(infile)
     f.read_data()
     dim10 = float(f.header['dim1_start'])
     dim11 = float(f.header['dim1_span']) + dim10
     dim20 = float(f.header['dim2_start'])
     dim21 = float(f.header['dim2_span']) + dim20
-    if loged:
-        data = 10*np.log10(f.data)
-    else:
-        data = f.data
-    plt.imshow(data, aspect='auto', origin='lower', cmap ='hot',
-                   interpolation='none', extent=[dim10, dim11, dim20, dim21])
+    data = 10*np.log10(f.data)
+    plt.imshow(data if f.header['metadata']['complex']==1 else np.abs(data)**2,
+               aspect='auto', origin='lower', cmap ='hot',
+               interpolation='none', extent=[dim10, dim11, dim20, dim21])
     plt.title(infile) 
+    plt.xlabel("Time sample")
+    plt.ylabel("Frequency (Hz)")
     plt.colorbar()
-    plt.show() 
+
+    if kwargs.has_key('savefig'):
+        bn = os.path.basename(bbxFile)
+        plt.savefig(bn + '.png')
+    if not kwargs.has_key('suppress'):
+        plt.show()
+    plt.clf()
+
+def plot_all_available_pols(bbxPrefix, **kwargs):
+    '''Scan local directory for bbxPrefix and generate plot with all available
+    matching polarization bbx files.
+
+    Parameters
+    ----------
+    bbxPrefix : str
+        bbx prefix to scan for in local directory.
+    
+        arbitrary keyword arguments
+    savefig : bool 
+        save image in local directory if true. 
+    '''
+
+    regex = '^{}_[A-Z]{{2}}.bbx*'.format(bbxPrefix)
+    files = [f for f in os.listdir('.') if re.match(regex,f)]
+    if not files:
+        raise RuntimeError("No files matching {}".format(regex))
+    pols = kwargs['pols'].split(',')
+    files = [files[i] for i in range(len(files)) if [p for p in pols if p in files[i]] ]
+    
+    for f in files:
+        print "Processing {}...".format(f)
+        plot_single_file(f, suppress=True, savefig=True)
+    
+
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('inputfile', help="path to input file")
+    parser.add_argument('-p', action='store_true',
+                         help="Set to plot all available polarizations of prefix.")
+    parser.add_argument('--savefig', '-s', help="save figure in local direcotry",
+                        type=bool, default=False)
+    parser.add_argument('--pols', help="pols to plot. comma separated list",
+                        default=",".join(Baselines))
+    args = parser.parse_args()
+
+    pols = (args.pols).split()
+
+    if args.p:
+        plot_all_available_pols(args.inputfile, pols=args.pols, savefig=True)
+    else:
+        plot_single_file(args.inputfile)
