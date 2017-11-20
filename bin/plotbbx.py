@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 
 from lofasm.bbx.bbx import LofasmFile
 import numpy as np
