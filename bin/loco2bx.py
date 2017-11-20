@@ -1,4 +1,4 @@
-#! python
+#!/usr/bin/env python
 # Converts .lofasm files to .bbx or .abx files.
 # Run with option -h or --help for full usage information.
 
@@ -118,6 +118,10 @@ for inname in args.files:
         elif field[0] == "int_time":
             int_time = float( field[1] )
 
+    ## THROW AWAY THE EMPTY HALF OF THE FREQUENCY BINS 
+    nbins = nbins//2
+    ##
+
     while not EOF_REACHED:
         nint = 0 # new subfile
         if subfile_id > 0:
@@ -179,7 +183,7 @@ for inname in args.files:
                 # Get the data.
                 try:
                     crawler.setPol( pol )
-                    fdata = crawler.get()
+                    fdata = crawler.get()[:nbins]
                 except:
                     datfile.close()
                     try:
@@ -219,8 +223,8 @@ for inname in args.files:
             except EOFError:
                 EOF_SUBFILE = True
                 EOF_REACHED = True
-        nin += 1
         print "Closing subfile {} with {} integrations.".format(tstart, nint)
+        
         # Close data files.
         for datfile in datfiles:
             datfiles[datfile].close()
