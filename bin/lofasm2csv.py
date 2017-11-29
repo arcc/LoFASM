@@ -3,14 +3,15 @@ from time import time
 import numpy as np
 import sys
 import os
+from datetime import datetime
 
 # LOFASM_FILE = '20160223_163528.lofasm'
 
-pols = ['AA','BB','CC','DD','AB','AC','AD','BC','BD','CD']
+pols = ['AA', 'BB', 'CC', 'DD', 'AB', 'AC', 'AD', 'BC', 'BD', 'CD']
 
 
 def writeRow(dfile, data):
-    #check data type
+    # check data type
     if type(data[0]) in [np.int64, np.float64]:
         row = ','.join([str(x) for x in data])
     elif type(data[0]) in [np.complex128, np.complex64]:
@@ -82,7 +83,7 @@ def convert_lofasm_file(lofasm_file, pols=pols):
 def convert_bbx_file(lofasm_file):
     from lofasm.bbx import bbx
 
-    lf = bbx.LofasmFileClass(lofasm_file)
+    lf = bbx.LofasmFile(lofasm_file)
     lf.read_data()
 
     csvname = get_csv_filename(lofasm_file)
@@ -108,7 +109,9 @@ if __name__ == "__main__":
     import argparse
 
     p = argparse.ArgumentParser(description="Convert lofasm to csv format.")
-    p.add_argument('lofasm_file', type=str,
+
+    # target files will be collected into a list, even if there's only one.
+    p.add_argument('lofasm_file', type=str, nargs='+',
                    help="path to lofasm file to convert")
     p.add_argument('-l', action='store_true', dest='lofasm',
                    help="if set then process as old .lofasm file")
@@ -122,12 +125,18 @@ if __name__ == "__main__":
         input_pols = [x.upper() for x in args.pols.split(',')]
         for p in input_pols:
             if p not in pols:
-                raise ValueError ("{} is an unrecognized polarization".format(p))
+                raise ValueError("{} is an unrecognized pol.".format(p))
 
-    LOFASM_FILE = args.lofasm_file
-
-    if args.lofasm:
-        convert_lofasm_file(LOFASM_FILE, input_pols)
-    else:
-        convert_bbx_file(LOFASM_FILE)
-
+    # loop all target files and convert 1 by 1
+    now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    print "{} - Processing {} input files.".format(now, len(args.lofasm_file))
+    sys.stdout.flush()
+    for target_file in args.lofasm_file:
+        now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        print "{} - Starting to process {}".format(now, target_file)
+        sys.stdout.flush()
+        if args.lofasm:
+            convert_lofasm_file(target_file, input_pols)
+        else:
+            convert_bbx_file(target_file)
+ 
