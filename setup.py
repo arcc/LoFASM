@@ -11,7 +11,9 @@ setup(
 
     packages=['lofasm', 'lofasm.simulate', 'lofasm.bbx', 'lofasm.formats',
               'lofasm.clean', 'lofasm.data_file_info', 'lofasm.calibrate'],
-              
+    package_dir={'lofasm.simulate': 'lofasm/simulate'},
+    package_data={'lofasm.simulate': ['lambda_haslam408_dsds.fits.txt']},
+
     scripts=['bin/lofasm_plot.py',
              'bin/simulate_signal_as_AA.py',
              'bin/simulate_zeros_as_AA.py',
@@ -34,12 +36,7 @@ setup(
              'bin/normalize_data.py',
              'bin/clean_data.py',
              'bin/plotbbx.py'],
-             
+
     description='LoFASM Tools',
     long_description=open('README.md').read(),
-    install_requires=[
-        "matplotlib >= 1.1.1",
-        "numpy >= 1.6.2",
-        "scipy",
-        "astropy"],
 )
