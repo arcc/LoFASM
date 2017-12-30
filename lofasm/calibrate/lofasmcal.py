@@ -138,6 +138,7 @@ class data_handler(object):
         """Takes a calibration time in hours and returns
         """
 
+
 class galaxy(object):
     def __init__(self):
 
@@ -151,7 +152,7 @@ class galaxy(object):
 
     def galaxy_power_array(self, time_array, freq, station, verbose=True):
 
-        time_list = list(time_array) #Convert nparray to list - for %age
+        time_list = list(time_array)  # Convert nparray to list - for %age
         lfs = self.lfdic[station]
         long_radians = (lfs['long'][0] + lfs['long'][1]/60.0 + lfs['long'][2]/3600.0)*np.pi/180.0
 
@@ -165,8 +166,8 @@ class galaxy(object):
         #     time_list[i] = time_list[i] + datetime.timedelta(seconds=150)# Make model times == middle of 5min file times
 
         power = np.multiply(LoFASM.calculate_gpowervslstarray(time_list, verbose=verbose),conversion)
-
         return power
+
 
 class fitter(object):
     def __init__(self, data, galaxy):

@@ -13,19 +13,21 @@ SUPPORTED_ENCODING_SCHEMES = ['raw256']
 SUPPORTED_HDR_TYPES = ['LoFASM-filterbank', 'LoFASM-dedispersion-dm-time']
 REQUIRED_HDR_COMMENT_FIELDS = {
     'LoFASM-filterbank': ['hdr_type', 'hdr_version', 'station', 'channel',
-                       'dim1_start', 'dim1_span', 'dim2_start', 'dim2_span',
-                       'data_type'],
-    'LoFASM-dedispersion-dm-time': ['hdr_type', 'hdr_version', 'station', 'channel',
-                       'dim1_start', 'dim1_span', 'dim2_start', 'dim2_span',
-                       'data_type']
+                          'dim1_start', 'dim1_span', 'dim2_start', 'dim2_span',
+                          'data_type'],
+    'LoFASM-dedispersion-dm-time': ['hdr_type', 'hdr_version', 'station',
+                                    'channel', 'dim1_start', 'dim1_span',
+                                    'dim2_start', 'dim2_span', 'data_type']
 }
+
 
 class LofasmFile(object):
     """Class to represent .bbx-type data files for LoFASM.
-
     Currently, the only data format supported is 'LoFASM-filterbank'.
     """
-    def __init__(self, lofasm_file, header={}, verbose=False, mode='read', gz=None):
+    def __init__(self, lofasm_file, header={}, verbose=False,
+                 mode='read', gz=None):
+
         self.debug = True if verbose else False
         self.header = deepcopy(header)
 
@@ -47,7 +49,7 @@ class LofasmFile(object):
         # check existence of file
         if not os.path.exists(lofasm_file):
             if mode == 'read':
-                raise RuntimeError("File does not exist: {}".format(lofasm_file))
+                raise RuntimeError("File does not exist: " + str(lofasm_file))
         elif mode == 'read':
             assert(os.path.getsize(lofasm_file) > 0), "File is empty"
 
