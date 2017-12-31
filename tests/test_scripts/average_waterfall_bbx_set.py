@@ -14,7 +14,11 @@ def averageFileSpectra(f):
     '''
     lfx = bbx.LofasmFile(f)
     lfx.read_data()
-    return np.average(lfx.data, axis=1)
+    if lfx.iscplx:
+        result = np.average(np.abs(lfx.data)**2, axis=1)
+    else:
+        result = np.average(lfx.data, axis=1)
+    return result
 
 if __name__ == "__main__":
     import argparse
@@ -28,6 +32,10 @@ if __name__ == "__main__":
     flist = glob(os.path.join(args.datasetdir, "*.bbx.gz"))
     flist.sort()
 
+    lfx = bbx.LofasmFile(flist[0])
+    pol = lfx.header['channel']
+    lfx.close()
+
     data = np.zeros((1024, len(flist)), dtype=np.float64)
     for i in range(len(flist)):
         re = "Processing {}/{}".format(i+1,len(flist))
@@ -37,11 +45,11 @@ if __name__ == "__main__":
         data[:,i] = avgSpectra
 
     if args.savedata:
-        with open('waterfall_out_data_freqvtime.numpy', 'w') as f:
+        with open('waterfall_out_data_freqvtime_{}.numpy'.format(pol), 'w') as f:
             data.tofile(f)
 
     plt.figure()
     plt.title("L1 Avg. PvF over Time")
     plt.imshow(10*np.log10(data), aspect='auto')
-    plt.savefig('waterfall.png', format='png')
+    plt.savefig('waterfall_{}.png'.format(pol), format='png')
     
