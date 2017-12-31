@@ -31,10 +31,16 @@ if __name__ == "__main__":
 
     freqlist = [float(x) for x in args.frequency]
     freqlist.sort()
-    flist = glob(os.path.join(args.dataDir, '*.bbx.gz'))
+
+    if not args.lofasm:
+        flist = glob(os.path.join(args.dataDir, '*.bbx*'))
+    else:
+        flist = glob(os.path.join(args.dataDir, '*.lofasm*'))
     flist.sort()
     
+    
     N = len(flist)
+
 
     # get polarization
     if not args.lofasm:
@@ -45,7 +51,7 @@ if __name__ == "__main__":
     else:
         lofasm_mode = True
         pol = (args.pol).upper()
-    
+
     freqVTime = np.zeros((len(freqlist), N), dtype=np.float64)
 
     # loop over files

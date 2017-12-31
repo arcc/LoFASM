@@ -3,7 +3,7 @@ from lofasm.parse_data import freq2bin, LoFASMFileCrawler
 from astropy.time import Time
 from datetime import datetime
 from lofasm.parse_data_H import IntegrationError
-
+from copy import deepcopy
 
 def _load_data(filename, pol):
     '''
@@ -82,7 +82,7 @@ def freq_average_file(filename, freqs, pol, bw=1.):
             avg_ts = np.average(filedata[lfbin:hfbin,:], axis=0)
             freq_avg_list.append(deepcopy(avg_ts))
         rows = len(freq_avg_list)
-        cols = max([len(x) for x in freq_avg])
+        cols = max([len(x) for x in freq_avg_list])
         data = np.zeros((rows,cols), dtype=np.float64)
         for i in range(rows):
             data[i,:] = freq_avg_list[i]

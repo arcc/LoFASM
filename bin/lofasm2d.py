@@ -14,6 +14,10 @@ import numpy as np
 from lofasm import filter
 import sidereal
 from time import time
+import os
+from glob import glob
+from lofasm.parse_data_H import IntegrationError
+
 
 east_long_radians = 4.243069944523414
 lat_radians = 0.6183119763398577
@@ -38,8 +42,8 @@ if __name__ == "__main__":
     '''
     
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("filelist",
-                        help="file containing paths to lofasm files to process. one on each line.")
+    parser.add_argument("dataDir",
+                        help="directory containing paths to lofasm files to process.")
     parser.add_argument("polarization",
                         help="choice of polarization to process", type=str)
     parser.add_argument('-c', '--cadence', help="process every Nth sample. default is 10", type=int, default=10)
@@ -52,7 +56,7 @@ if __name__ == "__main__":
 
 
     
-    assert os.path.exists(args.filelist) #ensure input filelist exists
+
     assert args.hf <= 100.0 #frequency range, MHz
     assert args.lf >= 0.0
 
@@ -61,9 +65,8 @@ if __name__ == "__main__":
                 if not args.output.endswith('.lofasm2d') else args.output,'wb')
     
     #parse input filelist
-    with open(args.filelist, 'r') as f:
-        #only take files which end in ".lofasm" and are not commented out with '#'
-        flist = [x.rstrip('\n') for x in f if x.rstrip('\n').endswith('.lofasm') and not x.startswith('#')]
+    flist = glob(os.path.join(args.dataDir, '*.lofasm'))
+    flist.sort()
 
     Nfiles = len(flist)
     Tsamp = pdat.getSampleTime(8192)
@@ -94,7 +97,7 @@ if __name__ == "__main__":
             print "{}/{} processing {}".format(flist.index(f), len(flist), f),
             sys.stdout.flush()
 
-            crawler = pdat.LoFASMFileCrawler(os.path.join(os.path.dirname(args.filelist), f))        
+            crawler = pdat.LoFASMFileCrawler(os.path.join(args.dataDir, f))        
             crawler.open()
             crawler.setPol(args.polarization.upper())
             n = crawler.getNumberOfIntegrationsInFile() / cadence
@@ -111,18 +114,27 @@ if __name__ == "__main__":
             data[:,i] = dfilt #complex array
             
             i+=1
+            badIntegration = False
             for k in range(n-1):
-                crawler.forward(cadence)
-                timestamps.append(crawler.time.datetime)
-                dfilt = filter.medfilt(np.conj(crawler.get()[LBIN:HBIN]), medfilt_stride)
+                try:
+                    if badIntegration:
+                        crawler.moveToNextBurst()
+                    else:
+                        crawler.forward(cadence)
+                    timestamps.append(crawler.time.datetime)
+                    dfilt = filter.medfilt(np.conj(crawler.get()[LBIN:HBIN]), medfilt_stride)
 
-                #dfft_raw = np.fft.fft(dfilt)
-                #dfft[:Nbins/2] = dfft_raw[Nbins/2:]
-                #dfft[Nbins/2:] = dfft_raw[:Nbins/2]
+                    #dfft_raw = np.fft.fft(dfilt)
+                    #dfft[:Nbins/2] = dfft_raw[Nbins/2:]
+                    #dfft[Nbins/2:] = dfft_raw[:Nbins/2]
 
-                #data[:,i] = np.abs(dfft)**2
-                data[:,i] = dfilt
-                i+=1
+                    #data[:,i] = np.abs(dfft)**2
+                    data[:,i] = dfilt
+                    i+=1
+                except IntegrationError:
+                    badIntegration = True
+                except EOFError:
+                    break
 
             exitLoop = time()
             print "\t {}s".format(exitLoop - enterLoop)
