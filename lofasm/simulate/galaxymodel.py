@@ -16,7 +16,8 @@ class station(object):
 
     def __init__(self, name, lat, west_long, FOV_color=[0,0,0],
                  FOV_radius=23, time=0, frequency=20.0, config='',
-                 rot_angle=0.0, pol_angle=8*np.pi/9.0):
+                 rot_angle=0.0, pol_angle=8*np.pi/9.0,
+                 horizon_cutoff_alt=0.0):
 
         self.name        = name
         self.lat         = [np.float(x) for x in lat]
@@ -39,7 +40,8 @@ class station(object):
 
         self.FOV_collection = 0
         self.config = config
-
+        self.horizon_cutoff_costheta = np.cos(np.pi/2 - horizon_cutoff_alt*np.pi/180.)
+        
         if not type(time) == datetime.datetime:
             self.time = datetime.datetime.utcnow()
         else:
@@ -51,11 +53,14 @@ class station(object):
                                  verbose=False)
         self.Rotator = hp.Rotator(coord=['C','G'])
 
-        if(config=='inner' or config=='outer'):
-            radius = 441. if config=='inner' else np.sqrt(3.)*441.
-            self.lofasm = v3.LoFASM_onering(radius,rot_angle=rot_angle,pol_angle=pol_angle)
-        elif config=='':
-            self.lofasm = v3.LoFASM(441.0,rot_angle=rot_angle,pol_angle=pol_angle)
+        print "CONFIG: ", config
+        if (config == 'inner' or config == 'outer'):
+            radius = 441. if config == 'inner' else np.sqrt(3.)*441.
+            self.lofasm = v3.LoFASM_onering(radius, rot_angle=rot_angle,
+                                            pol_angle=pol_angle)
+        elif config == '':
+            self.lofasm = v3.LoFASM(441.0, rot_angle=rot_angle,
+                                    pol_angle=pol_angle)
 
         self.lofasm.set_frequency(frequency)
 
@@ -99,7 +104,7 @@ class station(object):
 
         M = 30
         gasleg = np.polynomial.legendre.leggauss(M)
-        locs = np.where(gasleg[0] > 0)
+        locs = np.where(gasleg[0] > self.horizon_cutoff_costheta)
         cos_theta = gasleg[0][locs]
 
         phi = np.arange(0,2*np.pi,2*np.pi/(2.0*M))

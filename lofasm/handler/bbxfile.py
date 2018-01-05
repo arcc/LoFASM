@@ -45,10 +45,8 @@ def freq_average_file(filename, freqs, bw=1.):
     else:
         lfbin = freq2bin(freqs - bw / 2.)
         hfbin = freq2bin(freqs + bw / 2.)
-        num_fbins = hfbin - lfbin
-        avg_ts = np.average(lfx.data[lfbin:hfbin,:], axis=0)
+        avg_ts = np.average(lfx.data[lfbin:hfbin, :], axis=0)
         data = avg_ts
-        
     lfx.close()
     return data
 

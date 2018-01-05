@@ -96,6 +96,7 @@ class FileListHandler(object):
                     file_start_mjds.append(mjd_timestamp)
             except:
                 print "\nunable to process {}\n".format(f)
+                self.flist.remove(f)  # remove from file list
                 
             i += 1
                 
@@ -137,7 +138,7 @@ class LofasmFileListHandler(FileListHandler):
         '''
         
         # verify inputs
-        assert os.path.isdir(dirPath), "Unable to open the dataset directory."
+        #assert os.path.isdir(dirPath), "Unable to open the dataset directory."
         super(LofasmFileListHandler, self).__init__(dirPath)
 
         self.mjdRange = mjdRange
@@ -170,7 +171,7 @@ class BbxFileListHandler(FileListHandler):
         '''
         
         # verify inputs
-        assert os.path.isdir(dirPath), "Unable to open the dataset directory."
+        assert os.path.isdir(dirPath), "Unable to open the dataset directory: {}".format(dirPath)
         pol = pol.upper()
         assert pol in Baselines, "Unrecognized Baseline"
         
@@ -191,6 +192,9 @@ class BbxFileListHandler(FileListHandler):
     def _getMjdStartTimeFromFileHeader(self, f):
         lfx = bbx.LofasmFile(f)
         hdr = lfx.header
+        if not lfx.header['metadata']['dim1_len']:
+            raise ValueError("no data in this file")
+
         startt = hdr['start_time']
         startt_repr = startt[:-8] if 'T' in startt else startt
         dfmt = self.startt_fmts[0] if 'T' in startt else self.startt_fmts[1]
