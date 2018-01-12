@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
         # Open file and read metadata.
         try:
-            crawler = pdat.LoFASMFileCrawler( inname )
+            crawler = pdat.LoFASMFileCrawler( inname, unpack_binary=args.ascii)
             crawler.open()
             header = crawler.getFileHeader()
             tstart = crawler.time_start.datetime.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -161,8 +161,8 @@ if __name__ == "__main__":
             # Open data files for each polarization.
             datfiles = {}
             tstart_str = crawler.time.datetime.strftime("%Y%m%d_%H%M%S")
-            tstart = tstart_str # for compatibility / laziness
-            print "Starting subfile: ", tstart        
+            tstart = crawler.time.datetime.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            print "Starting subfile: ", tstart_str
             for pol in filepols:
                 if args.ascii:
                     outname = tstart_str + "_" + pol + ".abx"
@@ -198,7 +198,6 @@ if __name__ == "__main__":
                     # Get the data.
                     try:
                         crawler.setPol( pol )
-                        fdata = crawler.get()[:nbins]
                     except:
                         datfile.close()
                         try:
@@ -211,33 +210,31 @@ if __name__ == "__main__":
                         continue
 
                     # Write this integration to data file.
-                    if pol[0] == pol[1]:
-                        if args.ascii:
+                    if args.ascii:
+                        fdata = crawler.get()
+                        if pol[0] == pol[1]:
                             hexwrite( datfile, struct.pack( realfmt, *fdata ) )
                             datfile.write( "\n" )
                         else:
-                            datfile.write( struct.pack( realfmt, *fdata ) )
-                    else:
-                        i = 0;
-                        for f in fdata:
-                            cplxbuf[i] = f.real
-                            cplxbuf[i+1] = f.imag
-                            i += 2
-                        if args.ascii:
+                            i = 0
+                            for f in fdata:
+                                cplxbuf[i] = f.real
+                                cplxbuf[i+1] = f.imag
+                                i += 2
                             hexwrite( datfile, struct.pack( cplxfmt, *cplxbuf ) )
                             datfile.write( "\n" )
-                        else:
-                            datfile.write( struct.pack( cplxfmt, *cplxbuf ) )
+                    else:
+                        datfile.write(crawler.get().getvalue())
 
                 # End loop over polarizations.
 
                 # Advance to next integration.
                 try:
-                    crawler.forward( 1 )
                     nint += 1
+                    crawler.forward( 1 )
                 except IntegrationError: # encountered corrupt data
                     EOF_SUBFILE = True
-                    print "Closing subfile {} with {} integrations.".format(tstart, nint)           
+                    print "Closing subfile {} with {} integrations.".format(tstart, nint)
                 except EOFError:
                     EOF_SUBFILE = True
                     EOF_REACHED = True
@@ -266,29 +263,29 @@ if __name__ == "__main__":
                     hdrfile.write( "%ABX\n" )
                 else:
                     hdrfile.write( "%\x02BX\n" )
-                    hdrfile.write( "%hdr_type: LoFASM-filterbank\n" )
-                    hdrfile.write( "%hdr_version: " )
-                    hexwrite( hdrfile, struct.pack( "f", version ) )
-                    hdrfile.write( "\n" )
-                    hdrfile.write( "%station: {}\n".format( station ) )
-                    hdrfile.write( "%channel: {}\n".format( pol ) )
-                    hdrfile.write( "%start_time: {}\n".format( tstart ) )
-                    hdrfile.write( "%time_offset_J2000: 0 (s)\n" )
-                    hdrfile.write( "%frequency_offset_DC: 0 (Hz)\n" )
-                    hdrfile.write( "%dim1_label: time (s)\n" )
-                    hdrfile.write( "%dim1_start: {}\n".format( toff ) )
-                    hdrfile.write( "%dim1_span: {}\n".format( int_time*nint ) ) 
-                    hdrfile.write( "%dim2_label: frequency (Hz)\n" )
-                    hdrfile.write( "%dim2_start: {}\n".format( fstart ) )
-                    hdrfile.write( "%dim2_span: {}\n".format( fstep*nbins ) )
+                hdrfile.write( "%hdr_type: LoFASM-filterbank\n" )
+                hdrfile.write( "%hdr_version: " )
+                hexwrite( hdrfile, struct.pack( "f", version ) )
+                hdrfile.write( "\n" )
+                hdrfile.write( "%station: {}\n".format( station ) )
+                hdrfile.write( "%channel: {}\n".format( pol ) )
+                hdrfile.write( "%start_time: {}\n".format( tstart ) )
+                hdrfile.write( "%time_offset_J2000: 0 (s)\n" )
+                hdrfile.write( "%frequency_offset_DC: 0 (Hz)\n" )
+                hdrfile.write( "%dim1_label: time (s)\n" )
+                hdrfile.write( "%dim1_start: {}\n".format( toff ) )
+                hdrfile.write( "%dim1_span: {}\n".format( int_time*nint ) ) 
+                hdrfile.write( "%dim2_label: frequency (Hz)\n" )
+                hdrfile.write( "%dim2_start: {}\n".format( fstart ) )
+                hdrfile.write( "%dim2_span: {}\n".format( fstep*nbins ) )
                 if pol[0] == pol[1]:
                     hdrfile.write( "%data_label: power spectrum (arbitrary)\n" )
                 else:
                     hdrfile.write( "%data_label: cross spectrum (arbitrary)\n" )
-                    hdrfile.write( "%data_offset: 0\n" )
-                    hdrfile.write( "%data_scale: 1\n" )
-                    hdrfile.write( "%data_type: real64\n" )
-                    hdrfile.write( "{} {} ".format( nint, nbins ) )
+                hdrfile.write( "%data_offset: 0\n" )
+                hdrfile.write( "%data_scale: 1\n" )
+                hdrfile.write( "%data_type: real64\n" )
+                hdrfile.write( "{} {} ".format( nint, nbins ) )
                 if pol[0] != pol[1]:
                     hdrfile.write( "2 " )
                 else:
@@ -297,7 +294,7 @@ if __name__ == "__main__":
                     hdrfile.write( "64 raw16\n" )
                 else:
                     hdrfile.write( "64 raw256\n" )
-                    hdrfile.close()
+                hdrfile.close()
 
                 # Merge header and data files.
                 if os.path.isfile( outname ) and args.force:

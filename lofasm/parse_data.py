@@ -7,14 +7,17 @@ from parse_data_H import IntegrationError
 import datetime
 from astropy.time import Time, TimeDelta
 import gzip
+import io
 
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
 HDR_V1_SIGNATURE = 14613675
 INTEGRATION_SIZE_B = 139264 #bytes
 START_DATA = 204896
 PACKET_SIZE_B = 8192
-
-
+bufReal = '*' * 8192
+bufCplx = '*' * 16384
+bufBurst = '*' * INTEGRATION_SIZE_B
+range1024 = range(1024)
 # station polarization mapping
 BASELINE_ID = {
     'LoFASMI' : {
@@ -41,6 +44,8 @@ BASELINE_ID = {
 
 
 Baselines = pdat_H.Baselines
+AUTOPOLS =  ['AA', 'BB', 'CC', 'DD']
+CROSSPOLS = ['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
 
 ##### Function Definitions
 def freqRange(lowfreq=0.0, highfreq=100.0):
@@ -422,7 +427,8 @@ class LoFASM_burst:
     __type_cross = complex
     __type_beams = np.float64
 
-    def __init__(self, burst_string, packet_size=PACKET_SIZE_B):
+    def __init__(self, burst_string, packet_size=PACKET_SIZE_B,
+                 unpack_binary=True):
         '''
         initialize LoFASM Burst instance
         '''
@@ -430,7 +436,8 @@ class LoFASM_burst:
         self.autos = {}
         self.cross = {}
         self.hdr = {}
-
+        self.packet_size = packet_size
+        
         #read header packet
         hdr_packet = burst_string[:packet_size]
 
@@ -440,6 +447,69 @@ class LoFASM_burst:
         #in the future it would be good to take full advantage of this
         #header packet to store more meta-data at the FPGA level.
         self.hdr = parse_hdr(hdr_packet[:8])
+        self.raw = burst_string
+        if unpack_binary:
+            self._unpack_burst(burst_string)
+        else:
+            self._bufRaw = io.BytesIO()
+            self._bufRaw.write(burst_string)
+            self._bufRaw.seek(0)
+            # initialize buffers for each polarization
+            for key in Baselines:
+                if key[0] == key[1]:
+                    self.autos[key] = io.BytesIO()
+                    self.autos[key].write(bufReal)
+                    self.autos[key].seek(0)
+                else:
+                    self.cross[key] = io.BytesIO()
+                    self.cross[key].write(bufCplx)
+                    self.cross[key].seek(0)
+
+            self._load_raw()
+            
+
+    def _load_raw(self, iburst=None):
+        '''load each polarization as raw data
+        '''
+        raw = self._bufRaw
+        if iburst is not None:
+            raw.seek(0)
+            raw.write(iburst)
+        # skip past the header packet
+        raw.seek(8192)
+        
+        for isOdd in [False, True]:
+            # if isOdd is False load even bins
+            # if True then load odd bins
+            if isOdd:
+                for k in AUTOPOLS:
+                    self.autos[k].seek(4)
+                for k in CROSSPOLS:
+                    self.cross[k].seek(8)
+            # load AA & BB bins
+            for i in range1024:
+                self.autos['AA'].write(raw.read(4))
+                self.autos['BB'].write(raw.read(4))
+                self.autos['AA'].seek(4, 1)
+                self.autos['BB'].seek(4, 1)
+            # load CC & DD bins
+            for i in range1024:
+                self.autos['CC'].write(raw.read(4))
+                self.autos['DD'].write(raw.read(4))
+                self.autos['CC'].seek(4, 1)
+                self.autos['CC'].seek(4, 1)
+            # load bins for cross power
+            for k in CROSSPOLS:
+                for i in range1024:
+                    self.cross[k].write(raw.read(8))
+                    self.cross[k].seek(8, 1)
+
+                
+
+    def _unpack_burst(self, burst_string):
+        '''unpack contents of burst_string into class attributes
+        '''
+        packet_size = self.packet_size
 
         #split data portion into even and odd bins
         burst_real_even_bin = burst_string[packet_size:packet_size*3]
@@ -448,10 +518,14 @@ class LoFASM_burst:
         burst_complex_odd_bin = burst_string[packet_size*11:]
 
         #unpack all values
-        burst_real_even_val = list(struct.unpack("4096".join(self.__fmt_autos), burst_real_even_bin))
-        burst_real_odd_val = list(struct.unpack("4096".join(self.__fmt_autos), burst_real_odd_bin))
-        burst_complex_even_val = struct.unpack("12288".join(self.__fmt_cross), burst_complex_even_bin)
-        burst_complex_odd_val = struct.unpack("12288".join(self.__fmt_cross), burst_complex_odd_bin)
+        burst_real_even_val = list(struct.unpack("4096".join(self.__fmt_autos),
+                                                 burst_real_even_bin))
+        burst_real_odd_val = list(struct.unpack("4096".join(self.__fmt_autos),
+                                                burst_real_odd_bin))
+        burst_complex_even_val = struct.unpack("12288".join(self.__fmt_cross),
+                                               burst_complex_even_bin)
+        burst_complex_odd_val = struct.unpack("12288".join(self.__fmt_cross),
+                                              burst_complex_odd_bin)
 
         blocksize = 2048 #values
 
@@ -625,7 +699,8 @@ class LoFASMFileCrawler(object):
     File crawler for LoFASM data files.
     '''
 
-    def __init__(self, filename, scan_file=False, start_loc=None, gz=False):
+    def __init__(self, filename, scan_file=False, start_loc=None, gz=False,
+                 generate_beams=False, unpack_binary=True):
         '''
         initialize LoFASM File Crawler instance
 
@@ -646,6 +721,8 @@ class LoFASMFileCrawler(object):
         else:
             self.gz = gz
         self.eof = False
+        self._unpack_binary = unpack_binary
+        self._generate_beams = generate_beams
         self._int_hdr = {} #integration header
         self._file_hdr = {} #file header
         self._acc_num_ref = None #first integration id
@@ -783,14 +860,6 @@ class LoFASMFileCrawler(object):
 
         self._status_open = True
 
-        #quick sanity check
-        #try:
-        #    self.forward(self.getNumberOfIntegrationsInFile()-1)
-        #    self.reset()
-        #except IntegrationError:
-        #    self.corrupt = True
-
-
     def isopen(self):
         return self._status_open
 
@@ -809,7 +878,6 @@ class LoFASMFileCrawler(object):
 
         self._update_data(N)
         self._update_time()
-
 
     def getNumberOfIntegrationsInFile(self):
         '''
@@ -839,8 +907,9 @@ class LoFASMFileCrawler(object):
         data = self._lofasm_file.read(self._int_size)
         if len(data) < self._int_size:
             raise EOFError
-        self._burst = LoFASM_burst(data)
-        self._burst.create_LoFASM_beams()
+        self._burst = LoFASM_burst(data, unpack_binary=self._unpack_binary)
+        if self._generate_beams:
+            self._burst.create_LoFASM_beams()
         self._update_ptr()
 
         #update integration header and accumulation number
@@ -850,7 +919,8 @@ class LoFASMFileCrawler(object):
         #update data arrays
         self.autos = self._burst.autos
         self.cross = self._burst.cross
-        self.beams = self._burst.beams
+        if self._generate_beams:
+            self.beams = self._burst.beams
 
 
         if self._print_int_headers:
@@ -1001,15 +1071,20 @@ class LoFASMFileCrawler(object):
         returns a numpy array
         '''
 
-        auto_pols = ['AA', 'BB', 'CC', 'DD']
-        cross_pols = ['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
-
         if self._pol is None:
-            return None
-        elif self._pol in auto_pols:
-            return np.array(self.autos[self._pol])
-        elif self._pol in cross_pols:
-            return np.array(self.cross[self._pol])
+            val = None
+        elif self._pol in AUTOPOLS:
+            if self._unpack_binary:
+                val = np.array(self.autos[self._pol])[:1024]
+            else:
+                val = self.autos[self._pol]
+        elif self._pol in CROSSPOLS:
+            if self._unpack_binary:
+                val = np.array(self.cross[self._pol])[:1024]
+            else:
+                val = self.cross[self._pol]
+
+        return val
 
 
     def __repr__(self):
