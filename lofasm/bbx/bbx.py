@@ -155,26 +155,29 @@ class LofasmFile(object):
         self._fp.close()
 
     def read_data(self, N=None):
-        """Parse data block in LoFASM filterbank file and load into memory as `self.data`.
-
-        The resulting data array in self.data is stored as a 2d array with dim1 as the horizontal axis and
+        """Parse data block in LoFASM filterbank file and load into 
+        memory as `self.data`.
+        The resulting data array in self.data is stored as a 2d 
+        array with dim1 as the horizontal axis and
         dim2 as the vertical axis.
-
-        If reading a typical LoFASM-filterbank file then the x-axis will represent the time bins and the y-axis will
+        If reading a typical LoFASM-filterbank file then the 
+        x-axis will represent the time bins and the y-axis will
         represent the frequency bins.
 
         Parameters
         ----------
         N : int
-            The number of rows to read. If not provided, then attempt to read the entire file (read all rows).
-            If `num_time_bin` is larger than the number of time bins in the file then read the entire file.
+            The number of rows to read. If not provided, then
+            attempt to read the entire file (read all rows).
+            If `num_time_bin` is larger than the number of time 
+            bins in the file then read the entire file.
             A value of 0 will result in nothing being read.
         Raises
         ------
         AssertionError
             If file is not open for reading
         """
-
+        
 
         assert(self.mode == 'read'), "File not open for reading."
 
@@ -186,23 +189,32 @@ class LofasmFile(object):
         else:
             dim1_len = self.dim1_len
 
+        
         if not self.iscplx:
+            if self.nbits == 64:
+                fmt = '{}d'.format(self.dim2_len)
+            elif self.nbits == 32:
+                fmt = '>{}L'.format(self.dim2_len)
+
             self._debug('parsing real data')
             nbytes = self.freqbins * self.nbits / 8
-            self.data = np.zeros((int(self.dim2_len), int(dim1_len)), dtype=np.float64)
+            self.data = np.zeros((int(self.dim2_len), int(dim1_len)),
+                                 dtype=np.float64)
             self.dtype = self.data.dtype
             for col in range(dim1_len):
-                spec = struct.unpack('{}d'.format(self.dim2_len),
-                                     self._fp.read(nbytes))
+                spec = struct.unpack(fmt, self._fp.read(nbytes))
                 self.data[:,col] = spec
         else:
+            if self.nbits == 64:
+                fmt = '{}d'.format(2*self.dim2_len)
+            elif self.nbits == 32:
+                fmt = '>{}l'.format(2*self.dim2_len)
             self._debug('parsing complex data')
             nbytes = 2 * self.freqbins * self.nbits / 8
             self.data = np.zeros((int(self.dim2_len), int(dim1_len)), dtype=np.complex128)
             self.dtype = self.data.dtype
             for col in range(dim1_len):
-                spec_cmplx = struct.unpack('{}d'.format(2*self.dim2_len),
-                                           self._fp.read(nbytes))
+                spec_cmplx = struct.unpack(fmt, self._fp.read(nbytes))
                 i=0
                 for row in range(len(spec_cmplx)/2):
                     self.data[row, col] = np.complex64(complex(spec_cmplx[i], spec_cmplx[i+1]))
@@ -210,11 +222,12 @@ class LofasmFile(object):
 
     def set(self, key, val):
         """Set header or metadata fields
-
-        Set or create header comment fields. If the field `key` exists then its value will be overwritten.
-        If the field does not exist, then it will be created as a new comment field.
-
-        If `key` exists as part of the metadata field, then the value will be overwritten.
+        Set or create header comment fields. If the field `key` exists
+        then its value will be overwritten.
+        If the field does not exist, then it will be created as a 
+        new comment field.
+        If `key` exists as part of the metadata field, then the 
+        value will be overwritten.
 
         Parameters
         ----------
@@ -245,7 +258,8 @@ class LofasmFile(object):
             if self.header[key] == None:
                 missing_keys.append(key)
         if missing_keys:
-            raise RuntimeError, "the header is missing some required fields: {}".format(', '.join(missing_keys))
+            errmsg = "header missing required fields: {}".format(', '.join(missing_keys))
+            raise RuntimeError, errmsg
 
         if self._fp.tell() == 0:
             self._write_header()
@@ -456,7 +470,7 @@ class LofasmFile(object):
 
         return val
 
-# a light function for check if a file in lofasm bbx format.
+# a light function to check if a file in lofasm bbx format.
 def is_lofasm_bbx(filename):
     """ Check the file is lofasm file or not.
     """

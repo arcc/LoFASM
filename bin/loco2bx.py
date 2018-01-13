@@ -284,7 +284,10 @@ if __name__ == "__main__":
                     hdrfile.write( "%data_label: cross spectrum (arbitrary)\n" )
                 hdrfile.write( "%data_offset: 0\n" )
                 hdrfile.write( "%data_scale: 1\n" )
-                hdrfile.write( "%data_type: real64\n" )
+                if args.ascii:
+                    hdrfile.write( "%data_type: real64\n" )
+                else:
+                    hdrfile.write( "%data_type: real32\n" )                    
                 hdrfile.write( "{} {} ".format( nint, nbins ) )
                 if pol[0] != pol[1]:
                     hdrfile.write( "2 " )
@@ -293,7 +296,7 @@ if __name__ == "__main__":
                 if args.ascii:
                     hdrfile.write( "64 raw16\n" )
                 else:
-                    hdrfile.write( "64 raw256\n" )
+                    hdrfile.write( "32 raw256\n" )
                 hdrfile.close()
 
                 # Merge header and data files.

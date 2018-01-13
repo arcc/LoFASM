@@ -14,10 +14,10 @@ HDR_V1_SIGNATURE = 14613675
 INTEGRATION_SIZE_B = 139264 #bytes
 START_DATA = 204896
 PACKET_SIZE_B = 8192
-bufReal = '*' * 8192
-bufCplx = '*' * 16384
+bufReal = '*' * 4096
+bufCplx = '*' * 8192
 bufBurst = '*' * INTEGRATION_SIZE_B
-range1024 = range(1024)
+range512 = range(512)
 # station polarization mapping
 BASELINE_ID = {
     'LoFASMI' : {
@@ -486,23 +486,31 @@ class LoFASM_burst:
                     self.autos[k].seek(4)
                 for k in CROSSPOLS:
                     self.cross[k].seek(8)
+            
+            # only read half of the packets since we are ignoring the
+            # second half of the channels below.
+            
             # load AA & BB bins
-            for i in range1024:
+            for i in range512:
                 self.autos['AA'].write(raw.read(4))
                 self.autos['BB'].write(raw.read(4))
                 self.autos['AA'].seek(4, 1)
                 self.autos['BB'].seek(4, 1)
+            # move forward 4096 bytes to the next packet
+            raw.seek(4096, 1)
             # load CC & DD bins
-            for i in range1024:
+            for i in range512:
                 self.autos['CC'].write(raw.read(4))
                 self.autos['DD'].write(raw.read(4))
                 self.autos['CC'].seek(4, 1)
                 self.autos['CC'].seek(4, 1)
+            raw.seek(4096, 1)
             # load bins for cross power
             for k in CROSSPOLS:
-                for i in range1024:
+                for i in range512:
                     self.cross[k].write(raw.read(8))
                     self.cross[k].seek(8, 1)
+                raw.seek(4096, 1)
 
                 
 
