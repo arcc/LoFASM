@@ -14,7 +14,7 @@ import struct, os, sys, argparse, time, array, shutil
 import gzip
 from astropy.time import Time
 from datetime import datetime
-from lofasm.parse_data import IntegrationError
+from lofasm.parse_data import IntegrationError, AUTOPOLS, CROSSPOLS
 
 
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     # Process arguments.
     args = parser.parse_args()
-    pols = [x.upper() for x in args.pols.split( ',' )]
+    pols = [x.upper() for x in args.pols.split(',')]
 
     # create directory tree
     rdir = os.path.join(os.getcwd(), 'bbx')
@@ -85,15 +85,14 @@ if __name__ == "__main__":
         if not os.path.isdir(d):
             os.mkdir(d)
 
-    
     # Loop over files.
     nin = 0  # files processed
-    nout = 0 # files written
+    nout = 0  # files written
 
     for inname in args.files:
         # Check input file name
-        filepols = list( pols )
-        splitname = os.path.splitext( inname )
+        filepols = list(pols)
+        splitname = os.path.splitext(inname)
         if splitname[1] != ".lofasm" and splitname[1] != '.gz':
             print "Skipping " + inname + " (not a .lofasm file)"
             continue
@@ -103,7 +102,7 @@ if __name__ == "__main__":
 
         # Open file and read metadata.
         try:
-            crawler = pdat.LoFASMFileCrawler( inname, unpack_binary=args.ascii)
+            crawler = pdat.LoFASMFileCrawler(inname, unpack_binary=args.ascii)
             crawler.open()
             header = crawler.getFileHeader()
             tstart = crawler.time_start.datetime.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
@@ -130,17 +129,17 @@ if __name__ == "__main__":
             elif field[0] == "int_time":
                 int_time = float( field[1] )
 
-        ## THROW AWAY THE EMPTY HALF OF THE FREQUENCY BINS 
+        # THROW AWAY THE EMPTY HALF OF THE FREQUENCY BINS
         nbins = nbins//2
         ##
 
         while not EOF_REACHED:
-            nint = 0 # new subfile
+            nint = 0  # new subfile
             if subfile_id > 0:
                 try:
                     crawler.moveToNextBurst()
                     t = crawler.time
-                    t = Time(t) #astropy time object
+                    t = Time(t)  # astropy time object
                     mjd = t.mjd
                     mjd_day = int(mjd)
                     mjd_msec = (mjd-mjd_day) * 8.64e+7
@@ -148,10 +147,10 @@ if __name__ == "__main__":
                     EOF_REACHED = True
 
             # Compute offset and integration times in seconds
-            toff = long( mjd_day ) - ( mjd_epoch - mjd_offset )
+            toff = long(mjd_day) - (mjd_epoch - mjd_offset)
             toff *= 86400.0
-            toff += float( mjd_msec )*0.001
-            int_time *= 1.0;  # since we're keeping things in seconds
+            toff += float(mjd_msec)*0.001
+            int_time *= 1.0  # since we're keeping things in seconds
 
             # Set up some more constants for this file.
             realfmt = 'd'*nbins           # Format for struct.pack() on real data
@@ -197,7 +196,7 @@ if __name__ == "__main__":
 
                     # Get the data.
                     try:
-                        crawler.setPol( pol )
+                        crawler.setPol(pol)
                     except:
                         datfile.close()
                         try:
@@ -224,8 +223,20 @@ if __name__ == "__main__":
                             hexwrite( datfile, struct.pack( cplxfmt, *cplxbuf ) )
                             datfile.write( "\n" )
                     else:
-                        datfile.write(crawler.get().getvalue())
-
+                        # read raw data from crawler
+                        # unpack and repack as real64 floats
+                        dataBuf = crawler.get()
+                        dataBuf.seek(0)
+                        if pol in AUTOPOLS:
+                            data_int32 = struct.unpack('>1024L',
+                                                       dataBuf.getvalue())
+                            real64_binary = struct.pack('1024d', data_int32)
+                        else:
+                            data_int32 = struct.unpack('>2048l',
+                                                       dataBuf.getvalue())
+                            real64_binary = struct.pack('2048d', data_int32)
+                        datfile.write(real64_binary)
+                        
                 # End loop over polarizations.
 
                 # Advance to next integration.
@@ -284,10 +295,7 @@ if __name__ == "__main__":
                     hdrfile.write( "%data_label: cross spectrum (arbitrary)\n" )
                 hdrfile.write( "%data_offset: 0\n" )
                 hdrfile.write( "%data_scale: 1\n" )
-                if args.ascii:
-                    hdrfile.write( "%data_type: real64\n" )
-                else:
-                    hdrfile.write( "%data_type: real32\n" )                    
+                hdrfile.write( "%data_type: real64\n" )
                 hdrfile.write( "{} {} ".format( nint, nbins ) )
                 if pol[0] != pol[1]:
                     hdrfile.write( "2 " )
@@ -296,7 +304,7 @@ if __name__ == "__main__":
                 if args.ascii:
                     hdrfile.write( "64 raw16\n" )
                 else:
-                    hdrfile.write( "32 raw256\n" )
+                    hdrfile.write( "64 raw256\n" )
                 hdrfile.close()
 
                 # Merge header and data files.

@@ -1,17 +1,17 @@
 
 # python file for parsing LoFASM Correlator Data
-import struct, sys, time
+import struct
+import sys
 import numpy as np
 import parse_data_H as pdat_H
 from parse_data_H import IntegrationError
-import datetime
 from astropy.time import Time, TimeDelta
 import gzip
 import io
 
 LoFASM_SPECTRA_KEY_TO_DESC = pdat_H.LoFASM_SPECTRA_KEY_TO_DESC
 HDR_V1_SIGNATURE = 14613675
-INTEGRATION_SIZE_B = 139264 #bytes
+INTEGRATION_SIZE_B = 139264  # bytes
 START_DATA = 204896
 PACKET_SIZE_B = 8192
 bufReal = '*' * 4096
@@ -44,7 +44,7 @@ BASELINE_ID = {
 
 
 Baselines = pdat_H.Baselines
-AUTOPOLS =  ['AA', 'BB', 'CC', 'DD']
+AUTOPOLS = ['AA', 'BB', 'CC', 'DD']
 CROSSPOLS = ['AB', 'AC', 'AD', 'BC', 'BD', 'CD']
 
 ##### Function Definitions
@@ -418,7 +418,6 @@ class LoFASM_burst:
     data.
     '''
 
-
     __fmt_autos = '>L'
     __fmt_cross = '>l'
     __fmt_beams = '>f'
@@ -437,15 +436,15 @@ class LoFASM_burst:
         self.cross = {}
         self.hdr = {}
         self.packet_size = packet_size
-        
-        #read header packet
+
+        # read header packet
         hdr_packet = burst_string[:packet_size]
 
-        #in this version, we need only to be able to read the first
-        #8 bytes of the header packet because the header packet
-        #consists of the same 8byte row repeating itself.
-        #in the future it would be good to take full advantage of this
-        #header packet to store more meta-data at the FPGA level.
+        # in this version, we need only to be able to read the first
+        # 8 bytes of the header packet because the header packet
+        # consists of the same 8byte row repeating itself.
+        # in the future it would be good to take full advantage of this
+        # header packet to store more meta-data at the FPGA level.
         self.hdr = parse_hdr(hdr_packet[:8])
         self.raw = burst_string
         if unpack_binary:
@@ -838,7 +837,6 @@ class LoFASMFileCrawler(object):
                 if self._file_hdr[2][1] == 1 or self._file_hdr[2][1] == 2:
                     self._data_start = 204896
                 else:
-                    #self._data_start = 204908 # damn, i've forgotten where this number came from! 09/25/2017
                     self._data_start = self._find_next_burst(start=0)
 
         #move file pointer to data location
@@ -848,7 +846,8 @@ class LoFASMFileCrawler(object):
 
         #get times
         self.int_time = TimeDelta(float(self._file_hdr[10][1]), format='sec')
-        mjd_start = float(self._file_hdr[8][1]) + float(self._file_hdr[9][1])/1000/86400
+        mjd_start = float(self._file_hdr[8][1])
+        mjd_start += float(self._file_hdr[9][1])/1000/86400
         self.time_start = Time(mjd_start, format='mjd', scale='utc')
         self.time = self.time_start
 
