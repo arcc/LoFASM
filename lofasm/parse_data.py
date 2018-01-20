@@ -463,9 +463,7 @@ class LoFASM_burst:
                     self.cross[key] = io.BytesIO()
                     self.cross[key].write(bufCplx)
                     self.cross[key].seek(0)
-
             self._load_raw()
-            
 
     def _load_raw(self, iburst=None):
         '''load each polarization as raw data
@@ -502,7 +500,7 @@ class LoFASM_burst:
                 self.autos['CC'].write(raw.read(4))
                 self.autos['DD'].write(raw.read(4))
                 self.autos['CC'].seek(4, 1)
-                self.autos['CC'].seek(4, 1)
+                self.autos['DD'].seek(4, 1)
             raw.seek(4096, 1)
             # load bins for cross power
             for k in CROSSPOLS:
