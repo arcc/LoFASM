@@ -230,11 +230,11 @@ if __name__ == "__main__":
                         if pol in AUTOPOLS:
                             data_int32 = struct.unpack('>1024L',
                                                        dataBuf.getvalue())
-                            real64_binary = struct.pack('1024d', data_int32)
+                            real64_binary = struct.pack('1024d', *data_int32)
                         else:
                             data_int32 = struct.unpack('>2048l',
                                                        dataBuf.getvalue())
-                            real64_binary = struct.pack('2048d', data_int32)
+                            real64_binary = struct.pack('2048d', *data_int32)
                         datfile.write(real64_binary)
                         
                 # End loop over polarizations.
