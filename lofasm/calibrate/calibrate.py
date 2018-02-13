@@ -1,5 +1,5 @@
 #!/usr/bin/python
-#Calibration tool
+# Calibration tool
 
 if __name__ == "__main__":
 

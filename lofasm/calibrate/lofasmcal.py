@@ -40,7 +40,29 @@ class data_handler(object):
             timelength = float(head['dim1_span'])
 
             # Convert header start_time to datetime object
-            time_obj = datetime.datetime.strptime(startt[:-8],'%Y-%m-%dT%H:%M:%S')
+            # ================TODO=====================================
+            # Due to a bug some LoFASM data has messed up start times.
+            # What follows is a hotfix so that this library can support
+            # both time formats. In the future, the bug should be fixed
+            # and this library should only have to support 1 time format.
+            # 
+            # The following loop tries each format specified in fmts.
+            # If the time is parsed correctly (and does not throw an
+            # exception) then the loop will be broken.
+            # ==========================================================
+            fmts = ["%Y-%m-%dT%H:%M:%S",  # correct time format for bbx files
+                    "%Y%m%d_%H%M%S"]  # additional format found in LoFASM I files
+            startt_repr = startt[:-8] if 'T' in startt else startt
+            for fmt in fmts:
+                try:
+                    time_obj = datetime.datetime.strptime(startt_repr, fmt)
+                    break
+                except ValueError:
+                    pass
+            else:
+                print "Cannot parse start time header field {}".format(startt_repr)
+
+
             # Find the frequency bin corresponding to the given frequency
             bw = (float(head['dim2_span'])/1000000.0)/head['metadata']['dim2_len']
             freqbin = int((self.freqmhz-(float(head['dim2_start'])/1000000.0))/bw)
@@ -138,35 +160,39 @@ class data_handler(object):
         """Takes a calibration time in hours and returns
         """
 
+
 class galaxy(object):
     def __init__(self):
 
         self.rot_ang = 1
         self.pol_ang = 1
 
-        self.lfdic = {1:{'name':'LI', 'lat':[26,33,19.676], 'long':[97,26,31.174], 't_offset':6.496132851851852},
-                      2:{'name':'LII', 'lat':[34,4,43.497], 'long':[107,37,5.819], 't_offset':7.174552203703703},
-                      3:{'name':'LIII', 'lat':[38,25,59.0], 'long':[79,50,23.0], 't_offset':5.322648148148148},
-                      4:{'name':'LIV', 'lat':[34,12,3.0], 'long':[118,10,18.0], 't_offset':7.87811111111111}}
+        self.lfdic = {1:{'name':'LI', 'lat':[26,33,19.676],
+                         'long':[97,26,31.174], 't_offset':6.496132851851852},
+                      2:{'name':'LII', 'lat':[34,4,43.497],
+                         'long':[107,37,5.819], 't_offset':7.174552203703703},
+                      3:{'name':'LIII', 'lat':[38,25,59.0],
+                         'long':[79,50,23.0], 't_offset':5.322648148148148},
+                      4:{'name':'LIV', 'lat':[34,12,3.0],
+                         'long':[118,10,18.0], 't_offset':7.87811111111111}}
 
-    def galaxy_power_array(self, time_array, freq, station, verbose=True):
+    def galaxy_power_array(self, time_array, freq, stationID, horizon_cutoff=0.0, config='', verbose=True):
 
-        time_list = list(time_array) #Convert nparray to list - for %age
-        lfs = self.lfdic[station]
+        time_list = list(time_array)  # Convert nparray to list - for %age
+        lfs = self.lfdic[stationID]
         long_radians = (lfs['long'][0] + lfs['long'][1]/60.0 + lfs['long'][2]/3600.0)*np.pi/180.0
 
-        LoFASM = gm.station(lfs['name'], lfs['lat'], lfs['long'],FOV_color='b',
-                            frequency=freq,one_ring=False,
-                            rot_angle=self.rot_ang,pol_angle=self.pol_ang)
+        LoFASM = gm.station(lfs['name'], lfs['lat'], lfs['long'],
+                            FOV_color='b',
+                            frequency=freq, config=config,
+                            rot_angle=self.rot_ang, pol_angle=self.pol_ang,
+                            horizon_cutoff_alt=horizon_cutoff)
         FOV = LoFASM.lofasm.Omega()
         conversion = np.divide((np.power(np.divide(3.0*1.0e8,45.0e6),2)),(FOV))
 
-        # for i in range(len(time_list)):
-        #     time_list[i] = time_list[i] + datetime.timedelta(seconds=150)# Make model times == middle of 5min file times
-
         power = np.multiply(LoFASM.calculate_gpowervslstarray(time_list, verbose=verbose),conversion)
-
         return power
+
 
 class fitter(object):
     def __init__(self, data, galaxy):
@@ -565,4 +591,4 @@ class calibrateio(object):
         sys.stdout.write('\rDone - '+str(len(filelist))+' calibration parameters \n written to '+cp_filepath)
         sys.stdout.flush()
 
-#~
+

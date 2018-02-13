@@ -7,6 +7,7 @@ import os
 from lofasm.parse_data_H import Baselines
 import re
 
+
 def plot_single_file(bbxFile, **kwargs):
     '''
     Produce waterfall plot window of a single bbx file
@@ -32,7 +33,7 @@ def plot_single_file(bbxFile, **kwargs):
     plt.imshow(data if f.header['metadata']['complex']==1 else np.abs(data)**2,
                aspect='auto', origin='lower', cmap ='hot',
                interpolation='none', extent=[dim10, dim11, dim20, dim21])
-    plt.title(infile) 
+    plt.title(infile)
     plt.xlabel("Time sample")
     plt.ylabel("Frequency (Hz)")
     plt.colorbar()

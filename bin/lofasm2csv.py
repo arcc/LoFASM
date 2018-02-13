@@ -5,7 +5,6 @@ import sys
 import os
 from datetime import datetime
 
-# LOFASM_FILE = '20160223_163528.lofasm'
 
 pols = ['AA', 'BB', 'CC', 'DD', 'AB', 'AC', 'AD', 'BC', 'BD', 'CD']
 

@@ -95,7 +95,7 @@ class dipole_antenna(antenna):
     """dipole style antenna class"""
 
     def __init__(self,location,pol,length):
-        self.location   = np.array(location)
+        self.location   = np.array(location)  # [x,y,z]
         self.length     = length                #Length of Antenna in cms
         self.impedance  = 50                 #Impedence in Ohms
         self.Nelements  = 10
@@ -566,7 +566,8 @@ class LoFASM_ext(antenna_array):
 class LoFASM_onering(antenna_array):
     """LoFASM Antenna array class with only one ring."""
 
-    def __init__(self,r_inner=441,pol_angle=np.pi/2.0,N_antennas=6,delta_r=0,delta_phase=0,rot_angle=0.0):
+    def __init__(self,r_inner=441,pol_angle=np.pi/2.0,N_antennas=6,delta_r=0,
+                 delta_phase=0,rot_angle=0.0):
         antenna_array.__init__(self)
 
         N = N_antennas
@@ -581,11 +582,42 @@ class LoFASM_onering(antenna_array):
         for i in np.arange(0,N):
             dx = 0*dr[i]*np.cos(phi[i])
             dy = 0*dr[i]*np.sin(phi[i])
-            ant = dipole_antenna([r_inner*np.cos(i*dtheta + rot_angle) + dx ,r_inner*np.sin(i*dtheta + rot_angle)+dy,0], [np.cos(pol_angle),np.sin(pol_angle),0], 100.0)
+            ant = dipole_antenna([r_inner*np.cos(i*dtheta + rot_angle) + dx ,
+                                  r_inner*np.sin(i*dtheta + rot_angle)+dy,0],
+                                 [np.cos(pol_angle),np.sin(pol_angle),0],
+                                 100.)
             self.receiver_gain[ant]=1
             self.receiver_gain[ant] *= np.exp(gain_phi[i])
             self.add_antenna(ant)
+
+
+class LoFASM_outrigger(antenna_array):
+    """LoFASM Antenna array class with only an outrigger (no rings)."""
+
+    def __init__(self,r_inner=441,pol_angle=np.pi/2.0,delta_r=0,
+                 delta_phase=0,rot_angle=0.0):
+        antenna_array.__init__(self)
+
+        N = 1
+        dtheta = 2*np.pi/N
+
+        array = np.zeros([2*N,3])
+        polarization = np.zeros([2*N,3])
+
+        phi = np.random.uniform(0,2.0*np.pi,N)
+        dr    = np.sqrt(2.0*np.random.uniform(0,(delta_r**2)/2.0,N))
+        gain_phi = np.random.uniform(-delta_phase/2,delta_phase/2.0,N)*1j
+
+        dx = 0*dr[0]*np.cos(phi[0])
+        dy = 0*dr[0]*np.sin(phi[0])
+        ant = dipole_antenna([0, 0, 0],
+                             [np.cos(pol_angle),np.sin(pol_angle),0],
+                             100.)
+        self.receiver_gain[ant]=1
+        self.receiver_gain[ant] *= np.exp(gain_phi[i])
+        self.add_antenna(ant)
     
+
 class phased_array_grid(antenna_array):
     """Phase Array class NxN uniform grid."""
 

@@ -4,7 +4,29 @@
 from astropy.coordinates import EarthLocation, Latitude, Longitude, Angle
 import numpy as np
 from ephem import Observer
-import sidereal
+#import sidereal
+import ephem
+
+
+# LoFASM Station Coordinates
+# in the ephem library, longitude coordinates are positive east
+LoFASM1 = ephem.Observer()
+LoFASM1.lat = "26:33:19.676"
+LoFASM1.lon = "-97:26:31.174"
+LoFASM2 = ephem.Observer()
+LoFASM2.lat = "34:4:43.497"
+LoFASM2.lon = "-107:37:5.819"
+LoFASM3 = ephem.Observer()
+LoFASM3.lat = "38:25:59.0"
+LoFASM3.lon = "-79:50:23.0"
+LoFASM4 = ephem.Observer()
+LoFASM4.lat = "34:12:3.0"
+LoFASM4.lon = "-118:10:18.0"
+LoFASM_Stations = {}
+LoFASM_Stations[1] = LoFASM1
+LoFASM_Stations[2] = LoFASM2
+LoFASM_Stations[3] = LoFASM3
+LoFASM_Stations[4] = LoFASM4
 
 
 class lofasmStation(object):
