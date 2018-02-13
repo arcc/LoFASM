@@ -78,7 +78,23 @@ LoFASM_FHEADER_TEMPLATE = {
         10: ['int_time', None],
         11: ['Dfmt_ver', None],
         12: ['Nsamp', None]}, # number of spectral samples in the file
-    }
+    5: {1: ['hdr_sig', None],
+        2: ['hdr_ver', None],
+        3: ['hdr_len', None],
+        4: ['station', None],
+        5: ['Nbins', None],
+        6: ['fstart', None],
+        7: ['fstep', None],
+        8: ['mjd_day', None],
+        9: ['mjd_msec', None],
+        10: ['int_time', None],
+        11: ['Dfmt_ver', None],
+        12: ['Nsamp', None],
+        13: ['TrunkA', None],
+        14: ['TrunkB', None],
+        15: ['TrunkC', None],
+        16: ['TrunkD', None]}
+}
 LoFASM_SPECTRUM_HEADER_TEMPLATE = {
     1: {1: ['hdr_sig', None],
         2: ['hdr_ver', None],
@@ -131,9 +147,25 @@ LoFASM_SPECTRUM_HEADER_TEMPLATE = {
         10: ['int_time', None],
         12: ['num_int', None],
         13: ['spect_type', None],
-        14: ['notes', None]}
-    }
+        14: ['notes', None]},
+    5: {1: ['hdr_sig', None],
+        2: ['hdr_ver', None],
+        3: ['hdr_len', None],
+        4: ['station', None],
+        5: ['Nbins', None],
+        6: ['fstart', None],
+        7: ['fstep', None],
+        8: ['mjd_day', None],
+        9: ['mjd_msec', None],
+        10: ['int_time', None],
+        11: ['Dfmt_ver', None],
+        12: ['Nsamp', None],
+        13: ['TrunkA', None],
+        14: ['TrunkB', None],
+        15: ['TrunkC', None],
 
+    }
+}
 
 
 class Header_Error:

@@ -186,6 +186,20 @@ def parse_file_header(file_obj, fileType='lofasm'):
         fhdr_field_dict[10][1] = remaining_hdr_string[48:56].strip()
         fhdr_field_dict[11][1] = remaining_hdr_string[56:64].strip()
         fhdr_field_dict[12][1] = remaining_hdr_string[64:74].strip()
+    elif file_hdr_version == 5:
+        fhdr_field_dict[4][1] = remaining_hdr_string[:8].strip()
+        fhdr_field_dict[5][1] = remaining_hdr_string[8:16].strip()
+        fhdr_field_dict[6][1] = remaining_hdr_string[16:24].strip()
+        fhdr_field_dict[7][1] = remaining_hdr_string[24:32].strip()
+        fhdr_field_dict[8][1] = remaining_hdr_string[32:40].strip()
+        fhdr_field_dict[9][1] = remaining_hdr_string[40:48].strip()
+        fhdr_field_dict[10][1] = remaining_hdr_string[48:56].strip()
+        fhdr_field_dict[11][1] = remaining_hdr_string[56:64].strip()
+        fhdr_field_dict[12][1] = remaining_hdr_string[64:72].strip()
+        fhdr_field_dict[13][1] = remaining_hdr_string[72:80].strip()
+        fhdr_field_dict[14][1] = remaining_hdr_string[80:88].strip()
+        fhdr_field_dict[15][1] = remaining_hdr_string[88:96].strip()
+        fhdr_field_dict[16][1] = remaining_hdr_string[96:104].strip()
 
     #move file cursor back to original position
     file_obj.seek(freeze_pointer)
@@ -794,9 +808,8 @@ class LoFASMFileCrawler(object):
             else:
                 #check file extension
                 file_ext = filename[-7:]
-                if file_ext != '.lofasm':
+                if file_ext != '.lofasm' or file_ext != '.lofasm.gz':
                     print "Warning: file extension not recognized. Attempting to open anyway."
-
                 #get file handler
                 if self.gz:
                     print "Warning: gzipped files are only supported for header versions 4 or higher."
@@ -813,7 +826,7 @@ class LoFASMFileCrawler(object):
         self._file_hdr = parse_file_header(self._lofasm_file)
 
         #find end of file
-        if int(self._file_hdr[2][1]) == 4:
+        if int(self._file_hdr[2][1]) >= 4:
             self._lofasm_file_end = self._file_hdr[3][1] + int(self._file_hdr[12][1])*INTEGRATION_SIZE_B
         else:
             self._lofasm_file_end = self._get_file_end_loc()
