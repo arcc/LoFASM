@@ -236,7 +236,7 @@ if __name__ == "__main__":
                                                        dataBuf.getvalue())
                             real64_binary = struct.pack('2048d', *data_int32)
                         datfile.write(real64_binary)
-                        
+
                 # End loop over polarizations.
 
                 # Advance to next integration.
