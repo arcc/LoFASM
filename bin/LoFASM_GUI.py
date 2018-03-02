@@ -1,29 +1,28 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 import matplotlib
-matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
 import matplotlib.animation as animation
 from lofasm import parse_data as pdat
+from lofasm.filter import running_median
 import matplotlib.pyplot as plt
 import sys
 import numpy as np
 import argparse
 from tkFileDialog import askopenfilename
 plt.ion()
-from lofasm.filter import running_median
 import time
 import Tkinter as tk
 import ttk
 import matplotlib.pyplot as plt
 import thread
-
+import os
 import warnings
 
 warnings.filterwarnings('ignore',r'divide by zero encountered in log10')
 
 #############################################
-#### this uses argparse to create a help menu 
+#### this uses argparse to create a help menu
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-lf', '--lower_frequency', action='store', dest='lower_freq',
@@ -68,13 +67,12 @@ results = parser.parse_args()
 class LoFASMGUIapp(tk.Tk):
 
     def __init__(self, *args, **kwargs):
-        
+
         tk.Tk.__init__(self, *args, **kwargs)
 
-        #tk.Tk.iconbitmap(self, default="clienticon.ico")
         tk.Tk.wm_title(self, "LoFASM Client")
-        
-        
+
+
         container = tk.Frame(self)
         container.pack(side="top", fill="both", expand = True)
         container.grid_rowconfigure(0, weight=1)
@@ -245,7 +243,7 @@ class GraphPage(tk.Frame):
         self.button_get  = tk.Button(self,text='get',command=lambda: self.get()).grid(row=8,column=2)
 
         #Gui Row 9
-        
+
         self.button_plot = tk.Button(self,text='plot',command=lambda: self.plot()).grid(row=9, column=1, columnspan=2, rowspan=1)#,sticky=tk.W+tk.E+tk.N+tk.S)
         #self.button_quit = tk.Button(self,text='quit').grid(row=7,column=0)
 
@@ -273,12 +271,12 @@ class GraphPage(tk.Frame):
         canvas2 = FigureCanvasTkAgg(self.fig2 , self)
         canvas2.show()
         canvas2.get_tk_widget().grid(row=11 , column=0 , columnspan=4)
-        
-        
+
+
         toolbar = NavigationToolbar2TkAgg(canvas, self)
         toolbar.update()
         canvas._tkcanvas.grid(row=1 , column=12)#pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-        '''   
+        '''
 
     def create_figure(self):
         '''
@@ -343,38 +341,43 @@ class GraphPage(tk.Frame):
 
     def get(self):
         '''
-        retrieve values 
+        retrieve values
         '''
         if self.correlation_variable.get():
             results.current_correlation = self.correlation_variable.get()
             self.current_correlation_label.configure(text=results.current_correlation)
 
-        if self.lfEntry.get():                   # If the Entry field is not empty 
-            results.lower_freq = self.lfEntry.get() # Get the new value
+        if self.lfEntry.get():                   # If the Entry field is not empty
+            results.lower_freq = float(self.lfEntry.get()) # Get the new value
             self.l7.configure(text=str(results.lower_freq)+' MHz') # update label
-            self.pow_spec_plot.set_xlim(int(results.lower_freq),int(results.upper_freq))
-            #print "```````````````````````````"+str(int(results.lower_freq)*10.24)
-            self.filter_bank_plot.set_ylim(int(int(results.lower_freq)*10.24),int(int(results.upper_freq)*10.24))
+            #self.pow_spec_plot.set_xlim(int(results.lower_freq),int(results.upper_freq))
+            #self.filter_bank_plot.set_ylim(int(int(results.lower_freq)*10.24),int(int(results.upper_freq)*10.24))
+            self.pow_spec_plot.set_xlim(pdat.freq2bin(results.lower_freq),pdat.freq2bin(results.upper_freq))
+            self.filter_bank_plot.set_ylim(pdat.freq2bin(results.lower_freq),pdat.freq2bin(results.upper_freq))
 
-        if self.ufEntry.get():                   # If the Entry field is not empty 
-            results.upper_freq = self.ufEntry.get() # Get the new value
+        if self.ufEntry.get():                   # If the Entry field is not empty
+            results.upper_freq = float(self.ufEntry.get()) # Get the new value
             self.l8.configure(text=str(results.upper_freq)+' MHz') # update label
-            self.pow_spec_plot.set_xlim(int(results.lower_freq),int(results.upper_freq))
-            self.filter_bank_plot.set_ylim(int(int(results.lower_freq)*10.24),int(int(results.upper_freq)*10.24))
+            #self.pow_spec_plot.set_xlim(int(results.lower_freq),int(results.upper_freq))
+            #self.filter_bank_plot.set_ylim(int(int(results.lower_freq)*10.24),int(int(results.upper_freq)*10.24))
+            self.pow_spec_plot.set_xlim(pdat.freq2bin(results.lower_freq),pdat.freq2bin(results.upper_freq))
+            self.filter_bank_plot.set_ylim(pdat.freq2bin(results.lower_freq),pdat.freq2bin(results.upper_freq))
 
-        if self.upEntry.get():                   # If the Entry field is not empty 
+        if self.upEntry.get():                   # If the Entry field is not empty
             results.upper_power = self.upEntry.get() # Get the new value
             self.l9.configure(text=str(results.upper_power)+' dBm') # update label
             self.pow_spec_plot.set_ylim(int(results.lower_power),int(results.upper_power))
 
-        if self.lpEntry.get():                   # If the Entry field is not empty 
+        if self.lpEntry.get():                   # If the Entry field is not empty
             results.lower_power = self.lpEntry.get() # Get the new value
             self.l10.configure(text=str(results.lower_power)+' dBm') # update label
             self.pow_spec_plot.set_ylim(int(results.lower_power),int(results.upper_power))
 
-    def _open(self): 
+    def _open(self):
         results.file_name = askopenfilename(filetypes=[("allfiles","*"),("binary files","*.dat"),("FITS files","*.fits"),("LoFASM Data Files","*.lofasm")]) #open data file, currently .lofasm
-        tk.Label(master=self,text=results.file_name.split('/')[-1][:20]+'...').grid(row=0, column=1)
+        #tk.Label(master=self,text=results.file_name.split('/')[-1][:20]+'...').grid(row=0, column=1)
+        tk.Label(master=self,text=os.path.basename(results.file_name)[:20]
+                 +'...').grid(row=0, column=1)
 
         self.crawler_mid = pdat.LoFASMFileCrawler(results.file_name)
         self.crawler_front = pdat.LoFASMFileCrawler(results.file_name)
@@ -390,7 +393,7 @@ class GraphPage(tk.Frame):
         self.create_figure()
 
         self.openedfile = True
-      
+
     def animate(self,i):
         #a = time.time()
 
@@ -407,9 +410,9 @@ class GraphPage(tk.Frame):
             power_front = 10*np.log10(self.crawler_front.autos[results.current_correlation])
         #print str(time.time()-a)+'second to read data'
         if self.play == True:
-            
+
             self.line.set_ydata(power_mid)
-            
+
             print "front"
             a = time.time()
             self.crawler_front.forward()
@@ -423,8 +426,6 @@ class GraphPage(tk.Frame):
             self.pow_spec_plot.set_title('T+'+str(round(self.t/10.24,2)))
             self.t+=1
 
-            #return self.line, 
-            #return self.im,
         else:
             pass
 
@@ -442,7 +443,7 @@ class GraphPage(tk.Frame):
             #stuff = np.linspace(0,500,2048)
             #print power[300:500]
             self.filter_bank_data = np.hstack((self.filter_bank_data,(power).reshape((2048,1))))
-            
+
             self.filter_bank_data = np.delete(self.filter_bank_data,0,1)
             print self.filter_bank_data[400:500,-1]
             #self.im.autoscale()
@@ -464,7 +465,7 @@ class GraphPage(tk.Frame):
             print 'playing'
         else:
             self.play = False
-            print "paused" 
+            print "paused"
 
 
 if __name__ == '__main__':
@@ -475,7 +476,6 @@ if __name__ == '__main__':
             app.frames[GraphPage].animate,
             init_func=None,
             frames=10000, interval=83.*1.5, blit=False)
-        #anim2 = animation.FuncAnimation(app.frames[PageThree].fig2 , app.frames[PageThree].animate2, init_func=None,frames=10000, interval=83, blit=False)
         app.mainloop()
     except KeyboardInterrupt:
         exit()
