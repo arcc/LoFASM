@@ -29,19 +29,28 @@ def plot_single_file(bbxFile, **kwargs):
     dim11 = float(f.header['dim1_span']) + dim10
     dim20 = float(f.header['dim2_start'])
     dim21 = float(f.header['dim2_span']) + dim20
+
+    # convert frequencies to MHz
+    dim20 /= 1e6
+    dim21 /= 1e6
+
     data = 10*np.log10(f.data)
     plt.imshow(data if f.header['metadata']['complex']==1 else np.abs(data)**2,
                aspect='auto', origin='lower', cmap ='hot',
                interpolation='none', extent=[dim10, dim11, dim20, dim21])
-    plt.title(infile)
+    plt.title(os.path.basename(infile))
     plt.xlabel("Time sample")
-    plt.ylabel("Frequency (Hz)")
+    plt.ylabel("Frequency (MHz)")
     plt.colorbar()
 
     if kwargs.has_key('savefig'):
-        bn = os.path.basename(bbxFile)
-        plt.savefig(bn + '.png')
-    if not kwargs.has_key('suppress'):
+        if kwargs['savefig']:
+            bn = os.path.basename(bbxFile)
+            plt.savefig(bn + '.png')
+    if kwargs.has_key('suppress'):
+        if not kwargs['suppress']:
+            plt.show()
+    else:
         plt.show()
     plt.clf()
 
@@ -53,9 +62,9 @@ def plot_all_available_pols(bbxPrefix, **kwargs):
     ----------
     bbxPrefix : str
         bbx prefix to scan for in local directory.
-    
+
         arbitrary keyword arguments
-    savefig : bool 
+    savefig : bool
         save image in local directory if true. 
     '''
 
@@ -65,11 +74,11 @@ def plot_all_available_pols(bbxPrefix, **kwargs):
         raise RuntimeError("No files matching {}".format(regex))
     pols = kwargs['pols'].split(',')
     files = [files[i] for i in range(len(files)) if [p for p in pols if p in files[i]] ]
-    
+
     for f in files:
         print "Processing {}...".format(f)
         plot_single_file(f, suppress=True, savefig=True)
-    
+
 
 
 
@@ -80,7 +89,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', action='store_true',
                          help="Set to plot all available polarizations of prefix.")
     parser.add_argument('--savefig', '-s', help="save figure in local direcotry",
-                        type=bool, default=False)
+                        action='store_true', dest='s')
     parser.add_argument('--pols', help="pols to plot. comma separated list",
                         default=",".join(Baselines))
     args = parser.parse_args()
@@ -89,5 +98,7 @@ if __name__ == "__main__":
 
     if args.p:
         plot_all_available_pols(args.inputfile, pols=args.pols, savefig=True)
+    elif args.s:
+        plot_single_file(args.inputfile, suppress=True, savefig=True)
     else:
         plot_single_file(args.inputfile)

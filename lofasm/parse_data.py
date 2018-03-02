@@ -808,8 +808,10 @@ class LoFASMFileCrawler(object):
             else:
                 #check file extension
                 file_ext = filename[-7:]
-                if file_ext != '.lofasm' or file_ext != '.lofasm.gz':
-                    print "Warning: file extension not recognized. Attempting to open anyway."
+                if file_ext != '.lofasm' and file_ext != '.lofasm.gz':
+                    print "Warning: {} file extension not recognized.".format(
+                        file_ext)
+                    print "Attempting to open anyway."
                 #get file handler
                 if self.gz:
                     print "Warning: gzipped files are only supported for header versions 4 or higher."
