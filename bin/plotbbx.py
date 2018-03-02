@@ -53,9 +53,9 @@ def plot_all_available_pols(bbxPrefix, **kwargs):
     ----------
     bbxPrefix : str
         bbx prefix to scan for in local directory.
-    
+
         arbitrary keyword arguments
-    savefig : bool 
+    savefig : bool
         save image in local directory if true. 
     '''
 
@@ -65,11 +65,11 @@ def plot_all_available_pols(bbxPrefix, **kwargs):
         raise RuntimeError("No files matching {}".format(regex))
     pols = kwargs['pols'].split(',')
     files = [files[i] for i in range(len(files)) if [p for p in pols if p in files[i]] ]
-    
+
     for f in files:
         print "Processing {}...".format(f)
         plot_single_file(f, suppress=True, savefig=True)
-    
+
 
 
 
