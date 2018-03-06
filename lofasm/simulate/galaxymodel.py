@@ -100,7 +100,11 @@ class station(object):
         return np.pi/2.0 - 10.0*np.pi/180
 
 
-    def calculate_gnoise(self,utc=-1):
+    def calculate_gnoise(self,t=-1,lst=False):
+        '''
+        if lst is false then t is treated as a datetime object in utc.
+        otherwise t is a float indicating the lst in hours
+        '''
 
         M = 30
         gasleg = np.polynomial.legendre.leggauss(M)
@@ -112,11 +116,17 @@ class station(object):
         weights *= np.pi/M
 
         O = 0
-        if (utc == -1):
-            self.__lst_current = self.lst() #Remove
-        else:
-			t = sidereal.SiderealTime.fromDatetime(utc)
-			self.__lst_current = t.lst(self.east_long_radians)
+
+        # set __lst_current
+        if not lst:
+            utc = t
+            if (utc == -1):
+                self.__lst_current = self.lst() #Remove
+            else:
+			    t = sidereal.SiderealTime.fromDatetime(utc)
+			    self.__lst_current = t.lst(self.east_long_radians)
+        else: # lst==True
+            self.__lst_current = sidereal.SiderealTime(t)
 
         for cos_theta1,weights1 in zip(cos_theta,weights):
             theta1 = np.arccos(cos_theta1)
@@ -125,22 +135,19 @@ class station(object):
 
         return O
 
-    def calculate_gpowervslstarray(self,utc_time,verbose=True):
+    def calculate_gpowervslstarray(self,times,verbose=True,lst=False):
 
         power = []
-        utc = utc_time
 
         ge = "Generating models... "
-        for hour in utc:
-            power.append(self.calculate_gnoise(utc=hour)) #If "lst=", type(hour)==datetime.datetime is true.
+        for hour in times:
+            power.append(self.calculate_gnoise(t=hour,lst=lst)) #If "lst=", type(hour)==datetime.datetime is true.
             if verbose==True:
-                p = (str((utc.index(hour))*100/len(utc)) + '%')
-                if utc.index(hour) == (len(utc)-1):
+                p = (str((times.index(hour))*100/len(times)) + '%')
+                if times.index(hour) == (len(times)-1):
                     p = "Done"
                 sys.stdout.write("\r%s%s" % (ge,p))
                 sys.stdout.flush()
-
-        #~ print np.shape(utc)
 
         return power
 
