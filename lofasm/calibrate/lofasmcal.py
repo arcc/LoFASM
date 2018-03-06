@@ -176,7 +176,7 @@ class galaxy(object):
                       4:{'name':'LIV', 'lat':[34,12,3.0],
                          'long':[118,10,18.0], 't_offset':7.87811111111111}}
 
-    def galaxy_power_array(self, time_array, freq, stationID, horizon_cutoff=0.0, config='', verbose=True):
+    def galaxy_power_array(self, time_array, freq, stationID, horizon_cutoff=0.0, config='', verbose=True,lst=False):
 
         time_list = list(time_array)  # Convert nparray to list - for %age
         lfs = self.lfdic[stationID]
@@ -190,7 +190,7 @@ class galaxy(object):
         FOV = LoFASM.lofasm.Omega()
         conversion = np.divide((np.power(np.divide(3.0*1.0e8,45.0e6),2)),(FOV))
 
-        power = np.multiply(LoFASM.calculate_gpowervslstarray(time_list, verbose=verbose),conversion)
+        power = np.multiply(LoFASM.calculate_gpowervslstarray(time_list, verbose=verbose,lst=lst),conversion)
         return power
 
 
