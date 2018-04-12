@@ -177,7 +177,7 @@ class LofasmFile(object):
         AssertionError
             If file is not open for reading
         """
-        
+
 
         assert(self.mode == 'read'), "File not open for reading."
 
@@ -189,7 +189,7 @@ class LofasmFile(object):
         else:
             dim1_len = self.dim1_len
 
-        
+
         if not self.iscplx:
             if self.nbits == 64:
                 fmt = '{}d'.format(self.dim2_len)
