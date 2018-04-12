@@ -128,6 +128,10 @@ if __name__ == "__main__":
                 mjd_msec = float( field[1] )
             elif field[0] == "int_time":
                 int_time = float( field[1] )
+            elif field[0] == "hdr_ver":
+                lofasm_hdr_version = int( field[1] )
+
+
 
         # THROW AWAY THE EMPTY HALF OF THE FREQUENCY BINS
         nbins = nbins//2
@@ -280,12 +284,25 @@ if __name__ == "__main__":
                 hdrfile.write( "\n" )
                 hdrfile.write( "%station: {}\n".format( station ) )
                 hdrfile.write( "%channel: {}\n".format( pol ) )
+                if lofasm_hdr_version >= 5:
+                    if pol[0]==pol[1]:
+                        for k,v in header.items():
+                            if v[0]=='Trunk{}'.format(pol[0]):
+                                chan_label = v[1]
+                    else:
+                        for k,v in header.items():
+                            if v[0]=='Trunk{}'.format(pol[0]):
+                                chan1 = v[1]
+                            elif v[0]=='Trunk{}'.format(pol[1]):
+                                chan2 = v[1]
+                        chan_label = "{}x{}".format(chan1,chan2)
+                    hdrfile.write("%channel_label: {}\n".format(chan_label))
                 hdrfile.write( "%start_time: {}\n".format( tstart ) )
                 hdrfile.write( "%time_offset_J2000: 0 (s)\n" )
                 hdrfile.write( "%frequency_offset_DC: 0 (Hz)\n" )
                 hdrfile.write( "%dim1_label: time (s)\n" )
                 hdrfile.write( "%dim1_start: {}\n".format( toff ) )
-                hdrfile.write( "%dim1_span: {}\n".format( int_time*nint ) ) 
+                hdrfile.write( "%dim1_span: {}\n".format( int_time*nint ) )
                 hdrfile.write( "%dim2_label: frequency (Hz)\n" )
                 hdrfile.write( "%dim2_start: {}\n".format( fstart ) )
                 hdrfile.write( "%dim2_span: {}\n".format( fstep*nbins ) )
