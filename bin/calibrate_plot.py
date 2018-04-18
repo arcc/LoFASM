@@ -1,8 +1,5 @@
 #! /usr/bin/env python
-import numpy as np
-import matplotlib.pyplot as plt
-from datetime import datetime, timedelta
-from glob import glob
+
 from lofasm.bbx import bbx
 from lofasm.time import UT_to_LST
 from lofasm.galaxy_model import galaxyPower
@@ -10,7 +7,10 @@ from lofasm.station import LoFASM_Stations
 from astropy.time import Time
 from lofasm.parse_data import freq2bin
 from scipy.optimize import curve_fit
-
+import numpy as np
+import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
+from glob import glob
 
 def avgpow(lf,freq):
     x = lf.data[freq2bin(freq), :]
@@ -41,17 +41,25 @@ if __name__ == '__main__':
         start_hr = start_sr.hour
 
         powmodel = galaxyPower.calculatepower(start_hr,st,args.freq,0)
-        x.append((start,avg,powmodel))
+        x.append((start_hr,avg,powmodel))
 
     t, avg, gal = zip(*x)
-    def linearData(l,a,b):
-        return(a*np.array(gal)+b)
-    popt, pcov = curve_fit(linearData,len(avg),avg)
-    calib = linearData(1,*popt)
+
+    def lst2pow(lst):
+        x = np.zeros_like(lst)
+        for i in range(len(lst)):
+            x[i] = galaxyPower.calculatepower(lst[i],st, args.freq,0)
+        return x
+
+    def linearData(xdata,a,b):
+        return a * (lst2pow(xdata) + b)
+
+    popt, pcov = curve_fit(linearData,t,avg)
+    calib = linearData(t,*popt)
     plt.figure()
     plt.title('Power vs LST')
     plt.plot(t, 10*np.log10(avg), '.', label = 'LoFASM')
-    plt.plot(t, 10*np.log10(gal), '.', label = 'Model')
+    # plt.plot(t, 10*np.log10(gal), '.', label = 'Model')
     plt.plot(t, 10*np.log10(calib), '.', label = 'Calib')
     plt.legend()
     plt.figure()
