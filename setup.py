@@ -2,6 +2,11 @@
 
 
 from distutils.core import setup
+from glob import glob
+import os
+
+galaxy_model_files = [os.path.basename(f) for f in glob('lofasm/galaxy_model/*.dat')]
+
 
 setup(
     name='lofasm',
@@ -16,9 +21,15 @@ setup(
               'lofasm.clean',
               'lofasm.data_file_info',
               'lofasm.calibrate',
-              'lofasm.handler'],
-    package_dir={'lofasm.simulate': 'lofasm/simulate'},
-    package_data={'lofasm.simulate': ['lambda_haslam408_dsds.fits.txt']},
+              'lofasm.handler',
+              'lofasm.galaxy_model'
+              ],
+    package_dir={'lofasm.simulate': 'lofasm/simulate',
+                'lofasm.galaxy_model': 'lofasm/galaxy_model'
+                 },
+    package_data={'lofasm.simulate': ['lambda_haslam408_dsds.fits.txt'],
+                'lofasm.galaxy_model': galaxy_model_files
+                  },
     scripts=['bin/lofasm_plot.py',
              'bin/simulate_signal_as_AA.py',
              'bin/simulate_zeros_as_AA.py',
@@ -40,7 +51,8 @@ setup(
              'bin/cleanfile.py',
              'bin/normalize_data.py',
              'bin/clean_data.py',
-             'bin/plotbbx.py'],
+             'bin/plotbbx.py',
+             'bin/calibrate_plot.py'],
 
     description='LoFASM Tools',
     long_description=open('README.md').read(),
