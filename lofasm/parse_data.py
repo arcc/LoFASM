@@ -807,10 +807,10 @@ class LoFASMFileCrawler(object):
                 self._lofasm_file = filename
             else:
                 #check file extension
-                file_ext = filename[-7:]
-                if file_ext != '.lofasm' and file_ext != '.lofasm.gz':
+                if not filename.endswith('.lofasm') and \
+                   not filename.endswith('.lofasm.gz'):
                     print "Warning: {} file extension not recognized.".format(
-                        file_ext)
+                        filename)
                     print "Attempting to open anyway."
                 #get file handler
                 if self.gz:
