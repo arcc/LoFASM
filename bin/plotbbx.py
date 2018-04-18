@@ -39,6 +39,7 @@ def plot_single_file(bbxFile, **kwargs):
                aspect='auto', origin='lower', cmap ='hot',
                interpolation='none', extent=[dim10, dim11, dim20, dim21])
     plt.title(os.path.basename(infile))
+    #plt.title("LoFASM {st}: ")
     plt.xlabel("Time sample")
     plt.ylabel("Frequency (MHz)")
     plt.colorbar()
