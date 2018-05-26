@@ -27,6 +27,9 @@ LoFASM_Stations[1] = LoFASM1
 LoFASM_Stations[2] = LoFASM2
 LoFASM_Stations[3] = LoFASM3
 LoFASM_Stations[4] = LoFASM4
+for (k,v) in LoFASM_Stations.items():
+    v.pressure = 0
+    v.horizon = "65" #degrees
 
 
 class lofasmStation(object):
