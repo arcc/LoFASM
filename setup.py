@@ -31,11 +31,6 @@ setup(
                 'lofasm.galaxy_model': galaxy_model_files
                   },
     scripts=['bin/lofasm_plot.py',
-             'bin/lofasm2fil.py',
-             'bin/applyDelay.py',
-             'bin/lofasm2d.py',
-             'bin/lightcurve.py',
-             'bin/skymap.py',
              'bin/loco2bx.py',
              'bin/lofasm2csv.py',
              'bin/simulate_dispered_filterbank.py',
