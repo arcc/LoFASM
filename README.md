@@ -14,6 +14,12 @@ I _strongly_ recommend installing the LoFASM tools in a virtual environment.
 To install run the setup.py script
 
 	python setup.py install
+
+#### Plotting with Matplotlib
+If you are hoping to use LoFASM's plotting tools then there is a possibility 
+that you will need to manually configure the matplotlib backend for your system.
+The best way to do this is to set the environment variable `MPLBACKEND` as 
+mentioned on the [matplotlib website](https://matplotlib.org/faq/environment_variables_faq.html).
  
 ### Windows
 This software has not been tested on Windows. If you get it working
