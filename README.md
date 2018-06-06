@@ -8,15 +8,16 @@ transients. LoFASM's band of interest is 5-88MHz. LoFASM was built and designed 
 a group of students and professor at the University of Texas at Brownsville.
 
 ## Installation
+I _strongly_ recommend installing the LoFASM tools in a virtual environment.
 
 ### Mac OSX and Linux
-To install run the setup.py script with root permissions
+To install run the setup.py script
 
-	sudo python setup.py install
+	python setup.py install
  
 ### Windows
 This software has not been tested on Windows. If you get it working
-please let me know!
+please let us know!
 
 ## Dependencies
 * numpy
@@ -43,14 +44,5 @@ correctly. :)
 
 
 __Refer to the _docs_ directory for more information.__
-
-
-## Contributing
-Pushing directly to this repository is discouraged. Please 
-fork this repo and push your changes to your own working copy. 
-Once your code is ready to be added to the repo create a pull
-request so that I can merge it.
-
-
 
 
