@@ -66,9 +66,8 @@ class ViewPage(tk.Frame):
         ax_image = fig.add_axes(image_rect)
         # set plot labels
         ax_squash.set_ylabel(self.bbxfile.header['data_label'])
-        ax_image.set_ylabel("{} since MJD {}".format(
-            self.bbxfile.header['dim1_label'],
-            self.bbxfile.header['start_mjd']))
+        ax_image.set_ylabel("{} since beginning".format(
+            self.bbxfile.header['dim1_label']))
         ax_image.set_xlabel(self.bbxfile.header['dim2_label'])
 
         # get axis ranges
