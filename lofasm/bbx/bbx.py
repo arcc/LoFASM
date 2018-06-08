@@ -112,8 +112,8 @@ class LofasmFile(object):
         assert(self.mode == 'write'), "File not open for writing."
 
         if data.ndim == 2:
-            dim2_bins, dim1_bins = np.shape(data)
-            data = data.flatten('F')
+            dim1_bins, dim2_bins = np.shape(data)
+            data = data.flatten()
         elif data.ndim == 1:
             data = data.flatten()
             dim2_bins = len(data)
