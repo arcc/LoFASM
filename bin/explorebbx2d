@@ -29,16 +29,37 @@ class ViewPage(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.parent = parent
         self.bbxfile = lfx
+        #self.create_label_widgets()
         self.create_plot_widgets()
         self.pack(fill="both", expand=True)
 
+
+    def create_label_widgets(self):
+        '''
+        create and place label widgets
+        '''
+
+        hdr_str = ''''''
+        for k,v in self.bbxfile.header.items():
+            s = "{}: {}\n".format(k, v)
+            hdr_str += s
+
+        label = tk.Label(self, text=hdr_str)
+        label.pack(fill='both', expand=True)
+        #label.grid(row=0, column=0, rowspan=5, sticky='nswe')
 
     def create_plot_widgets(self):
         '''
         Create and place plotting widgets in window
         '''
 
-        bbxdata = 10*np.log10(self.bbxfile.data.transpose())
+        #bbxdata = 10*np.log10(self.bbxfile.data.transpose())
+        if self.bbxfile.iscplx:
+            bbxdata = 10*np.log10(np.abs(self.bbxfile.data)**2)
+            print "Plotting the absolute value squared of complex data."
+        else:
+            bbxdata = 10*np.log10(self.bbxfile.data)
+
 
         # calculate step size for each dim
         # when being plotted dim1 will be the y-axis
@@ -53,10 +74,13 @@ class ViewPage(tk.Frame):
         # create canvas
         canvas = FigureCanvasTkAgg(fig, self)
         canvas.get_tk_widget().pack(fill='both', expand=True)
+        #canvas.get_tk_widget().grid(row=0, column=1, rowspan=4, columnspan=4,
+        #                            sticky=tk.N+tk.S+tk.E+tk.W)
 
         # create toolbar
         toolbar = NavigationToolbar2TkAgg(canvas, self)
         toolbar.update()
+
 
         # plot axis rectangles (l,b,w,h)
         squash_rect = (.1, .77, .88, .2)
@@ -123,7 +147,6 @@ class ViewPage(tk.Frame):
         # connect event triggers to event handlers
         cid = fig.canvas.mpl_connect('motion_notify_event', update_squash)
         ax_image.callbacks.connect('xlim_changed', new_x_limit)
-
         canvas.draw()
 
 

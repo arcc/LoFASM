@@ -158,8 +158,8 @@ class LofasmFile(object):
         """Parse data block in LoFASM filterbank file and load into 
         memory as `self.data`.
         The resulting data array in self.data is stored as a 2d 
-        array with dim1 as the horizontal axis and
-        dim2 as the vertical axis.
+        array with dim1 as the vertical axis and
+        dim2 as the horizontal axis.
         If reading a typical LoFASM-filterbank file then the 
         x-axis will represent the time bins and the y-axis will
         represent the frequency bins.
@@ -190,6 +190,7 @@ class LofasmFile(object):
             dim1_len = self.dim1_len
 
 
+        # real data
         if not self.iscplx:
             if self.nbits == 64:
                 fmt = '{}d'.format(self.dim2_len)
@@ -198,12 +199,13 @@ class LofasmFile(object):
 
             self._debug('parsing real data')
             nbytes = self.freqbins * self.nbits / 8
-            self.data = np.zeros((int(self.dim2_len), int(dim1_len)),
+            self.data = np.zeros((int(dim1_len), int(self.dim2_len)),
                                  dtype=np.float64)
             self.dtype = self.data.dtype
-            for col in range(dim1_len):
+            for row in range(dim1_len):
                 spec = struct.unpack(fmt, self._fp.read(nbytes))
-                self.data[:,col] = spec
+                self.data[row,:] = spec
+        # complex data
         else:
             if self.nbits == 64:
                 fmt = '{}d'.format(2*self.dim2_len)
@@ -211,12 +213,12 @@ class LofasmFile(object):
                 fmt = '>{}l'.format(2*self.dim2_len)
             self._debug('parsing complex data')
             nbytes = 2 * self.freqbins * self.nbits / 8
-            self.data = np.zeros((int(self.dim2_len), int(dim1_len)), dtype=np.complex128)
+            self.data = np.zeros((int(dim1_len), int(self.dim2_len)), dtype=np.complex128)
             self.dtype = self.data.dtype
-            for col in range(dim1_len):
+            for row in range(dim1_len):
                 spec_cmplx = struct.unpack(fmt, self._fp.read(nbytes))
                 i=0
-                for row in range(len(spec_cmplx)/2):
+                for col in range(len(spec_cmplx)/2):
                     self.data[row, col] = np.complex64(complex(spec_cmplx[i], spec_cmplx[i+1]))
                     i += 2
 
