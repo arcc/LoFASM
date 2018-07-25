@@ -266,21 +266,30 @@ class LofasmFile(object):
         if self._fp.tell() == 0:
             self._write_header()
 
-        N = len(self.data)
-        realfmt = '{}d'.format(N)
-        cplxfmt = '{}d'.format(2*N)
+        # write data by row to handle larger files
+        Nr, Nc = self.data.shape
+        real_row_fmt = '{}d'.format(Nc)
+        cplx_row_fmt = '{}d'.format(2*Nc)
 
         if np.iscomplexobj(self.data):
             self._debug("Writing complex data")
-            cplxdata = np.zeros(2*N, dtype=np.float64)
-            i = 0
-            for k in range(N):
-                cplxdata[i] = self.data[k].real
-                cplxdata[i+1] = self.data[k].imag
-                i += 2
-            self._fp.write(struct.pack(cplxfmt, *cplxdata))
+
+            # use a buffer to process each row of data
+            for ri in range(Nr):
+                cplx_row_buf = np.zeros(2*Nc, dtype=np.float64)
+                rowdata = self.data[ri]
+                i = 0
+                # populate buffer with current row contents
+                for ci in range(Nc):
+                    cplx_row_buf[i] = rowdata[ci].real
+                    cplx_row_buf[i+1] = rowdata[ci].imag
+                    i += 2
+                self._fp.write(struct.pack(cplx_row_fmt, *cplx_row_buf))
+
         else:
-            self._fp.write(struct.pack(realfmt, *self.data))
+            self._debug("Writing real data")
+            for ri in range(Nr):
+                self._fp.write(struct.pack(real_row_fmt, *self.data[ri]))
 
     ###################
     # Private methods #
