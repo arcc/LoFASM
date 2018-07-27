@@ -16,6 +16,8 @@ from lofasm.bbx import bbx
 warnings.filterwarnings('ignore', r'divide by zero encountered in log10')
 warnings.filterwarnings('ignore', r'The NavigationToolbar2TkAgg class was deprecated')
 
+global CMAP
+
 class main_app(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
@@ -114,7 +116,7 @@ class ViewPage(tk.Frame):
                             lfx.header['metadata']['dim2_len'],
                             endpoint=False)
         squash_line, = ax_squash.plot(xvals, bbxdata[0,:])
-        ax_image.imshow(bbxdata, aspect='auto',
+        ax_image.imshow(bbxdata, aspect='auto', cmap=CMAP,
                         extent=[image_xstart, image_xend,
                                 image_ystart, image_yend])
 
@@ -157,7 +159,11 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser()
     p.add_argument('filename', type=str,
                    help='Input BBX Filename')
+    p.add_argument('-c', '--cmap', type=str,
+                   default='hot',
+                   help='matplotlib colormap')
     args = p.parse_args()
+    CMAP = args.cmap
     filename = args.filename
     lfx = bbx.LofasmFile(filename)
     lfx.read_data()
