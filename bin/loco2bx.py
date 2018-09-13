@@ -132,7 +132,7 @@ if __name__ == "__main__":
                 lofasm_hdr_version = int( field[1] )
 
 
-
+        mjd = mjd_day + mjd_msec * 8.64e-7
         # THROW AWAY THE EMPTY HALF OF THE FREQUENCY BINS
         nbins = nbins//2
         ##
@@ -155,6 +155,7 @@ if __name__ == "__main__":
             toff *= 86400.0
             toff += float(mjd_msec)*0.001
             int_time *= 1.0  # since we're keeping things in seconds
+
 
             # Set up some more constants for this file.
             realfmt = 'd'*nbins           # Format for struct.pack() on real data
@@ -298,6 +299,7 @@ if __name__ == "__main__":
                         chan_label = "{}x{}".format(chan1,chan2)
                     hdrfile.write("%channel_label: {}\n".format(chan_label))
                 hdrfile.write( "%start_time: {}\n".format( tstart ) )
+                hdrfile.write( "%start_mjd: {}\n".format( mjd ))
                 hdrfile.write( "%time_offset_J2000: 0 (s)\n" )
                 hdrfile.write( "%frequency_offset_DC: 0 (Hz)\n" )
                 hdrfile.write( "%dim1_label: time (s)\n" )
