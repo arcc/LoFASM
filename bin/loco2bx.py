@@ -303,10 +303,10 @@ if __name__ == "__main__":
                 hdrfile.write( "%time_offset_J2000: 0 (s)\n" )
                 hdrfile.write( "%frequency_offset_DC: 0 (Hz)\n" )
                 hdrfile.write( "%dim1_label: time (s)\n" )
-                hdrfile.write( "%dim1_start: {}\n".format( toff ) )
+                hdrfile.write( "%dim1_start: {:.15f}\n".format( toff ) )
                 hdrfile.write( "%dim1_span: {}\n".format( int_time*nint ) )
                 hdrfile.write( "%dim2_label: frequency (Hz)\n" )
-                hdrfile.write( "%dim2_start: {}\n".format( fstart ) )
+                hdrfile.write( "%dim2_start: {:.15f}\n".format( fstart ) )
                 hdrfile.write( "%dim2_span: {}\n".format( fstep*nbins ) )
                 if pol[0] == pol[1]:
                     hdrfile.write( "%data_label: power spectrum (arbitrary)\n" )
