@@ -5,7 +5,7 @@
 # Constants
 version = 1.0
 mjd_epoch = 2451545  # J2000 epoch
-mjd_offset = 2400000 # Entries in LoCo files subtracted this from JD
+mjd_offset = 2400000.5 # Entries in LoCo files subtracted this from JD
 polarizations = "AA,BB,CC,DD,AB,AC,AD,BC,BD,CD"
 
 # Imports
