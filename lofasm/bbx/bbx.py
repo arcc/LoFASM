@@ -34,6 +34,7 @@ class LofasmFile(object):
         self.iscplx = None
         self.fpath = lofasm_file
         self.fname = os.path.basename(lofasm_file)
+        self.ptr = 0 # pointer location (dim1)
 
         # validate file open mode
         if mode.lower() not in ('read', 'write'):
@@ -182,16 +183,20 @@ class LofasmFile(object):
         assert(self.mode == 'read'), "File not open for reading."
 
         if not N is None:
-            if N > self.dim1_len:
-                # max out at length of file
-                dim1_len = self.dim1_len
+            if N > self.dim1_len-self.ptr:
+                err = "Requested {} rows but only {} rows remain in file".format(
+                        N, self.dim1_len-self.ptr
+                        )
+                raise RuntimeError(err)
             elif N <= 0:
-                # return empty string
+                # do nothing
                 return 
-            else:
-                dim1_len = N
+            elif N+self.ptr <= self.dim1_len:
+                self.ptr = N+self.ptr
         else:
-            dim1_len = self.dim1_len
+            N = self.dim1_len - self.ptr
+            self.ptr = self.dim1_len
+        
 
 
         # real data
@@ -203,10 +208,10 @@ class LofasmFile(object):
 
             self._debug('parsing real data')
             nbytes = self.freqbins * self.nbits / 8
-            self.data = np.zeros((int(dim1_len), int(self.dim2_len)),
+            self.data = np.zeros((int(N), int(self.dim2_len)),
                                  dtype=np.float64)
             self.dtype = self.data.dtype
-            for row in range(dim1_len):
+            for row in range(N):
                 spec = struct.unpack(fmt, self._fp.read(nbytes))
                 self.data[row,:] = spec
         # complex data
@@ -217,9 +222,9 @@ class LofasmFile(object):
                 fmt = '>{}l'.format(2*self.dim2_len)
             self._debug('parsing complex data')
             nbytes = 2 * self.freqbins * self.nbits / 8
-            self.data = np.zeros((int(dim1_len), int(self.dim2_len)), dtype=np.complex128)
+            self.data = np.zeros((int(N), int(self.dim2_len)), dtype=np.complex128)
             self.dtype = self.data.dtype
-            for row in range(dim1_len):
+            for row in range(N):
                 spec_cmplx = struct.unpack(fmt, self._fp.read(nbytes))
                 i=0
                 for col in range(len(spec_cmplx)/2):
