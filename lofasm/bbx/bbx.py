@@ -181,11 +181,15 @@ class LofasmFile(object):
 
         assert(self.mode == 'read'), "File not open for reading."
 
-        if N:
+        if not N is None:
             if N > self.dim1_len:
+                # max out at length of file
                 dim1_len = self.dim1_len
-            elif N < 0:
-                return
+            elif N <= 0:
+                # return empty string
+                return '' 
+            else:
+                dim1_len = N
         else:
             dim1_len = self.dim1_len
 
