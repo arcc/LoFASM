@@ -4,7 +4,7 @@
 
 # Constants
 version = 1.0
-mjd_epoch = 2451545  # J2000 epoch
+mjd_epoch = 2451545.  # J2000 epoch
 mjd_offset = 2400000.5 # Entries in LoCo files subtracted this from JD
 polarizations = "AA,BB,CC,DD,AB,AC,AD,BC,BD,CD"
 
@@ -303,8 +303,7 @@ if __name__ == "__main__":
                 hdrfile.write( "%time_offset_J2000: 0 (s)\n" )
                 hdrfile.write( "%frequency_offset_DC: 0 (Hz)\n" )
                 hdrfile.write( "%dim1_label: time (s)\n" )
-                #hdrfile.write( "%dim1_start: {:.15f}\n".format( toff ) )
-                hdrfile.write( "%dim1_start: 0\n" )
+                hdrfile.write( "%dim1_start: {:.15f}\n".format( toff ) )
                 hdrfile.write( "%dim1_span: {}\n".format( int_time*nint ) )
                 hdrfile.write( "%dim2_label: frequency (Hz)\n" )
                 hdrfile.write( "%dim2_start: {:.15f}\n".format( fstart ) )
