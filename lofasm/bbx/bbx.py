@@ -187,7 +187,7 @@ class LofasmFile(object):
                 dim1_len = self.dim1_len
             elif N <= 0:
                 # return empty string
-                return '' 
+                return 
             else:
                 dim1_len = N
         else:
