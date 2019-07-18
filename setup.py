@@ -18,7 +18,6 @@ setup(
               'lofasm.simulate',
               'lofasm.bbx',
               'lofasm.formats',
-              'lofasm.clean',
               'lofasm.data_file_info',
               'lofasm.calibrate',
               'lofasm.handler',
