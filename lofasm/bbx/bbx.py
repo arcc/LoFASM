@@ -526,7 +526,9 @@ class LofasmFile(object):
         :raises:
             AttributeError if attribute is not found.
         """
-        if key in self.header.keys():
+        if key in self.__dict__.keys():
+            val = self.__dict__[key]
+        elif key in self.header.keys():
             val = self.header[key]
         elif key in self.metadata.keys():
             val = self.metadata[key]
@@ -534,8 +536,6 @@ class LofasmFile(object):
             val = self.metadata['dim1_len']
         elif key == 'freqbins':
             val = self.metadata['dim2_len']
-        elif key in self.__dict__.keys():
-            val = self.__dict__[key]
         else:
             raise AttributeError("LoFASM File class has no attribute {}".format(key))
 
