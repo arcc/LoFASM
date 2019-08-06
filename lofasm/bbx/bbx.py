@@ -34,7 +34,7 @@ class LofasmFile(object):
     """Class to represent .bbx-type data files for LoFASM.
     Currently, the only data format supported is 'LoFASM-filterbank'.
     """
-    def __init__(self, lofasm_file, header={}, verbose=False,
+    def __init__(self, lofasm_file, header={'metadata':{}}, verbose=False,
                  mode='read', gz=None):
 
         self.debug = True if verbose else False
@@ -93,6 +93,7 @@ class LofasmFile(object):
         self._data_fp = open(self._data_fname, 'wb')
 
         if mode in ['read']:
+            self._fp = gzip.open(self.fpath, self._fmode) if gz else open(self.fpath, self._fmode)
             self._load_header()
         elif mode == 'write':
             self._debug("prepping file")
@@ -526,9 +527,7 @@ class LofasmFile(object):
         :raises:
             AttributeError if attribute is not found.
         """
-        if key in self.__dict__.keys():
-            val = self.__dict__[key]
-        elif key in self.header.keys():
+        if key in self.header.keys():
             val = self.header[key]
         elif key in self.metadata.keys():
             val = self.metadata[key]
