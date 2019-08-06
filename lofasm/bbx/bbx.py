@@ -174,11 +174,6 @@ class LofasmFile(object):
             # N reduces to `int(new_bins)` if internal block has been
             # recently dumped and cleared
             N = self.data.size + data.size 
-            print "Ninternal={}, Nappend={}, Ntotal = {}".format(
-                    self.data.size,
-                    data.size,
-                    N
-                    )
             dtype = np.float64 if self.complex=='1' else np.complex128
             newdata = np.zeros(N, dtype=dtype)
             newdata[:-data.size] = self.data
