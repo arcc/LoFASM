@@ -1,0 +1,181 @@
+#!/usr/bin/env python
+import matplotlib
+from matplotlib.backends.backend_tkagg import \
+    FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backend_tools import ToolBase, ToolToggleBase
+from matplotlib.figure import Figure
+import sys
+import numpy as np
+import time
+import Tkinter as tk
+import ttk
+import os
+import warnings
+from lofasm.bbx import bbx
+
+warnings.filterwarnings('ignore', r'divide by zero encountered in log10')
+warnings.filterwarnings('ignore', r'The NavigationToolbar2TkAgg class was deprecated')
+
+global CMAP
+
+class main_app(tk.Tk):
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
+
+    def set_bbxfile(self, bbxfile):
+        viewFrame = ViewPage(self, bbxfile)
+        viewFrame.pack()
+
+class ViewPage(tk.Frame):
+    def __init__(self, parent, *args, **kwargs):
+        tk.Frame.__init__(self, parent)
+        self.parent = parent
+        self.bbxfile = lfx
+        #self.create_label_widgets()
+        self.create_plot_widgets()
+        self.pack(fill="both", expand=True)
+
+
+    def create_label_widgets(self):
+        '''
+        create and place label widgets
+        '''
+
+        hdr_str = ''''''
+        for k,v in self.bbxfile.header.items():
+            s = "{}: {}\n".format(k, v)
+            hdr_str += s
+
+        label = tk.Label(self, text=hdr_str)
+        label.pack(fill='both', expand=True)
+        #label.grid(row=0, column=0, rowspan=5, sticky='nswe')
+
+    def create_plot_widgets(self):
+        '''
+        Create and place plotting widgets in window
+        '''
+
+        #bbxdata = 10*np.log10(self.bbxfile.data.transpose())
+        if self.bbxfile.iscplx:
+            bbxdata = 10*np.log10(np.abs(self.bbxfile.data)**2)
+            print "Plotting the absolute value squared of complex data."
+        else:
+            bbxdata = 10*np.log10(self.bbxfile.data)
+
+
+        # calculate step size for each dim
+        # when being plotted dim1 will be the y-axis
+        # and dim2 will be on the x-axis
+        ddim1 = float(lfx.header['dim1_span'])/lfx.header['metadata']['dim1_len']
+        ddim2 = float(lfx.header['dim2_span'])/lfx.header['metadata']['dim2_len']
+
+        # initialize figure
+        fs = (7,7)
+        fig = Figure(fs)
+
+        # create canvas
+        canvas = FigureCanvasTkAgg(fig, self)
+        canvas.get_tk_widget().pack(fill='both', expand=True)
+        #canvas.get_tk_widget().grid(row=0, column=1, rowspan=4, columnspan=4,
+        #                            sticky=tk.N+tk.S+tk.E+tk.W)
+
+        # create toolbar
+        toolbar = NavigationToolbar2TkAgg(canvas, self)
+        toolbar.update()
+
+
+        # plot axis rectangles (l,b,w,h)
+        squash_rect = (.1, .77, .88, .2)
+        image_rect = (.1, .07, .88, .65)
+        # create plot axes objects
+        ax_squash = fig.add_axes(squash_rect)
+        ax_image = fig.add_axes(image_rect)
+        # set plot labels
+        ax_squash.set_ylabel(self.bbxfile.header['data_label'])
+        # set ylabel based on available metadata information
+        if 'mjd_start' in self.bbxfile.header.keys():
+            ax_image.set_ylabel("{} since MJD {}".format(
+                self.bbxfile.header['dim1_label'],
+                self.bbxfile.header['mjd_start']))
+        else:
+            ax_image.set_ylabel("{} since beginning".format(
+                self.bbxfile.header['dim1_label']))
+
+        ax_image.set_xlabel(self.bbxfile.header['dim2_label'])
+
+        # get axis ranges
+        image_xstart = float(self.bbxfile.header['dim2_start'])
+        image_xend = image_xstart + float(self.bbxfile.header['dim2_span'])
+        image_ystart = float(self.bbxfile.header['dim1_span'])
+        image_yend = 0.0
+        squash_xstart = image_xstart
+        squash_xend = image_xend
+
+        # plot data
+        xvals = np.linspace(squash_xstart, squash_xend,
+                            lfx.header['metadata']['dim2_len'],
+                            endpoint=False)
+        squash_line, = ax_squash.plot(xvals, bbxdata[0,:])
+        ax_image.imshow(bbxdata, aspect='auto', cmap=CMAP,
+                        extent=[image_xstart, image_xend,
+                                image_ystart, image_yend])
+
+        # event handlers
+        def update_squash(e):
+            w, h = fig.canvas.get_width_height()
+            x = float(e.x)/w
+            y = float(e.y)/h
+
+            # update squash plot when cursor is inside the image box
+            if x>image_rect[0] and x<image_rect[0]+image_rect[2] \
+               and y>image_rect[1] and y<image_rect[1]+image_rect[3]:
+
+                # convert from physical units to bin number
+                ycoord = int(np.floor(e.ydata/ddim1))
+                squash_line.set_ydata(bbxdata[ycoord,:])
+                # use try-except block to filter out
+                # maximum-recursion depth exceeded messages
+                try:
+                    fig.canvas.draw()
+                    fig.canvas.flush_events()
+                except RuntimeError as e:
+                    pass
+        def new_x_limit(ax):
+            '''
+            update x-axis limits when zooming in on imshow plot
+            '''
+            ax_squash.set_xlim(ax.get_xlim())
+
+        # connect event triggers to event handlers
+        cid = fig.canvas.mpl_connect('motion_notify_event', update_squash)
+        ax_image.callbacks.connect('xlim_changed', new_x_limit)
+        canvas.draw()
+
+
+
+
+if __name__ == '__main__':
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument('filename', type=str,
+                   help='Input BBX Filename')
+    p.add_argument('-c', '--cmap', type=str,
+                   default='hot',
+                   help='matplotlib colormap')
+    args = p.parse_args()
+    CMAP = args.cmap
+    filename = args.filename
+    lfx = bbx.LofasmFile(filename)
+    lfx.read_data()
+    try:
+        app = main_app()
+        app.set_bbxfile(lfx)
+        app.mainloop()
+    except KeyboardInterrupt:
+        exit()
+
+
+
+
+
+

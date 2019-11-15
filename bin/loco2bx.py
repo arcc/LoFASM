@@ -4,8 +4,8 @@
 
 # Constants
 version = 1.0
-mjd_epoch = 2451545  # J2000 epoch
-mjd_offset = 2400000 # Entries in LoCo files subtracted this from JD
+mjd_epoch = 2451545.  # J2000 epoch
+mjd_offset = 2400000.5 # Entries in LoCo files subtracted this from JD
 polarizations = "AA,BB,CC,DD,AB,AC,AD,BC,BD,CD"
 
 # Imports
@@ -132,7 +132,7 @@ if __name__ == "__main__":
                 lofasm_hdr_version = int( field[1] )
 
 
-
+        mjd = mjd_day + mjd_msec * 8.64e-7
         # THROW AWAY THE EMPTY HALF OF THE FREQUENCY BINS
         nbins = nbins//2
         ##
@@ -155,6 +155,7 @@ if __name__ == "__main__":
             toff *= 86400.0
             toff += float(mjd_msec)*0.001
             int_time *= 1.0  # since we're keeping things in seconds
+
 
             # Set up some more constants for this file.
             realfmt = 'd'*nbins           # Format for struct.pack() on real data
@@ -298,13 +299,14 @@ if __name__ == "__main__":
                         chan_label = "{}x{}".format(chan1,chan2)
                     hdrfile.write("%channel_label: {}\n".format(chan_label))
                 hdrfile.write( "%start_time: {}\n".format( tstart ) )
+                hdrfile.write( "%start_mjd: {}\n".format( mjd ))
                 hdrfile.write( "%time_offset_J2000: 0 (s)\n" )
                 hdrfile.write( "%frequency_offset_DC: 0 (Hz)\n" )
                 hdrfile.write( "%dim1_label: time (s)\n" )
-                hdrfile.write( "%dim1_start: {}\n".format( toff ) )
+                hdrfile.write( "%dim1_start: {:.15f}\n".format( toff ) )
                 hdrfile.write( "%dim1_span: {}\n".format( int_time*nint ) )
                 hdrfile.write( "%dim2_label: frequency (Hz)\n" )
-                hdrfile.write( "%dim2_start: {}\n".format( fstart ) )
+                hdrfile.write( "%dim2_start: {:.15f}\n".format( fstart ) )
                 hdrfile.write( "%dim2_span: {}\n".format( fstep*nbins ) )
                 if pol[0] == pol[1]:
                     hdrfile.write( "%data_label: power spectrum (arbitrary)\n" )

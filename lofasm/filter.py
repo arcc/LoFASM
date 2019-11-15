@@ -2,37 +2,6 @@
 
 import numpy as np
 
-def running_median(y, N=50):
-    '''
-    Given a list, y, perform a running median filter.
-    Return the resulting list.
-
-    N is the total number of points to be considered for the
-    running median. The default is 50, so for any point X(n)
-    the values considered will be [X(n-25),X(n+25)], inclusive.
-
-    If N is not an even number then it will be changed to
-    even number N-1.
-
-    If N is not an integer it will be truncated.
-    '''
-    N = int(N)
-    
-    if N % 2 != 0: 
-        print 'running_median: N=%i is not even. Using N=%i instead.' % (N,N-1)
-        N -= 1
-        
-    ymed = [] # Empty list for new values    
-    for i in range(len(y)):
-        a=[] # Store values to determine new value of one point
-        for j in range(i-N/2, i+1+N/2):
-            if j >= 0 and j < len(y):
-                a.append(y[j])
-        a.sort(cmp=None, key=None, reverse=False)
-        ymed.append(a[(len(a)-1)/2+1])
-    return ymed
-
-
 def medfilt (x, k):
     """Apply a length-k median filter to a 1D array x.
     Boundaries are extended by repeating endpoints.
@@ -49,3 +18,81 @@ def medfilt (x, k):
         y[:-j,-(i+1)] = x[j:]
         y[-j:,-(i+1)] = x[-1]
     return np.median (y, axis=1)
+
+def running_median(x, r=50, axis=0):
+    '''
+    execute running median filter on x.
+
+    Parameters
+    ----------
+    x : array_like
+        Array to be filtered
+    r : int
+        number of elements to include in running window on each side
+        of current position
+    axis : int
+        axis along which to execute running filter
+
+    Returns
+    -------
+    y : ndarray
+        an array containing the resultant filtered data
+    '''
+    assert axis < x.ndim, "Axis is out of bounds"
+    assert x.shape[axis] > 2*r+1, "Window size (2*r+1) must be smaller than number of points along axis"
+    assert axis <= 1, "only 1d and 2d arrays supported"
+
+    if axis == 1:
+        x = np.rot90(x)
+
+    y = np.zeros_like(x)
+    for i in range(r):
+        y[i, :] = np.median(x[:i+r+1, :], axis=0)
+        y[-(i+1), :] = np.median(x[-(i+1+r):, :], axis=0)
+    for i in range(x.shape[0] - 2*r):
+        j = i + r
+        y[j, :] = np.median(x[j-r:j+r+1, :], axis=0)
+
+    if axis == 1:
+        y = np.rot90(y, k=-1)
+
+    return y
+
+def running_minimum(x, r=50, axis=0):
+    '''
+    execute running min filter on x.
+
+    Parameters
+    ----------
+    x : array_like
+        array to be filtered
+    r : int
+        number of elements to include in running window on each side
+        of current position
+    axis : int
+        axis along which to execute running filter
+
+    Returns
+    -------
+    y : ndarray
+        an array containing the resultant filtered data
+    '''
+    assert axis < x.ndim, "Axis is out of bounds"
+    assert x.shape[axis] > 2*r+1, "window size (2*r+1) must be less than number of points along axis"
+    assert axis <= 1, "only 1d and 2d arrays supported"
+
+    if axis == 1:
+        x = np.rot90(x)
+
+    y = np.zeros_like(x)
+    for i in range(r):
+        y[i, :] = np.amin(x[:i+r+1, :], axis=0)
+        y[-(i+1), :] = np.amin(x[-(i+1+r):, :], axis=0)
+    for i in range(x.shape[0] - 2*r):
+        j = i + r
+        y[j, :] = np.amin(x[j-r:j+r+1, :], axis=0)
+    
+    if axis == 1:
+        y = np.rot90(y, k=-1)
+
+    return y
